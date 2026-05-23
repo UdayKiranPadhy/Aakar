@@ -21,12 +21,23 @@ import { GenericBlockNode } from "./GenericBlockNode";
  *   - undefined  → default gray
  */
 export type NodeRole = "input" | "output";
+export type BlockVisualVariant = "layer-cell" | "flow-glyph";
+export type BlockVisualTone =
+  | "attention"
+  | "embedding"
+  | "io"
+  | "matrix"
+  | "mlp"
+  | "norm"
+  | "residual";
 
 export type BlockNodeProps = {
   node: Node;
   level: Level;
   selected: boolean;
   role?: NodeRole;
+  visualVariant?: BlockVisualVariant;
+  visualTone?: BlockVisualTone;
   onSelect?: (id: string) => void;
   onExpand?: (id: string) => void;
 };

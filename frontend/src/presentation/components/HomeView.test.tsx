@@ -4,29 +4,30 @@ import { describe, expect, it } from "vitest";
 import { HomeView } from "./HomeView";
 
 describe("HomeView", () => {
-  it("renders the welcome hero", () => {
+  it("renders the product title", () => {
     render(<HomeView />);
-    expect(
-      screen.getByRole("heading", { name: "Welcome to Aakar" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aakar" })).toBeInTheDocument();
   });
 
   it("includes the eyebrow tag", () => {
     render(<HomeView />);
-    expect(screen.getByText(/v0\.1 · llama family/i)).toBeInTheDocument();
+    expect(screen.getByText(/LLM architecture visualizer/i)).toBeInTheDocument();
   });
 
-  it("describes how to use the tool in the lead paragraph", () => {
+  it("shows the architecture preview stages", () => {
     render(<HomeView />);
-    expect(
-      screen.getByText(/interactive visualizer for large-language-model architectures/),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Tokens")).toBeInTheDocument();
+    expect(screen.getByText("Decoder layers")).toBeInTheDocument();
+    expect(screen.getByText("Logits")).toBeInTheDocument();
   });
 
-  it("renders multiple section headings (the lorem-ipsum sections that make the page scroll)", () => {
+  it("renders architecture lens sections", () => {
     render(<HomeView />);
-    // h2 headings — at least 4 sections are present
     const sections = screen.getAllByRole("heading", { level: 2 });
-    expect(sections.length).toBeGreaterThanOrEqual(4);
+    expect(sections.map((section) => section.textContent)).toEqual([
+      "Decoder paths stay readable",
+      "Q/K/V is shown as a fan-in",
+      "Parameters have visual weight",
+    ]);
   });
 });

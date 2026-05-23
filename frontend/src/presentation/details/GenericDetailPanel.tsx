@@ -47,6 +47,8 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
 
       <div className={styles.body}>
         {isRoot && spec && <ModelInfoSection spec={spec} />}
+        <SourceSection node={node} />
+        <TensorPathSection node={node} />
         <ParamsSection params={node.params} />
         <ShapesSection
           input={node.input_shape}
@@ -61,7 +63,7 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
         />
         <ComputeSection flops={node.flops} flopsReference={spec?.flops_reference} />
         <ActivationSection activation={node.activation} />
-        <IntermediatesSection intermediates={node.intermediates} />
+        <SubmoduleBreakdownSection node={node} />
         <BuffersSection buffers={node.buffers} />
       </div>
 
@@ -78,6 +80,41 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
         </footer>
       )}
     </div>
+  );
+}
+
+function SourceSection({ node }: { node: DetailPanelProps["node"] }) {
+  if (!node.module_path && !node.module_class) return null;
+  return (
+    <Section title="Source">
+      <dl className={styles.kvGrid}>
+        {node.module_path && <Row k="path" v={node.module_path} />}
+        {node.module_class && <Row k="class" v={node.module_class} />}
+      </dl>
+    </Section>
+  );
+}
+
+function TensorPathSection({ node }: { node: DetailPanelProps["node"] }) {
+  if (!node.input_shape && !node.output_shape && !node.intermediates) return null;
+  const intermediates = Object.entries(node.intermediates ?? {});
+  return (
+    <Section title="Tensor path">
+      {(node.input_shape || node.output_shape) && (
+        <div className={styles.tensorPath}>
+          <span>{node.input_shape ?? "?"}</span>
+          <span className={styles.tensorArrow}>→</span>
+          <span>{node.output_shape ?? "?"}</span>
+        </div>
+      )}
+      {intermediates.length > 0 && (
+        <dl className={styles.kvGrid}>
+          {intermediates.map(([k, v]) => (
+            <Row key={k} k={k} v={v} />
+          ))}
+        </dl>
+      )}
+    </Section>
   );
 }
 
@@ -141,7 +178,7 @@ function ParamCountSection({
   dtype?: string | null;
 }) {
   if (paramCount == null) return null;
-  const memStr = formatBytes(memoryBytes);
+  const memStr = formatBytes(memoryBytes ?? undefined);
   return (
     <Section title="Parameters">
       <div className={styles.paramCount}>
@@ -240,21 +277,29 @@ function BuffersSection({
   );
 }
 
-function IntermediatesSection({
-  intermediates,
-}: {
-  intermediates?: Readonly<Record<string, string>> | null;
-}) {
-  if (!intermediates) return null;
-  const entries = Object.entries(intermediates);
-  if (entries.length === 0) return null;
+function SubmoduleBreakdownSection({ node }: { node: DetailPanelProps["node"] }) {
+  const children = (node.children ?? []).filter((child) => (child.param_count ?? 0) > 0);
+  const total = node.param_count ?? 0;
+  if (children.length === 0 || total <= 0) return null;
   return (
-    <Section title="Intermediates">
-      <dl className={styles.kvGrid}>
-        {entries.map(([name, shape]) => (
-          <Row key={name} k={name} v={shape} />
-        ))}
-      </dl>
+    <Section title="Parameter breakdown">
+      <div className={styles.breakdown}>
+        {children.slice(0, 6).map((child) => {
+          const count = child.param_count ?? 0;
+          const pct = Math.max(2, Math.round((count / total) * 100));
+          return (
+            <div key={child.id} className={styles.breakdownRow}>
+              <div className={styles.breakdownTopline}>
+                <span>{child.label}</span>
+                <span>{formatParamCount(count)}</span>
+              </div>
+              <div className={styles.breakdownTrack}>
+                <span className={styles.breakdownBar} style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </Section>
   );
 }

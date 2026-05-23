@@ -13,14 +13,14 @@ type Props = {
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: styles.primary,
-  secondary: styles.secondary,
-  ghost: styles.ghost,
+  primary: styles.primary ?? "",
+  secondary: styles.secondary ?? "",
+  ghost: styles.ghost ?? "",
 };
 
 const SIZE_CLASSES: Record<Size, string> = {
-  sm: styles.sm,
-  md: styles.md,
+  sm: styles.sm ?? "",
+  md: styles.md ?? "",
 };
 
 export function Button({

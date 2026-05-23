@@ -178,7 +178,11 @@ class TransformersIntrospector:
         num_heads = int(getattr(config, "num_attention_heads", 0) or 0)
         num_kv_heads = int(getattr(config, "num_key_value_heads", num_heads) or num_heads)
         head_dim_raw = getattr(config, "head_dim", None)
-        head_dim = int(head_dim_raw) if head_dim_raw else (hidden_size // num_heads if num_heads else 0)
+        head_dim = (
+            int(head_dim_raw)
+            if head_dim_raw
+            else (hidden_size // num_heads if num_heads else 0)
+        )
         # `intermediate_size` is the standard name (Llama/Mistral/Qwen/Mixtral).
         # GPT-2 uses `n_inner`, which defaults to `4 * n_embd` when unset — fall
         # through to the 4× hidden_size convention so we still surface the MLP
@@ -325,7 +329,15 @@ class TransformersIntrospector:
             shape = f"[B, S, {ctx.hidden_size}]"
             return shape, shape
         # Attention / MLP / decoder layer / backbone — all hidden → hidden.
-        if any(s in cls for s in ("Attention", "MLP", "FeedForward", "FFN", "DecoderLayer", "EncoderLayer")):
+        hidden_to_hidden_classes = (
+            "Attention",
+            "MLP",
+            "FeedForward",
+            "FFN",
+            "DecoderLayer",
+            "EncoderLayer",
+        )
+        if any(s in cls for s in hidden_to_hidden_classes):
             shape = f"[B, S, {ctx.hidden_size}]"
             return shape, shape
         # Top-level CausalLM heads: tokens in, logits out.
@@ -415,8 +427,8 @@ class TransformersIntrospector:
             n_kv = (
                 getattr(module, "num_key_value_heads", None)
                 or getattr(module, "num_kv_heads", None)
-                or n_heads
                 or ctx.num_kv_heads
+                or n_heads
             )
             head_dim = getattr(module, "head_dim", None) or ctx.head_dim
             if not n_heads or not head_dim:
