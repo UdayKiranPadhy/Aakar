@@ -1,0 +1,29 @@
+.empty {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.emptyCard {
+  border-radius: var(--radius-block);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-bg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-block);
+}
+
+.emptyTitle {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+.emptyHint {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}

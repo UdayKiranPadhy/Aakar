@@ -1,0 +1,36 @@
+.nav {
+  display: flex;
+  align-items: center;
+}
+
+.tab {
+  position: relative;
+  height: 44px;
+  padding: 0 16px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.tab:hover {
+  color: var(--color-ink);
+}
+
+.tabActive {
+  color: var(--color-accent);
+}
+.tabActive:hover {
+  color: var(--color-accent);
+}
+
+.underline {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: var(--color-accent);
+}

@@ -1,0 +1,45 @@
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+  padding: 8px 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.rootButton {
+  color: var(--color-ink-muted);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.rootButton:hover {
+  color: var(--color-accent);
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chevron {
+  color: var(--color-ink-subtle);
+}
+
+.crumbLink {
+  border-radius: var(--radius-sm);
+  padding: 0 4px;
+  color: var(--color-ink-muted);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.crumbLink:hover {
+  color: var(--color-accent);
+}
+
+.crumbCurrent {
+  cursor: default;
+  color: var(--color-ink);
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+}

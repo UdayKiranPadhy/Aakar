@@ -1,0 +1,71 @@
+/* Design tokens — referenced by every *.module.css file. CSS variables are
+ * the single source of truth for design values (previously duplicated in
+ * tailwind.config.ts; that file is gone). When updating, check both color
+ * palettes (light + any future dark) live here. */
+
+:root {
+  /* ── Accent (single brand colour, like Google's blue) ───────────────── */
+  --color-accent: #1a73e8;
+  --color-accent-hover: #1765c8;
+  --color-accent-subtle: #e8f0fe;
+
+  /* ── Ink (text colours — strong → subtle) ──────────────────────────── */
+  /* Bumped one notch darker across the board from the original Google AI
+   * Studio palette; reads less washed-out at this app's information density. */
+  --color-ink: #1f1f1f;
+  --color-ink-muted: #3c4043;
+  --color-ink-subtle: #5f6368;
+
+  /* ── Surfaces ──────────────────────────────────────────────────────── */
+  --color-bg: #ffffff;
+  --color-canvas: #fafafa;
+
+  /* ── Borders ───────────────────────────────────────────────────────── */
+  --color-hairline: #e5e7eb;
+  --color-hairline-strong: #d1d5db;
+
+  /* ── Status (banner + error) ───────────────────────────────────────── */
+  --color-amber-50: #fffbeb;
+  --color-amber-200: #fde68a;
+  --color-amber-900: #78350f;
+  --color-red-600: #dc2626;
+
+  /* ── Type ─────────────────────────────────────────────────────────── */
+  --font-sans: "Google Sans", "Google Sans Flex", system-ui, -apple-system, sans-serif;
+  --font-mono: "Google Sans Code", ui-monospace, SFMono-Regular, monospace;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ── Radii ─────────────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-block: 8px;
+  --radius-pill: 999px;
+
+  /* ── Borders ───────────────────────────────────────────────────────── */
+  --border-hairline: 0.5px;
+
+  /* ── Shadows ───────────────────────────────────────────────────────── */
+  --shadow-block: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.06);
+
+  /* ── Spacing scale (4-px base) ─────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Motion ────────────────────────────────────────────────────────── */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}

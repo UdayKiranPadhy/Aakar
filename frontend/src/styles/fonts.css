@@ -1,0 +1,3 @@
+/* Fonts are loaded in index.html via <link> for fastest preconnect.
+ * This file is kept as a hook for future @font-face overrides or self-hosted
+ * fallbacks. Empty by design. */

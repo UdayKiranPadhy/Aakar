@@ -1,0 +1,59 @@
+.card {
+  position: relative;
+  cursor: pointer;
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  border: 1px solid var(--color-hairline);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.card:hover {
+  border-color: var(--color-hairline-strong);
+}
+.card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-block);
+}
+
+.cardSelected {
+  border: 2px solid var(--color-accent);
+}
+.cardSelected:hover {
+  border-color: var(--color-accent);
+}
+
+.body {
+  padding: 12px 16px;
+}
+
+.title {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+.titleSelected {
+  color: var(--color-accent);
+}
+
+.meta {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--color-ink-muted);
+}
+
+.params {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+}
+
+.expandButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}

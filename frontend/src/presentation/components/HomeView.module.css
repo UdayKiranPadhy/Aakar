@@ -1,0 +1,71 @@
+.container {
+  margin: 0 auto;
+  max-width: 768px;
+  padding: 48px 24px;
+}
+@media (min-width: 640px) {
+  .container {
+    padding: 64px 32px;
+  }
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-ink-subtle);
+}
+
+.title {
+  margin-top: 12px;
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+@media (min-width: 640px) {
+  .title {
+    font-size: 48px;
+  }
+}
+
+.lead {
+  margin-top: 16px;
+  max-width: 640px;
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+}
+
+.section {
+  margin-top: 48px;
+}
+.sectionLast {
+  margin-top: 48px;
+  margin-bottom: 32px;
+}
+
+.h2 {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.p {
+  margin-top: 12px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+}
+
+/* Subsequent paragraphs inside a section get a smaller top margin
+ * (the first :first-of-type already uses the .p above with mt-3 = 12px;
+ * use a child paragraph rule for the rest). */
+.p + .p {
+  margin-top: 16px;
+}
