@@ -13,7 +13,15 @@
 
 import { AttentionHeadNode } from "./AttentionHeadNode";
 import { blockRegistry } from "./BlockRegistry";
+import { FlowGlyphNode } from "./FlowGlyphNode";
 
 // Heads are rendered ~3× narrower than a default block — at level 4 we
 // render N of them side-by-side and need the grid to fit a normal viewport.
 blockRegistry.register("attention_head", AttentionHeadNode);
+blockRegistry.register("flow_input", FlowGlyphNode);
+blockRegistry.register("flow_residual", FlowGlyphNode);
+blockRegistry.register("attention_heads", FlowGlyphNode);
+blockRegistry.register("attention_scores", FlowGlyphNode);
+blockRegistry.register("attention_softmax", FlowGlyphNode);
+blockRegistry.register("attention_mix", FlowGlyphNode);
+blockRegistry.register("mlp_multiply", FlowGlyphNode);

@@ -107,6 +107,7 @@
 
 .kvValue {
   color: var(--color-ink);
+  overflow-wrap: anywhere;
 }
 
 /* Secondary line below a primary metric — e.g. memory under param-count, or
@@ -120,4 +121,50 @@
 
 .dim {
   color: var(--color-ink-subtle);
+}
+
+.tensorPath {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+
+.tensorArrow {
+  color: var(--color-accent);
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.breakdownTopline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+
+.breakdownTrack {
+  position: relative;
+  margin-top: 4px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-canvas);
+}
+
+.breakdownBar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
 }

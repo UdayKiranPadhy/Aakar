@@ -40,11 +40,26 @@ export function GenericBlockNode({
   level,
   selected,
   role,
+  visualVariant,
+  visualTone,
   onSelect,
   onExpand,
 }: BlockNodeProps) {
+  if (visualVariant === "layer-cell") {
+    return (
+      <LayerCellNode
+        node={node}
+        selected={selected}
+        role={role}
+        onSelect={onSelect}
+        onExpand={onExpand}
+      />
+    );
+  }
+
   const width = level === 1 ? 280 : 260;
   const canExpand = !!node.has_internals && !!onExpand;
+  const showMatrixGlyph = isMatrixLike(node.type);
 
   const handleClick = () => onSelect?.(node.id);
   const handleKey = (e: React.KeyboardEvent) => {
@@ -67,9 +82,12 @@ export function GenericBlockNode({
         selected && styles.cardSelected,
         role === "input" && styles.cardInput,
         role === "output" && styles.cardOutput,
+        visualTone && styles[`tone_${visualTone}`],
       )}
     >
       <div className={styles.body}>
+        {showMatrixGlyph && <MatrixGlyph node={node} />}
+
         <div className={clsx(styles.title, selected && styles.titleSelected)}>
           {node.label}
         </div>
@@ -138,4 +156,73 @@ export function GenericBlockNode({
       )}
     </div>
   );
+}
+
+function LayerCellNode({
+  node,
+  selected,
+  role,
+  onSelect,
+  onExpand,
+}: Pick<BlockNodeProps, "node" | "selected" | "role" | "onSelect" | "onExpand">) {
+  const canExpand = !!node.has_internals && !!onExpand;
+  const handleClick = () => onSelect?.(node.id);
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKey}
+      aria-label={node.label}
+      className={clsx(
+        styles.card,
+        styles.layerCell,
+        selected && styles.cardSelected,
+        role === "input" && styles.cardInput,
+        role === "output" && styles.cardOutput,
+      )}
+    >
+      <div className={styles.layerIndex}>{node.label}</div>
+      {node.meta && <div className={styles.layerMeta}>{node.meta}</div>}
+      {node.param_count !== undefined && node.param_count > 0 && (
+        <div className={styles.layerStats}>{formatParamCount(node.param_count)}</div>
+      )}
+      {selected && canExpand && (
+        <button
+          type="button"
+          className={styles.layerExpandButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            onExpand!(node.id);
+          }}
+          aria-label={`Expand ${node.label} internals`}
+        >
+          <Pill tone="accent">Open</Pill>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function MatrixGlyph({ node }: { node: BlockNodeProps["node"] }) {
+  const shape = formatShape(node.weight_shape);
+  return (
+    <div className={styles.matrixGlyph} aria-hidden="true">
+      <span className={styles.matrixBarTall} />
+      <span className={styles.matrixBarMid} />
+      <span className={styles.matrixBarShort} />
+      {shape && <span className={styles.matrixShape}>{shape}</span>}
+    </div>
+  );
+}
+
+function isMatrixLike(type: string): boolean {
+  return type === "linear" || type === "conv1_d" || type === "embedding";
 }

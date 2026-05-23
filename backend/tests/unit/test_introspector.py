@@ -11,12 +11,14 @@ because the introspector's whole job is to talk to it.
 from __future__ import annotations
 
 import pytest
+import torch.nn as nn
 
 from aakar_api.domain.exceptions import ModelNotFound, UnsupportedArchitecture
 from aakar_api.infrastructure.transformers_introspector import (
     TransformersIntrospector,
     _humanize,
     _snake_case,
+    _WalkCtx,
 )
 
 _TINY_LLAMA = "hf-internal-testing/tiny-random-LlamaForCausalLM"
@@ -180,6 +182,33 @@ async def test_intermediates_on_attention_and_mlp(
     assert str(expected) in mlp.intermediates["up"]
 
 
+def test_intermediates_use_config_kv_heads_for_gqa() -> None:
+    """Grouped-query attention has fewer K/V heads than Q heads."""
+
+    class FakeAttention(nn.Module):
+        head_dim = 128
+        num_heads = 16
+
+    ctx = _WalkCtx(
+        dtype_bytes=2,
+        hidden_size=1024,
+        vocab_size=151936,
+        num_heads=16,
+        num_kv_heads=8,
+        head_dim=128,
+        intermediate_size=3072,
+        seq_ref=2048,
+        batch_ref=1,
+    )
+
+    out = TransformersIntrospector._intermediates(FakeAttention(), ctx)
+    assert out is not None
+    assert out["q"] == "[B, 16, S, 128]"
+    assert out["k"] == "[B, 8, S, 128]"
+    assert out["v"] == "[B, 8, S, 128]"
+    assert out["attn_scores"] == "[B, 16, S, S]"
+
+
 @pytest.mark.asyncio
 async def test_intermediates_absent_on_leaf_modules(
     introspector: TransformersIntrospector,
@@ -194,7 +223,10 @@ async def test_intermediates_absent_on_leaf_modules(
 async def test_buffers_on_rotary(introspector: TransformersIntrospector) -> None:
     spec = await introspector.introspect(_TINY_LLAMA)
     model = next(c for c in spec.graph[0].children or [] if c.id == "model")
-    rotary = next((c for c in model.children or [] if "rotary" in (c.module_class or "").lower()), None)
+    rotary = next(
+        (c for c in model.children or [] if "rotary" in (c.module_class or "").lower()),
+        None,
+    )
     assert rotary is not None, "Expected a rotary embedding submodule on LlamaModel"
     # The rotary embedding caches the inverse-frequency table as a buffer.
     assert rotary.buffers is not None

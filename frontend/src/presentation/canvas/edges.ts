@@ -71,7 +71,7 @@ export function buildEdges(
   return buildSequentialEdges(nodes);
 }
 
-function makeEdge(source: SpecNode, target: SpecNode): Edge {
+export function makeEdge(source: SpecNode, target: SpecNode): Edge {
   return {
     id: `${source.id}→${target.id}`,
     source: source.id,
@@ -84,7 +84,20 @@ function makeEdge(source: SpecNode, target: SpecNode): Edge {
   };
 }
 
-function makeResidualEdge(source: SpecNode, target: SpecNode): Edge {
+export function makeFlowEdge(source: SpecNode, target: SpecNode): Edge {
+  return {
+    id: `${source.id}→${target.id}`,
+    source: source.id,
+    target: target.id,
+    sourceHandle: "right-out",
+    targetHandle: "left-in",
+    type: EDGE_TYPE,
+    style: SEQUENTIAL_STYLE,
+    markerEnd: arrowhead(SEQUENTIAL_STYLE.stroke),
+  };
+}
+
+export function makeResidualEdge(source: SpecNode, target: SpecNode): Edge {
   return {
     id: `${source.id}↪${target.id}`,
     source: source.id,

@@ -70,7 +70,7 @@ describe("DetailPanel — GPT-2 root", () => {
       detailOpen: true,
     });
     render(<DetailPanel />);
-    expect(screen.getByText("GPT2LMHeadModel")).toBeInTheDocument();
+    expect(screen.getAllByText("GPT2LMHeadModel").length).toBeGreaterThan(0);
     // Spec-level pills should appear.
     expect(screen.getByText("sdpa")).toBeInTheDocument();
     expect(screen.getByText("learned")).toBeInTheDocument();

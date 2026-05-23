@@ -29,6 +29,7 @@ import {
   highlightEdgesForSelection,
   inputOutputForSelection,
 } from "./edges";
+import { buildSemanticFlow, isSyntheticNode } from "./semanticFlow";
 import { ContextBlockFlowNode, type ContextBlockData } from "./ContextBlockNode";
 import { ResidualEdge } from "./ResidualEdge";
 import { layoutRegistry } from "../layout/LayoutRegistry";
@@ -53,12 +54,13 @@ export function Canvas() {
   const { level, expansionPath, currentView, expandNode } = useNavigation();
   const { selectedId, selectNode } = useSelection();
 
-  const { rfNodes, rfEdges, translateExtent } = useMemo(() => {
+  const { rfNodes, rfEdges, translateExtent, semanticFitViewOptions } = useMemo(() => {
     if (currentView.length === 0) {
       return {
         rfNodes: [] as ReactFlowNode[],
         rfEdges: [] as Edge[],
         translateExtent: undefined,
+        semanticFitViewOptions: undefined,
       };
     }
 
@@ -69,15 +71,17 @@ export function Canvas() {
         : null;
     const parentType = parent?.type ?? null;
 
+    const semantic = buildSemanticFlow(parent, currentView);
+    const visualNodes = semantic?.nodes ?? currentView;
     const strategy = layoutRegistry.resolve(parentType ?? "");
-    const positions = strategy(currentView);
+    const positions = semantic?.positions ?? strategy(currentView);
     const positionById = new Map(positions.map((p) => [p.id, p]));
 
     // Build edges first so we can derive input / output neighbours of the
     // selected node — they get the green / amber border colours in the
     // renderer (and the matching edge stroke colours via
     // highlightEdgesForSelection below).
-    const rawEdges = buildEdges(currentView, parentType);
+    const rawEdges = [...(semantic?.edges ?? buildEdges(currentView, parentType))];
     const { inputs, outputs } = inputOutputForSelection(rawEdges, selectedId);
 
     // Find the previous and next siblings of the currently-expanded node.
@@ -101,7 +105,8 @@ export function Canvas() {
       // Previous sibling — anchored to the first node of the current view.
       const prev = idx > 0 ? siblings[idx - 1] : null;
       const firstChildPos = positions[0];
-      if (prev?.has_internals && firstChildPos && currentView[0]) {
+      const firstVisualNode = visualNodes[0];
+      if (prev?.has_internals && firstChildPos && firstVisualNode) {
         const data: ContextBlockData = {
           specNode: prev,
           contextPath: [...parentExpansion, prev.id],
@@ -115,15 +120,15 @@ export function Canvas() {
           draggable: false,
           selectable: false,
         };
-        prevContextEdge = buildContextEdge(prevContextNode.id, currentView[0].id);
+        prevContextEdge = buildContextEdge(prevContextNode.id, firstVisualNode.id);
       }
 
       // Next sibling — anchored to the last node of the current view.
       const next =
         idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : null;
       const lastChildPos = positions[positions.length - 1];
-      const lastChild = currentView[currentView.length - 1];
-      if (next?.has_internals && lastChildPos && lastChild) {
+      const lastVisualNode = visualNodes[visualNodes.length - 1];
+      if (next?.has_internals && lastChildPos && lastVisualNode) {
         const data: ContextBlockData = {
           specNode: next,
           contextPath: [...parentExpansion, next.id],
@@ -137,12 +142,13 @@ export function Canvas() {
           draggable: false,
           selectable: false,
         };
-        nextContextEdge = buildContextEdge(lastChild.id, nextContextNode.id);
+        nextContextEdge = buildContextEdge(lastVisualNode.id, nextContextNode.id);
       }
     }
 
-    const rfNodes: ReactFlowNode[] = currentView.map((node) => {
+    const rfNodes: ReactFlowNode[] = visualNodes.map((node) => {
       const pos = positionById.get(node.id) ?? { x: 0, y: 0 };
+      const synthetic = isSyntheticNode(node);
       const role = inputs.has(node.id)
         ? ("input" as const)
         : outputs.has(node.id)
@@ -151,10 +157,12 @@ export function Canvas() {
       const data: BlockFlowData = {
         specNode: node,
         level,
-        isSelected: selectedId === node.id,
+        isSelected: !synthetic && selectedId === node.id,
         role,
-        onSelect: selectNode,
-        onExpand: expandNode,
+        visualVariant: semantic?.variants.get(node.id),
+        visualTone: semantic?.tones.get(node.id),
+        onSelect: synthetic ? undefined : selectNode,
+        onExpand: synthetic ? undefined : expandNode,
       };
       return {
         id: node.id,
@@ -199,7 +207,12 @@ export function Canvas() {
       [maxX + PAD, maxY + PAD],
     ];
 
-    return { rfNodes, rfEdges, translateExtent };
+    return {
+      rfNodes,
+      rfEdges,
+      translateExtent,
+      semanticFitViewOptions: semantic?.fitViewOptions,
+    };
   }, [currentView, spec, expansionPath, level, selectedId, selectNode, expandNode]);
 
   if (!spec) {
@@ -228,9 +241,9 @@ export function Canvas() {
   // fitView'ing the whole thing reads fine, so keep the old behaviour.
   const isRootView = expansionPath.length === 0;
   const firstNodeId = currentView[0]?.id;
-  const fitViewOptions = isRootView && firstNodeId
+  const fitViewOptions = semanticFitViewOptions ?? (isRootView && firstNodeId
     ? { nodes: [{ id: firstNodeId }], padding: 1.5, maxZoom: 1, minZoom: 0.6 }
-    : { padding: 0.25, maxZoom: 1 };
+    : { padding: 0.25, maxZoom: 1 });
 
   return (
     <ReactFlow
