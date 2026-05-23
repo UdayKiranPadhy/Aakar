@@ -10,17 +10,27 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from aakar_api.domain.model_config import ModelConfig
+from aakar_api.domain.spec import Spec
 
 
 @runtime_checkable
-class ConfigRepository(Protocol):
-    """Fetches a `ModelConfig` for a given HuggingFace model ID.
+class Introspector(Protocol):
+    """Builds a Spec for a HuggingFace model ID.
 
-    Implementations may hit the live HF Hub, read from disk, or return a
-    canned dict in tests. They are expected to raise the relevant domain
-    exception (`ModelNotFound`, `ModelGated`, `ConfigFetchTimeout`) for
-    well-known failures.
+    Implementations may walk the real `transformers` nn.Module tree (production)
+    or return canned specs (tests). Both methods are async because the production
+    impl wraps blocking work in `asyncio.to_thread`.
     """
 
-    async def fetch(self, model_id: str) -> ModelConfig: ...
+    async def introspect(self, model_id: str) -> Spec: ...
+
+    async def fetch_config_hash(self, model_id: str) -> str: ...
+
+
+@runtime_checkable
+class SpecCache(Protocol):
+    """Reads/writes `Spec` objects keyed by (model_id, config_hash)."""
+
+    async def get(self, model_id: str, config_hash: str) -> Spec | None: ...
+
+    async def set(self, model_id: str, config_hash: str, spec: Spec) -> None: ...

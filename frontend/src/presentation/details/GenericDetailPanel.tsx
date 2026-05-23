@@ -1,17 +1,32 @@
 /**
  * Default detail-panel content — used for every node type in v0.1.
  *
- * Renders three sections: Configuration (from params), Parameters (param_count),
- * Shapes (input/output_shape). Each section is hidden if the relevant data
- * is absent.
+ * Renders sections for: Configuration (params), Shapes (input/output/weight/
+ * bias), Parameters (param_count + memory), Compute (FLOPs), Activation,
+ * Buffers, plus a Model-level info strip pulled from the Spec.
+ *
+ * Sections are hidden if the relevant data is absent.
  */
 
 import { Button } from "../components/ui/Button";
 import type { DetailPanelProps } from "./DetailRegistry";
-import { formatParamCount } from "../components/ui/format";
+import {
+  formatBytes,
+  formatFlops,
+  formatParamCount,
+  formatShape,
+} from "../components/ui/format";
+import { useArchStore } from "../../store/archStore";
+import type { Spec } from "../../domain/spec";
 import styles from "./GenericDetailPanel.module.css";
 
 export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps) {
+  // Spec-level metadata (attention impl, position encoding, etc.) lives next
+  // to the per-node info because students inspecting a block almost always
+  // want the model-wide context to ground the layer's behavior.
+  const spec = useArchStore((s) => s.spec);
+  const isRoot = !node.module_path;
+
   return (
     <div className={styles.panel}>
       <header className={styles.header}>
@@ -31,9 +46,23 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
       </header>
 
       <div className={styles.body}>
+        {isRoot && spec && <ModelInfoSection spec={spec} />}
         <ParamsSection params={node.params} />
-        <ParamCountSection paramCount={node.param_count} />
-        <ShapesSection input={node.input_shape} output={node.output_shape} />
+        <ShapesSection
+          input={node.input_shape}
+          output={node.output_shape}
+          weight={node.weight_shape}
+          bias={node.bias_shape}
+        />
+        <ParamCountSection
+          paramCount={node.param_count}
+          memoryBytes={node.memory_bytes}
+          dtype={spec?.param_dtype}
+        />
+        <ComputeSection flops={node.flops} flopsReference={spec?.flops_reference} />
+        <ActivationSection activation={node.activation} />
+        <IntermediatesSection intermediates={node.intermediates} />
+        <BuffersSection buffers={node.buffers} />
       </div>
 
       {node.has_internals && onExpand && (
@@ -49,6 +78,38 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
         </footer>
       )}
     </div>
+  );
+}
+
+function ModelInfoSection({ spec }: { spec: Spec }) {
+  const summary = spec.config_summary;
+  const rows: Array<[string, string]> = [];
+  if (spec.param_dtype) rows.push(["dtype", spec.param_dtype]);
+  if (spec.attn_impl) rows.push(["attention", spec.attn_impl]);
+  if (spec.position_encoding) rows.push(["position", spec.position_encoding]);
+  if (spec.tied_word_embeddings !== undefined)
+    rows.push(["tied embeddings", spec.tied_word_embeddings ? "yes" : "no"]);
+  if (typeof summary.gqa_ratio === "number" && summary.gqa_ratio > 1)
+    rows.push(["GQA", `${summary.gqa_ratio}:1`]);
+  if (typeof summary.sliding_window === "number")
+    rows.push(["sliding window", String(summary.sliding_window)]);
+  if (typeof summary.num_local_experts === "number")
+    rows.push([
+      "MoE",
+      `${summary.num_local_experts} experts, top-${summary.num_experts_per_tok ?? "?"}`,
+    ]);
+  if (typeof summary.bos_token_id === "number")
+    rows.push(["bos / eos", `${summary.bos_token_id} / ${summary.eos_token_id ?? "?"}`]);
+  if (summary.quantization_config) rows.push(["quantized", "yes"]);
+  if (rows.length === 0) return null;
+  return (
+    <Section title="Model">
+      <dl className={styles.kvGrid}>
+        {rows.map(([k, v]) => (
+          <Row key={k} k={k} v={v} />
+        ))}
+      </dl>
+    </Section>
   );
 }
 
@@ -70,8 +131,17 @@ function ParamsSection({
   );
 }
 
-function ParamCountSection({ paramCount }: { paramCount?: number }) {
-  if (paramCount === undefined) return null;
+function ParamCountSection({
+  paramCount,
+  memoryBytes,
+  dtype,
+}: {
+  paramCount?: number | null;
+  memoryBytes?: number | null;
+  dtype?: string | null;
+}) {
+  if (paramCount == null) return null;
+  const memStr = formatBytes(memoryBytes);
   return (
     <Section title="Parameters">
       <div className={styles.paramCount}>
@@ -80,17 +150,110 @@ function ParamCountSection({ paramCount }: { paramCount?: number }) {
           ({paramCount.toLocaleString()})
         </span>
       </div>
+      {memStr && (
+        <div className={styles.subtle}>
+          {memStr}
+          {dtype && <span className={styles.dim}> · {dtype}</span>}
+        </div>
+      )}
     </Section>
   );
 }
 
-function ShapesSection({ input, output }: { input?: string; output?: string }) {
-  if (!input && !output) return null;
+function ShapesSection({
+  input,
+  output,
+  weight,
+  bias,
+}: {
+  input?: string;
+  output?: string;
+  weight?: ReadonlyArray<number>;
+  bias?: ReadonlyArray<number>;
+}) {
+  const w = formatShape(weight);
+  const b = formatShape(bias);
+  if (!input && !output && !w && !b) return null;
   return (
     <Section title="Shapes">
       <dl className={styles.kvGrid}>
         {input && <Row k="input" v={input} />}
         {output && <Row k="output" v={output} />}
+        {w && <Row k="weight" v={w} />}
+        {b && <Row k="bias" v={b} />}
+      </dl>
+    </Section>
+  );
+}
+
+function ComputeSection({
+  flops,
+  flopsReference,
+}: {
+  flops?: number | null;
+  flopsReference?: Readonly<{ batch_size: number; seq_len: number }> | null;
+}) {
+  // Pydantic optional ints serialize as JSON `null`, not absent — so a strict
+  // `=== undefined` check would fall through and crash on `null.toLocaleString()`.
+  if (flops == null) return null;
+  const ref = flopsReference
+    ? `B=${flopsReference.batch_size}, S=${flopsReference.seq_len}`
+    : null;
+  return (
+    <Section title="Compute (forward)">
+      <div className={styles.paramCount}>
+        {formatFlops(flops)}
+        <span className={styles.paramCountSecondary}>
+          ({flops.toLocaleString()} ops)
+        </span>
+      </div>
+      {ref && <div className={styles.subtle}>at {ref}</div>}
+    </Section>
+  );
+}
+
+function ActivationSection({ activation }: { activation?: string }) {
+  if (!activation) return null;
+  return (
+    <Section title="Activation">
+      <div className={styles.kvValue}>{activation}</div>
+    </Section>
+  );
+}
+
+function BuffersSection({
+  buffers,
+}: {
+  buffers?: Readonly<Record<string, ReadonlyArray<number>>> | null;
+}) {
+  if (!buffers) return null;
+  const entries = Object.entries(buffers);
+  if (entries.length === 0) return null;
+  return (
+    <Section title="Buffers">
+      <dl className={styles.kvGrid}>
+        {entries.map(([name, shape]) => (
+          <Row key={name} k={name} v={formatShape(shape) ?? "[]"} />
+        ))}
+      </dl>
+    </Section>
+  );
+}
+
+function IntermediatesSection({
+  intermediates,
+}: {
+  intermediates?: Readonly<Record<string, string>> | null;
+}) {
+  if (!intermediates) return null;
+  const entries = Object.entries(intermediates);
+  if (entries.length === 0) return null;
+  return (
+    <Section title="Intermediates">
+      <dl className={styles.kvGrid}>
+        {entries.map(([name, shape]) => (
+          <Row key={name} k={name} v={shape} />
+        ))}
       </dl>
     </Section>
   );

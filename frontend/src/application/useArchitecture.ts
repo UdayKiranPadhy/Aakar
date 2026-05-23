@@ -14,8 +14,7 @@ import {
   ModelGatedError,
   ModelNotFoundError,
   NetworkError,
-  UnsupportedConfigError,
-  UpstreamTimeoutError,
+  UnsupportedArchitectureError,
 } from "../infrastructure/api/errors";
 import type { ArchitectureRepository } from "./interfaces";
 
@@ -26,11 +25,9 @@ function toUserMessage(error: unknown): string {
   if (error instanceof ModelGatedError) {
     return `Model is gated or private (Aakar uses no HuggingFace token): ${error.modelId}`;
   }
-  if (error instanceof UpstreamTimeoutError) {
-    return "HuggingFace took too long to respond. Try again.";
-  }
-  if (error instanceof UnsupportedConfigError) {
-    return `Model config is missing required field "${error.missingField}".`;
+  if (error instanceof UnsupportedArchitectureError) {
+    const arch = error.architecture ? ` (${error.architecture})` : "";
+    return `Aakar doesn't load custom-code models${arch}. Try a model with a stock HuggingFace architecture.`;
   }
   if (error instanceof NetworkError) {
     return `Network error: ${error.message}`;

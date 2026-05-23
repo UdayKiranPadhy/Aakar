@@ -11,10 +11,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import ORJSONResponse
 
 from aakar_api.domain.exceptions import (
-    ConfigFetchTimeout,
     ModelGated,
     ModelNotFound,
-    UnsupportedConfig,
+    UnsupportedArchitecture,
 )
 
 
@@ -23,31 +22,34 @@ def register_error_handlers(app: FastAPI) -> None:
     async def _model_not_found(_: Request, exc: ModelNotFound) -> ORJSONResponse:
         return ORJSONResponse(
             status_code=404,
-            content={"error": "model_not_found", "message": str(exc), "model_id": exc.model_id},
+            content={
+                "kind": "model_not_found",
+                "message": str(exc),
+                "model_id": exc.model_id,
+            },
         )
 
     @app.exception_handler(ModelGated)
     async def _model_gated(_: Request, exc: ModelGated) -> ORJSONResponse:
         return ORJSONResponse(
             status_code=403,
-            content={"error": "model_gated", "message": str(exc), "model_id": exc.model_id},
+            content={
+                "kind": "model_gated",
+                "message": str(exc),
+                "model_id": exc.model_id,
+            },
         )
 
-    @app.exception_handler(ConfigFetchTimeout)
-    async def _config_timeout(_: Request, exc: ConfigFetchTimeout) -> ORJSONResponse:
-        return ORJSONResponse(
-            status_code=504,
-            content={"error": "upstream_timeout", "message": str(exc), "model_id": exc.model_id},
-        )
-
-    @app.exception_handler(UnsupportedConfig)
-    async def _unsupported_config(_: Request, exc: UnsupportedConfig) -> ORJSONResponse:
+    @app.exception_handler(UnsupportedArchitecture)
+    async def _unsupported_architecture(
+        _: Request, exc: UnsupportedArchitecture
+    ) -> ORJSONResponse:
         return ORJSONResponse(
             status_code=422,
             content={
-                "error": "unsupported_config",
+                "kind": "unsupported_architecture",
                 "message": str(exc),
                 "model_id": exc.model_id,
-                "missing_field": exc.missing_field,
+                "architecture": exc.architecture,
             },
         )

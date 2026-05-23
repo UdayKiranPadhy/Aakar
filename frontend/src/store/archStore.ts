@@ -42,6 +42,7 @@ type Actions = {
   selectNode(id: string): void;
   expandNode(id: string): void;
   collapseToLevel(target: Level): void;
+  goToExpansion(path: ExpansionPath): void;
   closeDetail(): void;
   setView(view: View): void;
   reset(): void;
@@ -78,8 +79,11 @@ export const useArchStore = create<State & Actions>()((set) => ({
       detailOpen: true,
     })),
 
-  // Expanding pushes into the view stack. Selection is cleared because the
-  // selected node is now the parent of the new view (not in it).
+  // Expanding pushes into the view stack. The detail panel CLOSES — once
+  // you're inside a block, that block's information is shown by the
+  // canvas-level "Previous block" context card (see PreviousBlockNode),
+  // not by the side panel. This avoids dragging stale parent metadata
+  // forward as the user keeps zooming in.
   expandNode: (id) =>
     set((s) => {
       const next: ExpansionPath = [...s.expansionPath, id];
@@ -92,7 +96,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
     }),
 
   // Truncate the expansionPath to `target - 1` entries. Clear selection
-  // because what was selected may not exist at the new level.
+  // and close the panel — the user's intent is "go back to that level",
+  // not "show me details of whatever I landed on".
   collapseToLevel: (target) =>
     set((s) => {
       const next: ExpansionPath = s.expansionPath.slice(0, target - 1);
@@ -102,6 +107,17 @@ export const useArchStore = create<State & Actions>()((set) => ({
         detailOpen: false,
         level: levelFromExpansion(next),
       };
+    }),
+
+  // Jump directly to a specific expansion path — used by the "Previous block"
+  // context card to navigate to the previous sibling's internals in one
+  // click instead of forcing the user to collapse + re-expand.
+  goToExpansion: (path) =>
+    set({
+      expansionPath: [...path],
+      selectionPath: [],
+      detailOpen: false,
+      level: levelFromExpansion(path),
     }),
 
   closeDetail: () => set({ detailOpen: false }),

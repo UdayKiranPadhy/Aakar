@@ -1,0 +1,3274 @@
+{
+  "model_id": "gpt2",
+  "model_type": "gpt2",
+  "config_summary": {
+    "total_params": 163037184,
+    "model_type": "gpt2",
+    "hidden_size": 768,
+    "num_hidden_layers": 12,
+    "num_attention_heads": 12,
+    "vocab_size": 50257,
+    "max_position_embeddings": 1024,
+    "tie_word_embeddings": true
+  },
+  "graph": [
+    {
+      "id": "GPT2LMHeadModel",
+      "type": "gpt2_lm_head_model",
+      "label": "GPT2LMHeadModel",
+      "meta": null,
+      "params": {},
+      "children": [
+        {
+          "id": "transformer",
+          "type": "gpt2_model",
+          "label": "Transformer",
+          "meta": "GPT2Model",
+          "params": {},
+          "children": [
+            {
+              "id": "transformer.wte",
+              "type": "embedding",
+              "label": "Wte",
+              "meta": "Embedding",
+              "params": {
+                "num_embeddings": 50257,
+                "embedding_dim": 768
+              },
+              "children": null,
+              "has_internals": false,
+              "param_count": 38597376,
+              "input_shape": null,
+              "output_shape": null,
+              "module_class": "Embedding",
+              "module_path": "transformer.wte",
+              "weight_shape": [
+                50257,
+                768
+              ],
+              "bias_shape": null
+            },
+            {
+              "id": "transformer.wpe",
+              "type": "embedding",
+              "label": "Wpe",
+              "meta": "Embedding",
+              "params": {
+                "num_embeddings": 1024,
+                "embedding_dim": 768
+              },
+              "children": null,
+              "has_internals": false,
+              "param_count": 786432,
+              "input_shape": null,
+              "output_shape": null,
+              "module_class": "Embedding",
+              "module_path": "transformer.wpe",
+              "weight_shape": [
+                1024,
+                768
+              ],
+              "bias_shape": null
+            },
+            {
+              "id": "transformer.drop",
+              "type": "dropout",
+              "label": "Drop",
+              "meta": "Dropout",
+              "params": {
+                "p": 0.1
+              },
+              "children": null,
+              "has_internals": false,
+              "param_count": 0,
+              "input_shape": null,
+              "output_shape": null,
+              "module_class": "Dropout",
+              "module_path": "transformer.drop",
+              "weight_shape": null,
+              "bias_shape": null
+            },
+            {
+              "id": "transformer.h",
+              "type": "module_list",
+              "label": "H",
+              "meta": "ModuleList",
+              "params": {},
+              "children": [
+                {
+                  "id": "transformer.h.0",
+                  "type": "gpt2_block",
+                  "label": "Layer 0",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.0.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.0.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.0.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.0.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.0.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.0.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.0.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.0.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.0.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.0.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.0.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.0.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.0.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.0.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.0.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.0.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.0.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.0.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.0.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.0.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.0.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.0.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.0.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.0.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.0",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.1",
+                  "type": "gpt2_block",
+                  "label": "Layer 1",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.1.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.1.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.1.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.1.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.1.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.1.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.1.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.1.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.1.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.1.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.1.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.1.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.1.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.1.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.1.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.1.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.1.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.1.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.1.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.1.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.1.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.1.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.1.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.1.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.1",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.2",
+                  "type": "gpt2_block",
+                  "label": "Layer 2",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.2.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.2.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.2.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.2.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.2.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.2.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.2.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.2.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.2.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.2.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.2.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.2.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.2.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.2.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.2.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.2.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.2.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.2.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.2.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.2.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.2.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.2.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.2.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.2.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.2",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.3",
+                  "type": "gpt2_block",
+                  "label": "Layer 3",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.3.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.3.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.3.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.3.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.3.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.3.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.3.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.3.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.3.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.3.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.3.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.3.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.3.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.3.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.3.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.3.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.3.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.3.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.3.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.3.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.3.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.3.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.3.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.3.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.3",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.4",
+                  "type": "gpt2_block",
+                  "label": "Layer 4",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.4.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.4.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.4.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.4.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.4.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.4.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.4.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.4.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.4.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.4.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.4.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.4.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.4.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.4.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.4.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.4.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.4.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.4.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.4.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.4.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.4.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.4.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.4.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.4.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.4",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.5",
+                  "type": "gpt2_block",
+                  "label": "Layer 5",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.5.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.5.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.5.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.5.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.5.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.5.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.5.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.5.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.5.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.5.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.5.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.5.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.5.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.5.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.5.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.5.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.5.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.5.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.5.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.5.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.5.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.5.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.5.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.5.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.5",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.6",
+                  "type": "gpt2_block",
+                  "label": "Layer 6",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.6.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.6.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.6.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.6.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.6.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.6.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.6.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.6.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.6.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.6.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.6.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.6.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.6.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.6.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.6.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.6.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.6.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.6.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.6.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.6.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.6.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.6.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.6.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.6.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.6",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.7",
+                  "type": "gpt2_block",
+                  "label": "Layer 7",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.7.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.7.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.7.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.7.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.7.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.7.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.7.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.7.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.7.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.7.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.7.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.7.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.7.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.7.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.7.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.7.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.7.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.7.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.7.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.7.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.7.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.7.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.7.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.7.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.7",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.8",
+                  "type": "gpt2_block",
+                  "label": "Layer 8",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.8.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.8.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.8.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.8.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.8.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.8.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.8.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.8.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.8.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.8.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.8.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.8.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.8.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.8.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.8.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.8.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.8.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.8.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.8.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.8.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.8.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.8.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.8.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.8.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.8",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.9",
+                  "type": "gpt2_block",
+                  "label": "Layer 9",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.9.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.9.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.9.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.9.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.9.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.9.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.9.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.9.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.9.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.9.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.9.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.9.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.9.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.9.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.9.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.9.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.9.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.9.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.9.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.9.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.9.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.9.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.9.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.9.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.9",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.10",
+                  "type": "gpt2_block",
+                  "label": "Layer 10",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.10.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.10.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.10.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.10.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.10.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.10.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.10.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.10.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.10.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.10.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.10.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.10.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.10.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.10.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.10.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.10.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.10.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.10.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.10.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.10.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.10.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.10.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.10.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.10.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.10",
+                  "weight_shape": null,
+                  "bias_shape": null
+                },
+                {
+                  "id": "transformer.h.11",
+                  "type": "gpt2_block",
+                  "label": "Layer 11",
+                  "meta": "GPT2Block",
+                  "params": {},
+                  "children": [
+                    {
+                      "id": "transformer.h.11.ln_1",
+                      "type": "layer_norm",
+                      "label": "Ln 1",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.11.ln_1",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.11.attn",
+                      "type": "gpt2_attention",
+                      "label": "Attn",
+                      "meta": "GPT2Attention",
+                      "params": {
+                        "num_heads": 12,
+                        "head_dim": 64
+                      },
+                      "children": [
+                        {
+                          "id": "transformer.h.11.attn.c_attn",
+                          "type": "conv1_d",
+                          "label": "C attn",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 1771776,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.11.attn.c_attn",
+                          "weight_shape": [
+                            768,
+                            2304
+                          ],
+                          "bias_shape": [
+                            2304
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.11.attn.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 590592,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.11.attn.c_proj",
+                          "weight_shape": [
+                            768,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.11.attn.attn_dropout",
+                          "type": "dropout",
+                          "label": "Attn dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.11.attn.attn_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.11.attn.resid_dropout",
+                          "type": "dropout",
+                          "label": "Resid dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.11.attn.resid_dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 2362368,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2Attention",
+                      "module_path": "transformer.h.11.attn",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    },
+                    {
+                      "id": "transformer.h.11.ln_2",
+                      "type": "layer_norm",
+                      "label": "Ln 2",
+                      "meta": "LayerNorm",
+                      "params": {
+                        "normalized_shape": [
+                          768
+                        ],
+                        "eps": 0.00001
+                      },
+                      "children": null,
+                      "has_internals": false,
+                      "param_count": 1536,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "LayerNorm",
+                      "module_path": "transformer.h.11.ln_2",
+                      "weight_shape": [
+                        768
+                      ],
+                      "bias_shape": [
+                        768
+                      ]
+                    },
+                    {
+                      "id": "transformer.h.11.mlp",
+                      "type": "gpt2_mlp",
+                      "label": "Mlp",
+                      "meta": "GPT2MLP",
+                      "params": {},
+                      "children": [
+                        {
+                          "id": "transformer.h.11.mlp.c_fc",
+                          "type": "conv1_d",
+                          "label": "C fc",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2362368,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.11.mlp.c_fc",
+                          "weight_shape": [
+                            768,
+                            3072
+                          ],
+                          "bias_shape": [
+                            3072
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.11.mlp.c_proj",
+                          "type": "conv1_d",
+                          "label": "C proj",
+                          "meta": "Conv1D",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 2360064,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Conv1D",
+                          "module_path": "transformer.h.11.mlp.c_proj",
+                          "weight_shape": [
+                            3072,
+                            768
+                          ],
+                          "bias_shape": [
+                            768
+                          ]
+                        },
+                        {
+                          "id": "transformer.h.11.mlp.act",
+                          "type": "new_gelu_activation",
+                          "label": "Act",
+                          "meta": "NewGELUActivation",
+                          "params": {},
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "NewGELUActivation",
+                          "module_path": "transformer.h.11.mlp.act",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        },
+                        {
+                          "id": "transformer.h.11.mlp.dropout",
+                          "type": "dropout",
+                          "label": "Dropout",
+                          "meta": "Dropout",
+                          "params": {
+                            "p": 0.1
+                          },
+                          "children": null,
+                          "has_internals": false,
+                          "param_count": 0,
+                          "input_shape": null,
+                          "output_shape": null,
+                          "module_class": "Dropout",
+                          "module_path": "transformer.h.11.mlp.dropout",
+                          "weight_shape": null,
+                          "bias_shape": null
+                        }
+                      ],
+                      "has_internals": true,
+                      "param_count": 4722432,
+                      "input_shape": null,
+                      "output_shape": null,
+                      "module_class": "GPT2MLP",
+                      "module_path": "transformer.h.11.mlp",
+                      "weight_shape": null,
+                      "bias_shape": null
+                    }
+                  ],
+                  "has_internals": true,
+                  "param_count": 7087872,
+                  "input_shape": null,
+                  "output_shape": null,
+                  "module_class": "GPT2Block",
+                  "module_path": "transformer.h.11",
+                  "weight_shape": null,
+                  "bias_shape": null
+                }
+              ],
+              "has_internals": true,
+              "param_count": 85054464,
+              "input_shape": null,
+              "output_shape": null,
+              "module_class": "ModuleList",
+              "module_path": "transformer.h",
+              "weight_shape": null,
+              "bias_shape": null
+            },
+            {
+              "id": "transformer.ln_f",
+              "type": "layer_norm",
+              "label": "Ln f",
+              "meta": "LayerNorm",
+              "params": {
+                "normalized_shape": [
+                  768
+                ],
+                "eps": 0.00001
+              },
+              "children": null,
+              "has_internals": false,
+              "param_count": 1536,
+              "input_shape": null,
+              "output_shape": null,
+              "module_class": "LayerNorm",
+              "module_path": "transformer.ln_f",
+              "weight_shape": [
+                768
+              ],
+              "bias_shape": [
+                768
+              ]
+            }
+          ],
+          "has_internals": true,
+          "param_count": 124439808,
+          "input_shape": null,
+          "output_shape": null,
+          "module_class": "GPT2Model",
+          "module_path": "transformer",
+          "weight_shape": null,
+          "bias_shape": null
+        },
+        {
+          "id": "lm_head",
+          "type": "linear",
+          "label": "Lm head",
+          "meta": "Linear",
+          "params": {
+            "in_features": 768,
+            "out_features": 50257,
+            "has_bias": false
+          },
+          "children": null,
+          "has_internals": false,
+          "param_count": 38597376,
+          "input_shape": null,
+          "output_shape": null,
+          "module_class": "Linear",
+          "module_path": "lm_head",
+          "weight_shape": [
+            50257,
+            768
+          ],
+          "bias_shape": null
+        }
+      ],
+      "has_internals": true,
+      "param_count": 163037184,
+      "input_shape": null,
+      "output_shape": null,
+      "module_class": "GPT2LMHeadModel",
+      "module_path": null,
+      "weight_shape": null,
+      "bias_shape": null
+    }
+  ],
+  "notes": null
+}

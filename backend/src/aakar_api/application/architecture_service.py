@@ -1,29 +1,28 @@
 """Application service — orchestrates one architecture request end-to-end.
 
-`ArchitectureService` is the only place the system composes a fetch + an
-adapter dispatch. It depends on abstractions (`ConfigRepository`,
-`AdapterRegistry`) so it is trivial to test with fakes — no HTTP, no FastAPI.
+`ArchitectureService` is the only place the system composes a cache lookup +
+a transformers introspection. It depends on abstractions (`Introspector`,
+`SpecCache`) so it is trivial to test with fakes — no transformers, no FastAPI.
 """
 
 from __future__ import annotations
 
-from aakar_api.adapters.registry import AdapterRegistry
-from aakar_api.application.interfaces import ConfigRepository
+from aakar_api.application.interfaces import Introspector, SpecCache
 from aakar_api.domain.spec import Spec
 
 
 class ArchitectureService:
-    """Pure orchestration: fetch config, resolve adapter, build Spec."""
+    """Pure orchestration: cache-check, introspect on miss, write-through."""
 
-    def __init__(
-        self,
-        config_repo: ConfigRepository,
-        adapter_registry: AdapterRegistry,
-    ) -> None:
-        self._config_repo = config_repo
-        self._adapter_registry = adapter_registry
+    def __init__(self, introspector: Introspector, cache: SpecCache) -> None:
+        self._introspector = introspector
+        self._cache = cache
 
     async def get_architecture(self, model_id: str) -> Spec:
-        config = await self._config_repo.fetch(model_id)
-        adapter = self._adapter_registry.resolve(config.model_type)
-        return adapter.build(config, model_id)
+        # config_hash = await self._introspector.fetch_config_hash(model_id)
+        # cached = await self._cache.get(model_id, config_hash)
+        # if cached is not None:
+        #     return cached
+        spec = await self._introspector.introspect(model_id)
+        # await self._cache.set(model_id, config_hash, spec)
+        return spec

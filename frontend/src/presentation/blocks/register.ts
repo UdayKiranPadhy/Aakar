@@ -1,8 +1,8 @@
 /**
  * Default block-renderer registrations.
  *
- * v0.1 ships only `GenericBlockNode` (configured as the fallback in
- * BlockRegistry). To add a custom renderer for a specific block type:
+ * Custom renderers override `GenericBlockNode` (the fallback) for specific
+ * node types. To add a new one:
  *
  *   import { blockRegistry } from "./BlockRegistry";
  *   import { SparseAttentionNode } from "./SparseAttentionNode";
@@ -11,5 +11,9 @@
  * Imported once from `main.tsx` for side effects.
  */
 
-// (no custom block renderers registered for v0.1)
-export {};
+import { AttentionHeadNode } from "./AttentionHeadNode";
+import { blockRegistry } from "./BlockRegistry";
+
+// Heads are rendered ~3× narrower than a default block — at level 4 we
+// render N of them side-by-side and need the grid to fit a normal viewport.
+blockRegistry.register("attention_head", AttentionHeadNode);

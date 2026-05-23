@@ -15,8 +15,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class Node(BaseModel):
     """A single block in the architecture diagram.
 
-    `children` is recursive — a decoder_block has child nodes (norm, attention,
-    add, etc.), and self_attention has its own children (Q, K, V, SDPA, O).
+    Mirrors one `nn.Module` from the introspected `transformers` model. `children`
+    follows the real submodule tree (e.g. `LlamaForCausalLM → LlamaModel → ModuleList
+    → LlamaDecoderLayer → LlamaSdpaAttention → Linear`).
     """
 
     model_config = ConfigDict(frozen=True)
@@ -31,6 +32,31 @@ class Node(BaseModel):
     param_count: int | None = None
     input_shape: str | None = None
     output_shape: str | None = None
+    module_class: str | None = None
+    module_path: str | None = None
+    weight_shape: list[int] | None = None
+    bias_shape: list[int] | None = None
+    # Recursive memory footprint of this subtree, in bytes, at the model's
+    # declared `param_dtype` (Spec-level). Independent of the meta-device
+    # default float32 we actually allocate.
+    memory_bytes: int | None = None
+    # Non-parameter tensors registered with `register_buffer` — RoPE inv_freq,
+    # causal masks, etc. Map of buffer name → shape (only this module's own,
+    # not recursive).
+    buffers: dict[str, list[int]] | None = None
+    # For MLP-like modules, the class name of the activation callable
+    # (e.g. "SiLU", "GELUActivation").
+    activation: str | None = None
+    # Theoretical forward-pass FLOPs at Spec.flops_reference. Only populated for
+    # modules whose count is determined by the module alone (Linear, norms).
+    flops: int | None = None
+    # Per-class intermediate tensor shapes that aren't visible from in/out
+    # alone. Populated only for `*Attention` (q/k/v after multi-head reshape,
+    # attention scores) and `*MLP` (after the up projection) — they expose
+    # the multi-head split, GQA grouping, the S² attention map, and the MLP
+    # expansion ratio. Values are free-form symbolic strings like
+    # `"[B, 32, S, 128]"`.
+    intermediates: dict[str, str] | None = None
 
 
 class Spec(BaseModel):
@@ -43,3 +69,18 @@ class Spec(BaseModel):
     config_summary: dict[str, Any]
     graph: list[Node]
     notes: list[str] | None = None
+    # Intended parameter dtype from `config.torch_dtype` (e.g. "float16",
+    # "bfloat16"). Drives the memory_bytes calculation on every Node.
+    param_dtype: str | None = None
+    # Attention implementation in use: "eager" | "sdpa" | "flash_attention_2".
+    # Read from `config._attn_implementation` or inferred from the self-attn
+    # class-name suffix.
+    attn_impl: str | None = None
+    # "rope" | "alibi" | "learned" | "sinusoidal" — inferred from the presence
+    # of rotary modules or positional-embedding sub-modules.
+    position_encoding: str | None = None
+    # True iff `model.get_input_embeddings() is model.get_output_embeddings()`
+    # after the model is built on meta. The config flag isn't always honored.
+    tied_word_embeddings: bool | None = None
+    # Hypothetical batch/seq for the FLOPs estimate on each Node.
+    flops_reference: dict[str, int] | None = None

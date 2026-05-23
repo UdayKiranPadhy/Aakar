@@ -14,7 +14,10 @@
 import type { LayoutStrategy } from "../LayoutRegistry";
 
 const SPACING_X = 320;
-const SPACING_Y = 140;
+// Matches verticalStack's BLOCK_VSPACE — the children rendered here are full
+// GenericBlockNode cards (Q/K/V/SDPA/O) carrying I/O shapes, memory, FLOPs,
+// so the row stride needs the same headroom.
+const SPACING_Y = 240;
 
 // (column, row) pairs for the first 5 children in adapter order.
 const QKV_SDPA_O_LAYOUT: ReadonlyArray<[number, number]> = [

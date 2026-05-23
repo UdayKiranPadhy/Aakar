@@ -108,3 +108,16 @@
 .kvValue {
   color: var(--color-ink);
 }
+
+/* Secondary line below a primary metric — e.g. memory under param-count, or
+ * the (B, S) reference dimensions under FLOPs. */
+.subtle {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+}
+
+.dim {
+  color: var(--color-ink-subtle);
+}

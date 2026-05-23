@@ -25,17 +25,15 @@ export class ApiError extends Error {
 
     const message = body?.message ?? (res.statusText || `HTTP ${res.status}`);
 
-    switch (body?.error) {
+    switch (body?.kind) {
       case "model_not_found":
         return new ModelNotFoundError(body.model_id ?? "", message);
       case "model_gated":
         return new ModelGatedError(body.model_id ?? "", message);
-      case "upstream_timeout":
-        return new UpstreamTimeoutError(message);
-      case "unsupported_config":
-        return new UnsupportedConfigError(
+      case "unsupported_architecture":
+        return new UnsupportedArchitectureError(
           body.model_id ?? "",
-          body.missing_field ?? "",
+          body.architecture ?? null,
           message,
         );
       default:
@@ -64,18 +62,11 @@ export class ModelGatedError extends ApiError {
   }
 }
 
-export class UpstreamTimeoutError extends ApiError {
-  override name = "UpstreamTimeoutError";
-  constructor(message: string) {
-    super(504, message);
-  }
-}
-
-export class UnsupportedConfigError extends ApiError {
-  override name = "UnsupportedConfigError";
+export class UnsupportedArchitectureError extends ApiError {
+  override name = "UnsupportedArchitectureError";
   constructor(
     public readonly modelId: string,
-    public readonly missingField: string,
+    public readonly architecture: string | null,
     message: string,
   ) {
     super(422, message);
@@ -90,8 +81,8 @@ export class NetworkError extends ApiError {
 }
 
 type ApiErrorBody = {
-  error?: string;
+  kind?: string;
   message?: string;
   model_id?: string;
-  missing_field?: string;
+  architecture?: string | null;
 };

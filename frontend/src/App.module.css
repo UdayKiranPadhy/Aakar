@@ -22,5 +22,17 @@
 .canvasArea {
   position: relative;
   flex: 1;
-  background: var(--color-canvas);
+  background-color: var(--color-canvas);
+  /* Static dotted grid (like udaykp.dev's hero) — lives on the canvas
+   * wrapper so it stays at a fixed scale regardless of React Flow's pan/zoom.
+   * Radial-gradient with a tiny opaque dot + transparent fill, tiled every
+   * 22 px. Use --color-hairline-strong (#d1d5db) so dots read clearly against
+   * the off-white canvas without competing with the cards. */
+  background-image: radial-gradient(
+    circle,
+    var(--color-hairline-strong) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  background-position: 0 0;
 }

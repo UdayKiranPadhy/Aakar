@@ -6,6 +6,13 @@
   box-shadow: var(--shadow-block);
   border: 1px solid var(--color-hairline);
   transition: border-color var(--duration-fast) var(--ease-out);
+  /* React Flow v12 sets `pointer-events: none` on the .react-flow__node
+   * wrapper whenever the node is `draggable={false}` AND `selectable={false}`
+   * — its way of letting pan-on-drag gestures pass through. We opt back in on
+   * the card itself so clicks hit the button, not the canvas. (Without this
+   * the cursor shows the pan "hand" over the card and clicks pan the view
+   * instead of activating the node.) */
+  pointer-events: auto;
 }
 .card:hover {
   border-color: var(--color-hairline-strong);
@@ -20,6 +27,22 @@
 }
 .cardSelected:hover {
   border-color: var(--color-accent);
+}
+
+/* Input/output highlight colours — applied when another node is selected and
+ * this one is a predecessor (input, green) or successor (output, amber). Pairs
+ * with the recoloured edges in edges.ts. */
+.cardInput {
+  border: 2px solid #34a853; /* Google Green */
+}
+.cardInput:hover {
+  border-color: #34a853;
+}
+.cardOutput {
+  border: 2px solid #fbbc04; /* Google Yellow */
+}
+.cardOutput:hover {
+  border-color: #fbbc04;
 }
 
 .body {
@@ -52,8 +75,63 @@
   color: var(--color-ink-subtle);
 }
 
+/* Symbolic input/output shapes — derived from the module type + config.
+ * Appears just below the class meta so the user sees the "wire" through this
+ * block at a glance. */
+.io {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+}
+.ioRow {
+  display: flex;
+  gap: 6px;
+}
+.ioKey {
+  color: var(--color-ink-subtle);
+  min-width: 22px;
+}
+.ioVal {
+  color: var(--color-ink-muted);
+}
+
+.activation {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+
+.flops {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-subtle);
+}
+
+/* Tensor shape line — sits between class meta and param count. Ground-truth
+ * weight dims pulled straight from the introspected nn.Module tree. */
+.shape {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+.shapeAux {
+  color: var(--color-ink-subtle);
+}
+
+/* "Expand internals ↗" pill — appears in the top-right corner of a card
+ * that's both selected AND has children. It's the only canvas-level
+ * affordance for drilling in (the detail panel has a matching button at the
+ * bottom). Click here, not on the card body, to descend a zoom level. */
 .expandButton {
   position: absolute;
   top: 8px;
   right: 8px;
+  cursor: pointer;
 }

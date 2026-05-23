@@ -18,6 +18,7 @@ import { Canvas } from "./presentation/canvas/Canvas";
 import { DetailPanel } from "./presentation/details/DetailPanel";
 import { GenericViewBanner } from "./presentation/components/GenericViewBanner";
 import { HomeView } from "./presentation/components/HomeView";
+import { ModelInfoStrip } from "./presentation/components/ModelInfoStrip";
 import { NavBar } from "./presentation/components/NavBar";
 import { useScrollDirection } from "./presentation/components/useScrollDirection";
 import styles from "./App.module.css";
@@ -50,6 +51,7 @@ export function App() {
       {view === "visualizer" && (
         <>
           <Breadcrumb />
+          <ModelInfoStrip />
           <GenericViewBanner />
         </>
       )}

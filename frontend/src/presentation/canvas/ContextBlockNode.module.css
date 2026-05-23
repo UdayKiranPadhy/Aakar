@@ -1,0 +1,89 @@
+.card {
+  position: relative;
+  width: 240px;
+  cursor: pointer;
+  /* Solid accent border + accent-tint background + full opacity reads as a
+   * callout (matching the speech-bubble style of the requested annotation).
+   * Used for both the previous-block card above the canvas and the
+   * next-block card below; the only direction-specific bit is which edge
+   * the tail sticks out of (see .previous / .next modifiers below). */
+  border-radius: var(--radius-block);
+  background: var(--color-accent-subtle);
+  border: 2px solid var(--color-accent);
+  padding: 12px 14px;
+  transition: transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+  pointer-events: auto;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.18);
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.32);
+}
+
+/* Speech-bubble tail. Two stacked pseudo-elements share each direction —
+ * the outer (::before) in the accent border colour, the inner (::after)
+ * 2 px smaller and in the tint colour to "fill" the outline. */
+.card::before,
+.card::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+}
+
+/* Previous-block: tail at the bottom, pointing down to the current Block input. */
+.previous::before {
+  bottom: -12px;
+  transform: translateX(-50%);
+  border-top: 12px solid var(--color-accent);
+}
+.previous::after {
+  bottom: -9px;
+  transform: translateX(-50%);
+  border-top: 10px solid var(--color-accent-subtle);
+}
+
+/* Next-block: tail at the top, pointing up to the current view's last node. */
+.next::before {
+  top: -12px;
+  transform: translateX(-50%);
+  border-bottom: 12px solid var(--color-accent);
+}
+.next::after {
+  top: -9px;
+  transform: translateX(-50%);
+  border-bottom: 10px solid var(--color-accent-subtle);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.title {
+  margin-top: 6px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.meta {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+}

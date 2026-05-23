@@ -1,6 +1,6 @@
 """Domain-level exceptions.
 
-Raised by the infrastructure layer (e.g., `HFConfigRepository`) and mapped to
+Raised by the infrastructure layer (e.g., `TransformersIntrospector`) and mapped to
 HTTP responses by the API layer. The application layer propagates them
 untouched — keeping the service free of HTTP concerns.
 """
@@ -28,20 +28,25 @@ class ModelGated(AakarDomainError):
         self.model_id = model_id
 
 
-class ConfigFetchTimeout(AakarDomainError):
-    """The HF Hub did not respond within the configured timeout."""
+class UnsupportedArchitecture(AakarDomainError):
+    """The model's architecture can't be loaded by Aakar.
 
-    def __init__(self, model_id: str) -> None:
-        super().__init__(f"Timed out fetching config for {model_id!r}")
-        self.model_id = model_id
+    Two distinct triggers:
+      - The repo requires `trust_remote_code=True` (custom Python). Refused
+        on principle; we will not execute arbitrary code from HF repos.
+      - The config's `model_type` is unknown to our pinned `transformers`
+        version (i.e. the model is newer than the dep). Remedy is to bump
+        the pin in `backend/pyproject.toml`.
+    """
 
-
-class UnsupportedConfig(AakarDomainError):
-    """The fetched config is missing fields required by every adapter."""
-
-    def __init__(self, model_id: str, missing_field: str) -> None:
-        super().__init__(
-            f"Config for {model_id!r} is missing required field {missing_field!r}"
+    def __init__(self, model_id: str, architecture: str | None) -> None:
+        arch = architecture or "unknown"
+        msg = (
+            f"Model {model_id!r} uses an architecture ({arch}) that Aakar "
+            "can't load. Either the repo requires trust_remote_code=True "
+            "(refused for safety), or the installed transformers version is "
+            "too old to recognize it."
         )
+        super().__init__(msg)
         self.model_id = model_id
-        self.missing_field = missing_field
+        self.architecture = architecture

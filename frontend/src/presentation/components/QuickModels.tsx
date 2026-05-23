@@ -20,6 +20,7 @@ type QuickModel = Readonly<{
 }>;
 
 const MODELS: ReadonlyArray<QuickModel> = [
+  { label: "GPT-2", modelId: "gpt2" },
   { label: "Llama-3-8B", modelId: "meta-llama/Meta-Llama-3-8B" },
   { label: "Mistral-7B", modelId: "mistralai/Mistral-7B-v0.1" },
   { label: "Qwen2.5-7B", modelId: "Qwen/Qwen2.5-7B-Instruct" },

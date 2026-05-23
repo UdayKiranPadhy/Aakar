@@ -1,5 +1,6 @@
 """Infrastructure layer — concrete implementations of application interfaces."""
 
-from aakar_api.infrastructure.hf_config_repository import HFConfigRepository
+from aakar_api.infrastructure.spec_cache import DiskSpecCache
+from aakar_api.infrastructure.transformers_introspector import TransformersIntrospector
 
-__all__ = ["HFConfigRepository"]
+__all__ = ["DiskSpecCache", "TransformersIntrospector"]

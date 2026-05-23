@@ -1,0 +1,59 @@
+.card {
+  position: relative;
+  width: 160px;
+  cursor: pointer;
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  border: 1px solid var(--color-hairline);
+  padding: 10px 12px;
+  transition: border-color var(--duration-fast) var(--ease-out);
+  /* See GenericBlockNode.module.css for the React-Flow pointer-events note. */
+  pointer-events: auto;
+}
+.card:hover {
+  border-color: var(--color-hairline-strong);
+}
+.card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-block);
+}
+
+.cardSelected {
+  border: 2px solid var(--color-accent);
+  padding: 9px 11px; /* compensate for the +1px border on each side */
+}
+
+.cardInput,
+.cardOutput {
+  padding: 9px 11px; /* compensate for the +1px border on each side */
+}
+.cardInput {
+  border: 2px solid #34a853; /* Google Green */
+}
+.cardOutput {
+  border: 2px solid #fbbc04; /* Google Yellow */
+}
+
+.title {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+.titleSelected {
+  color: var(--color-accent);
+}
+
+.meta {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  /* The per-head formula (e.g. `softmax(Q3 · K0ᵀ / √64) · V0`) is verbose;
+   * an even smaller font + word-break keeps it readable inside the narrow
+   * card without truncation. */
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--color-ink-muted);
+  word-break: break-word;
+}

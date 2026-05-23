@@ -10,7 +10,28 @@ dependencies = [
     "pydantic==2.10.3",
     "httpx==0.28.1",
     "orjson==3.10.12",
+    # transformers stack — used by infrastructure/transformers_introspector.py
+    # to build the actual nn.Module tree (on the meta device, no weight RAM cost)
+    # and walk it for ground-truth shapes + module class names.
+    "transformers==5.9.0",
+    "torch==2.5.1",
+    "accelerate==1.2.1",
+    "safetensors==0.7.0",
+    "huggingface-hub==1.16.1",
 ]
+
+# On Linux (Docker), torch defaults to CUDA wheels (~3 GB). Pin to the CPU
+# index so the prod image stays slim. On macOS the regular PyPI torch is
+# already CPU-only, so the source override is Linux-scoped.
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", marker = "platform_system == 'Linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [dependency-groups]
 dev = [
@@ -33,6 +54,13 @@ packages = ["src/aakar_api"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Smoke tests hit the live HF Hub and instantiate real models on the meta
+# device. They're opt-in via `pytest -m smoke` (or `make smoke`) so the
+# default `pytest` run stays fast and offline.
+markers = [
+    "smoke: end-to-end tests requiring HF Hub network access (opt-in)",
+]
+addopts = "-m 'not smoke'"
 
 [tool.ruff]
 line-length = 100
@@ -40,8 +68,21 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+# N818: domain exceptions are short value-object-style names (ModelGated, not
+# ModelGatedError) — the "Error" suffix is reserved for the frontend's typed
+# error hierarchy that wraps them.
+# B008: `Depends(...)` in argument defaults is idiomatic FastAPI; the rule is
+# a generic Python warning that doesn't know about FastAPI's DI mechanism.
+ignore = ["N818", "B008"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 files = ["src"]
+
+# transformers, accelerate, huggingface_hub don't ship py.typed markers; type
+# stubs are missing or partial. Treat these as untyped at the boundary —
+# our own code uses `Any` consciously where it crosses that line.
+[[tool.mypy.overrides]]
+module = ["transformers", "transformers.*", "accelerate", "accelerate.*", "huggingface_hub.*"]
+ignore_missing_imports = true

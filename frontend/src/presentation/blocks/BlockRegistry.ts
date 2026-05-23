@@ -12,10 +12,21 @@ import type { Level } from "../../domain/navigation";
 import type { Node } from "../../domain/spec";
 import { GenericBlockNode } from "./GenericBlockNode";
 
+/**
+ * Per-node role relative to the current selection. Drives the border colour
+ * in the renderer:
+ *   - "selected" → blue, current accent
+ *   - "input"    → green; this node feeds the selected one
+ *   - "output"   → amber; the selected one feeds this node
+ *   - undefined  → default gray
+ */
+export type NodeRole = "input" | "output";
+
 export type BlockNodeProps = {
   node: Node;
   level: Level;
   selected: boolean;
+  role?: NodeRole;
   onSelect?: (id: string) => void;
   onExpand?: (id: string) => void;
 };
