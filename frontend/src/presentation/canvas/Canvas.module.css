@@ -27,3 +27,31 @@
   font-size: 11px;
   color: var(--color-ink-muted);
 }
+
+/* Reset-layout button — rendered inside a React Flow <Panel position="top-right">.
+ * Clears any dragged-node positions and refits the viewport. Styled to match
+ * the floating card surfaces (white background, hairline border, accent focus
+ * ring) so it reads as a peer of the MiniMap and Controls. */
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  background: var(--color-bg);
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: var(--shadow-block);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.resetButton:hover {
+  border-color: var(--color-hairline-strong);
+}
+.resetButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-block);
+}

@@ -7,14 +7,20 @@
  * / useNavigation.
  */
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Controls,
   MiniMap,
+  Panel,
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
   type CoordinateExtent,
   type Edge,
+  type FitViewOptions,
   type Node as ReactFlowNode,
+  type NodeChange,
+  type XYPosition,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -169,7 +175,10 @@ export function Canvas() {
         type: "block",
         position: { x: pos.x, y: pos.y },
         data: data as unknown as Record<string, unknown>,
-        draggable: false,
+        // Block nodes are draggable so the user can rearrange the layout
+        // when computed positions feel cramped. CanvasFlow's Reset button
+        // restores the layout-strategy positions.
+        draggable: true,
         selectable: false,
       };
     });
@@ -228,9 +237,10 @@ export function Canvas() {
     );
   }
 
-  // Remount on view change so fitView re-runs cleanly. The key encodes the
-  // current zoom path; switching levels triggers a fresh fit. React Flow has
-  // an imperative fitView, but for v0.1 the remount is simpler and reliable.
+  // Remount on view change so fitView re-runs cleanly AND user drag-positions
+  // reset to the layout-strategy positions. The key encodes the current zoom
+  // path; switching levels triggers a fresh fit. CanvasFlow's reset button
+  // covers the within-view case (clear overrides + refit).
   const flowKey = expansionPath.length === 0 ? "root" : expansionPath.join("/");
 
   // At the root view, focus the viewport on the first node (typically the
@@ -241,15 +251,74 @@ export function Canvas() {
   // fitView'ing the whole thing reads fine, so keep the old behaviour.
   const isRootView = expansionPath.length === 0;
   const firstNodeId = currentView[0]?.id;
-  const fitViewOptions = semanticFitViewOptions ?? (isRootView && firstNodeId
+  const fitViewOptions: FitViewOptions = semanticFitViewOptions ?? (isRootView && firstNodeId
     ? { nodes: [{ id: firstNodeId }], padding: 1.5, maxZoom: 1, minZoom: 0.6 }
     : { padding: 0.25, maxZoom: 1 });
 
   return (
+    <ReactFlowProvider>
+      <CanvasFlow
+        key={flowKey}
+        baseNodes={rfNodes}
+        edges={rfEdges}
+        fitViewOptions={fitViewOptions}
+        translateExtent={translateExtent}
+      />
+    </ReactFlowProvider>
+  );
+}
+
+type CanvasFlowProps = {
+  baseNodes: ReactFlowNode[];
+  edges: Edge[];
+  fitViewOptions: FitViewOptions;
+  translateExtent: CoordinateExtent | undefined;
+};
+
+function CanvasFlow({ baseNodes, edges, fitViewOptions, translateExtent }: CanvasFlowProps) {
+  // Drag positions are stored as overrides on top of the layout-strategy
+  // positions baked into baseNodes. Keeping them separate means selection /
+  // role-highlight updates (which flow through baseNodes.data) don't have to
+  // be merged into a controlled-nodes state, and Reset is just "clear the
+  // override map + refit".
+  const [positionOverrides, setPositionOverrides] = useState<Map<string, XYPosition>>(
+    () => new Map(),
+  );
+  const { fitView } = useReactFlow();
+
+  const nodes = useMemo(() => {
+    if (positionOverrides.size === 0) return baseNodes;
+    return baseNodes.map((node) => {
+      const override = positionOverrides.get(node.id);
+      return override ? { ...node, position: override } : node;
+    });
+  }, [baseNodes, positionOverrides]);
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setPositionOverrides((prev) => {
+      let next: Map<string, XYPosition> | null = null;
+      for (const change of changes) {
+        if (change.type === "position" && change.position) {
+          if (!next) next = new Map(prev);
+          next.set(change.id, change.position);
+        }
+      }
+      return next ?? prev;
+    });
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setPositionOverrides(new Map());
+    // Defer until the position reset has rendered so fitView measures the
+    // restored layout, not the dragged one.
+    requestAnimationFrame(() => fitView(fitViewOptions));
+  }, [fitView, fitViewOptions]);
+
+  return (
     <ReactFlow
-      key={flowKey}
-      nodes={rfNodes}
-      edges={rfEdges}
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       fitView
@@ -257,7 +326,7 @@ export function Canvas() {
       proOptions={{ hideAttribution: true }}
       minZoom={0.2}
       maxZoom={2}
-      nodesDraggable={false}
+      nodesDraggable
       nodesConnectable={false}
       panOnDrag
       zoomOnScroll
@@ -267,6 +336,17 @@ export function Canvas() {
           (see App.module.css `.canvasArea`) rather than React Flow's
           <Background> — that keeps the dots at a fixed scale even when the
           viewport zooms out to fit a 32-block model. */}
+      <Panel position="top-right">
+        <button
+          type="button"
+          className={styles.resetButton}
+          onClick={handleReset}
+          aria-label="Reset layout"
+          title="Reset node positions and refit the view"
+        >
+          <span aria-hidden="true">↺</span> Reset layout
+        </button>
+      </Panel>
       <MiniMap
         position="bottom-left"
         pannable

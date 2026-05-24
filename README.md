@@ -58,7 +58,6 @@ pnpm dev
 
 In the model input bar:
 
-- `meta-llama/Llama-3-8B`
 - `mistralai/Mistral-7B-v0.1`
 - `Qwen/Qwen2.5-7B`
 - `gpt2` (renders via the generic fallback adapter)

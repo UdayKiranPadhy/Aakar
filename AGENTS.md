@@ -187,7 +187,7 @@ If any of these starts to feel "too abstract" — re-read CLAUDE.md's "this is a
 
 ## Security & safety
 
-- Aakar uses **no HuggingFace auth token**. Only public configs are accessible. If a user pastes a gated model ID (e.g., `meta-llama/Llama-3-8B`, which requires accepting a license), the backend returns 403. Don't add token support without explicit user approval.
+- Aakar uses **no HuggingFace auth token**. Only public configs are accessible. If a user pastes a gated model ID (e.g., `gpt2`, which requires accepting a license), the backend returns 403. Don't add token support without explicit user approval.
 - The model ID is validated against `^[a-zA-Z0-9_\-./]+$` before any HTTP request. Don't widen this regex.
 - HTTP timeout to HF Hub is 5 seconds. Don't extend it; if a config doesn't return that fast, the upstream is misbehaving and we should fail fast.
 - CORS defaults to localhost only. In production, set `CORS_ORIGINS` to the deployed frontend's origin — never use `*`.

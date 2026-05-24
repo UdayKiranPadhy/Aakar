@@ -85,9 +85,15 @@ function buildDecoderLayerFlow(
   );
 
   const nodes = compact([input, preNorm, attn, attnAdd, postNorm, mlp, mlpAdd]);
+  // Generic block cards are 260px wide; stride 300 gives a 40px gap between
+  // adjacent real cards so they don't visually butt up against each other.
+  // Synthetic glyphs (Input, + residual) sit in the in-between columns and
+  // are offset on the Y axis so the previous/next-block context callouts
+  // (anchored CONTEXT_Y_OFFSET=180 above/below the first/last node) stay
+  // clearly above the row of real cards.
   const positions = positionByOrder(nodes, (node, index) => ({
     id: node.id,
-    x: index * 220,
+    x: index * 300,
     y: isSyntheticNode(node) ? 136 : 44,
   }));
   const tones = new Map<string, BlockVisualTone>([
@@ -377,26 +383,53 @@ function attentionPositions(
     fused?: string;
   },
 ): LayoutPosition[] {
+  // Row stride sized for the tallest card in a Q/K/V row — a Linear with
+  // matrix-glyph + I/O shapes + weight shape + params/memory + flops can hit
+  // ~180px. Anything tighter (the previous 136) stacked the projections on
+  // top of each other.
+  const ROW_Y = 240;
+  // X strides between major columns. Each Generic block card is 260px wide,
+  // so leave at least a 30px gap between adjacent columns.
+  const PROJ_TO_NORM_X = 300;
+  const NORM_TO_HEADS_X = 280;
+  const PROJ_TO_HEADS_X = 300;
+  // The compact attention_heads glyph is 132px wide; scores/softmax/mix use
+  // the same FlowGlyph renderer, so 200px stride leaves a clean ~70px gap.
+  const HEADS_TO_SCORES_X = 220;
+  const SCORES_TO_SOFTMAX_X = 200;
+  const SOFTMAX_TO_MIX_X = 220;
+  const MIX_TO_OUT_X = 240;
+
   const positions = new Map<string, { x: number; y: number }>();
-  if (ids.fused) positions.set(ids.fused, { x: 0, y: 124 });
-  const branchX = ids.fused ? 240 : 0;
+  if (ids.fused) positions.set(ids.fused, { x: 0, y: ROW_Y });
+  const branchX = ids.fused ? 280 : 0;
   positions.set(ids.q, { x: branchX, y: 0 });
-  positions.set(ids.k, { x: branchX, y: 136 });
-  positions.set(ids.v, { x: branchX, y: 272 });
-  if (ids.qNorm) positions.set(ids.qNorm, { x: branchX + 260, y: 0 });
-  if (ids.kNorm) positions.set(ids.kNorm, { x: branchX + 260, y: 136 });
-  const headsX = branchX + (ids.qNorm || ids.kNorm ? 500 : 300);
+  positions.set(ids.k, { x: branchX, y: ROW_Y });
+  positions.set(ids.v, { x: branchX, y: ROW_Y * 2 });
+  if (ids.qNorm) positions.set(ids.qNorm, { x: branchX + PROJ_TO_NORM_X, y: 0 });
+  if (ids.kNorm) positions.set(ids.kNorm, { x: branchX + PROJ_TO_NORM_X, y: ROW_Y });
+  const headsX =
+    branchX + (ids.qNorm || ids.kNorm ? PROJ_TO_NORM_X + NORM_TO_HEADS_X : PROJ_TO_HEADS_X);
   positions.set(ids.qHeads, { x: headsX, y: 0 });
-  positions.set(ids.kHeads, { x: headsX, y: 136 });
-  positions.set(ids.vHeads, { x: headsX, y: 272 });
-  const scoreX = headsX + 190;
-  positions.set(ids.scores, { x: scoreX, y: 68 });
-  positions.set(ids.softmax, { x: scoreX + 180, y: 68 });
-  positions.set(ids.mix, { x: scoreX + 360, y: 168 });
-  if (ids.out) positions.set(ids.out, { x: scoreX + 580, y: 168 });
+  positions.set(ids.kHeads, { x: headsX, y: ROW_Y });
+  positions.set(ids.vHeads, { x: headsX, y: ROW_Y * 2 });
+  // Scores / softmax sit centered between the Q-heads and K-heads rows.
+  // Mix sits centered between the K-heads and V-heads rows (where it
+  // pulls inputs from softmax above and V-heads below).
+  const scoreX = headsX + HEADS_TO_SCORES_X;
+  const scoreY = ROW_Y / 2;
+  const mixY = ROW_Y + ROW_Y / 2;
+  positions.set(ids.scores, { x: scoreX, y: scoreY });
+  positions.set(ids.softmax, { x: scoreX + SCORES_TO_SOFTMAX_X, y: scoreY });
+  positions.set(ids.mix, { x: scoreX + SCORES_TO_SOFTMAX_X + SOFTMAX_TO_MIX_X, y: mixY });
+  if (ids.out)
+    positions.set(ids.out, {
+      x: scoreX + SCORES_TO_SOFTMAX_X + SOFTMAX_TO_MIX_X + MIX_TO_OUT_X,
+      y: mixY,
+    });
   return nodes.map((node, index) => ({
     id: node.id,
-    ...(positions.get(node.id) ?? { x: index * 220, y: 0 }),
+    ...(positions.get(node.id) ?? { x: index * 240, y: 0 }),
   }));
 }
 
