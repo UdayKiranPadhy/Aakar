@@ -5,5 +5,11 @@
  * detail panel for a specific block type, register here.
  */
 
-// (no custom detail panels registered for v0.1)
-export {};
+import { detailRegistry } from "./DetailRegistry";
+import { EmbeddingDetail } from "./EmbeddingDetail";
+import { LinearDetail } from "./LinearDetail";
+
+// Custom detail panels for core layers
+detailRegistry.register("embedding", EmbeddingDetail);
+detailRegistry.register("linear", LinearDetail);
+

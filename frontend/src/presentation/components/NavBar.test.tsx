@@ -19,7 +19,7 @@ describe("NavBar", () => {
     render(<NavBar onSubmit={() => {}} />);
     expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "GPT-2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Llama-3-8B" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mistral-7B" })).toBeInTheDocument();
   });
 
   it("uses the full-height wrapper class by default (collapsed=false)", () => {

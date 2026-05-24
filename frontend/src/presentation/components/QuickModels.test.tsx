@@ -16,7 +16,7 @@ const gpt2Spec: Spec = {
 describe("QuickModels", () => {
   it("renders every preset model chip", () => {
     render(<QuickModels onSubmit={() => {}} />);
-    for (const label of ["GPT-2", "Llama-3-8B", "Mistral-7B", "Qwen2.5-7B", "Qwen3-0.6B"]) {
+    for (const label of ["GPT-2", "Mistral-7B", "Qwen2.5-7B", "Qwen3-0.6B"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
   });

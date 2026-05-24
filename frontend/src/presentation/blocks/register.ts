@@ -13,7 +13,9 @@
 
 import { AttentionHeadNode } from "./AttentionHeadNode";
 import { blockRegistry } from "./BlockRegistry";
+import { EmbeddingNode } from "./EmbeddingNode";
 import { FlowGlyphNode } from "./FlowGlyphNode";
+import { LinearNode } from "./LinearNode";
 
 // Heads are rendered ~3× narrower than a default block — at level 4 we
 // render N of them side-by-side and need the grid to fit a normal viewport.
@@ -25,3 +27,8 @@ blockRegistry.register("attention_scores", FlowGlyphNode);
 blockRegistry.register("attention_softmax", FlowGlyphNode);
 blockRegistry.register("attention_mix", FlowGlyphNode);
 blockRegistry.register("mlp_multiply", FlowGlyphNode);
+
+// Custom block renderers for core layers
+blockRegistry.register("embedding", EmbeddingNode);
+blockRegistry.register("linear", LinearNode);
+

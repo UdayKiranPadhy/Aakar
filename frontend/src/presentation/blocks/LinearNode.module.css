@@ -1,0 +1,111 @@
+.linearCard {
+  background: linear-gradient(135deg, var(--color-bg) 0%, rgba(191, 219, 254, 0.08) 100%);
+  border-left: 4px solid #bfdbfe !important;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.linearCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08), var(--shadow-block);
+  border-color: #bfdbfe;
+}
+
+.visualPattern {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  background: rgba(191, 219, 254, 0.12);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.matrixGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.matrixRow {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #bfdbfe;
+}
+
+.dotActive {
+  background: #3b82f6;
+}
+
+.mulSign {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  color: #3b82f6;
+  font-weight: bold;
+  margin: 0 2px;
+}
+
+.vectorBlock {
+  width: 4px;
+  height: 12px;
+  background: #3b82f6;
+  border-radius: 1px;
+}
+
+.titleContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+
+.tag {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1.5px 5px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.dimsGrid {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+.dimBox {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid var(--color-hairline);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+.dimLabel {
+  font-family: var(--font-sans);
+  font-size: 8.5px;
+  color: var(--color-ink-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dimValue {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  margin-top: 1px;
+}
