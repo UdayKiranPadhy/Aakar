@@ -19,10 +19,11 @@ class ArchitectureService:
         self._cache = cache
 
     async def get_architecture(self, model_id: str) -> Spec:
-        # config_hash = await self._introspector.fetch_config_hash(model_id)
-        # cached = await self._cache.get(model_id, config_hash)
-        # if cached is not None:
-        #     return cached
+        config_hash = await self._introspector.fetch_config_hash(model_id)
+        cached = await self._cache.get(model_id, config_hash)
+        if cached is not None:
+            return cached
+
         spec = await self._introspector.introspect(model_id)
-        # await self._cache.set(model_id, config_hash, spec)
+        await self._cache.set(model_id, config_hash, spec)
         return spec

@@ -4,7 +4,10 @@ Aakar's backend builds the architecture `Spec` by **introspecting the real `tran
 
 ## The flow
 
-`backend/src/aakar_api/infrastructure/transformers_introspector.py` is the single source of architectural truth.
+`backend/src/aakar_api/infrastructure/transformers_introspector.py` is the public entrypoint.
+The focused helpers under `backend/src/aakar_api/infrastructure/introspection/` keep each
+step readable: config loading, model construction, node walking, per-node metadata, and
+spec-level metadata.
 
 1. **Fetch the config.** `AutoConfig.from_pretrained(model_id)` — talks to the HF Hub once (or hits the local cache). No weights downloaded.
 2. **Resolve the architecture class.** Read `config.architectures[0]` (e.g. `"LlamaForCausalLM"`) and look it up as an attribute on the `transformers` module: `cls = getattr(transformers, arch_name)`.

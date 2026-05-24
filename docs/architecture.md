@@ -51,7 +51,7 @@ Browser:
 | -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------- |
 | **Domain**           | `domain/spec.py`, `domain/exceptions.py`                                 | `domain/spec.ts`, `domain/navigation.ts`              |
 | **Application**      | `application/architecture_service.py`, `application/interfaces.py`       | `application/useArchitecture.ts`, `useNavigation.ts`  |
-| **Infrastructure**   | `infrastructure/transformers_introspector.py`, `infrastructure/spec_cache.py` | `infrastructure/api/HttpArchitectureRepository.ts` |
+| **Infrastructure**   | `infrastructure/transformers_introspector.py`, `infrastructure/introspection/`, `infrastructure/spec_cache.py` | `infrastructure/api/HttpArchitectureRepository.ts` |
 | **Presentation/API** | `api/routes.py`, `api/dependencies.py`, `api/errors.py`                  | `presentation/canvas`, `blocks`, `layout`, `details`  |
 
 **Rule of dependency:** lower layers know nothing about higher layers. The application layer declares the abstractions it needs (`Introspector`, `SpecCache`); infrastructure provides the concrete implementations; `main.py` / `App.tsx` wire it all up.
