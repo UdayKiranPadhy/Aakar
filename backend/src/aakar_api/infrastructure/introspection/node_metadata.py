@@ -2,10 +2,22 @@
 
 from __future__ import annotations
 
+import inspect
+import re
 from typing import Any
 
+import torch
+import transformers
 from torch import nn
 
+from aakar_api.infrastructure.introspection._naming import (
+    ATTENTION_HEAD_ATTRS,
+    ATTENTION_HEAD_DIM_ATTRS,
+    ATTENTION_KV_HEAD_ATTRS,
+    ATTENTION_PROJECTION_NAMES,
+    MLP_PROJECTION_NAMES,
+    MLP_SIZE_ATTRS,
+)
 from aakar_api.infrastructure.introspection.walk_context import WalkContext
 
 _MODULE_PARAM_KEYS = (
@@ -80,17 +92,33 @@ def buffer_shapes(module: nn.Module) -> dict[str, list[int]]:
     return buffers
 
 
-def activation_name(module: nn.Module) -> str | None:
-    for attr in ("act_fn", "activation_fn", "activation"):
-        activation = getattr(module, attr, None)
-        if activation is None:
-            continue
-        if isinstance(activation, str):
-            return activation
-        if isinstance(activation, nn.Module):
-            return type(activation).__name__
-        if callable(activation):
-            return type(activation).__name__
+_NAMESPACE_CATEGORIES: tuple[tuple[str, str], ...] = (
+    ("torch.nn.modules.normalization", "norm"),
+    ("torch.nn.modules.batchnorm", "norm"),
+    ("torch.nn.modules.dropout", "dropout"),
+    ("torch.nn.modules.linear", "linear"),
+    ("torch.nn.modules.sparse", "embedding"),
+    ("torch.nn.modules.container", "container"),
+)
+
+
+def category(module: nn.Module) -> str | None:
+    """Classify a module by the Python module its class is defined in.
+
+    Activations also pick up Hugging Face's `transformers.activations.*` wrappers, which is the only
+    namespace outside `torch.nn` worth tagging — every other transformer
+    submodule lives in a model-family-specific file with no shared namespace.
+    """
+    defined_in = type(module).__module__
+    if defined_in.startswith("torch.nn.modules.activation"):
+        # MultiheadAttention lives in this namespace but is not an activation.
+        if type(module).__name__ != "MultiheadAttention":
+            return "activation"
+    if defined_in.startswith("transformers.activations"):
+        return "activation"
+    for namespace, tag in _NAMESPACE_CATEGORIES:
+        if defined_in.startswith(namespace):
+            return tag
     return None
 
 
@@ -108,27 +136,37 @@ def flops(module: nn.Module, ctx: WalkContext) -> int | None:
 
 
 def intermediates(module: nn.Module, ctx: WalkContext) -> dict[str, str] | None:
-    class_name = type(module).__name__
-    if "Attention" in class_name:
+    """Per-class intermediate tensor shapes not visible from in/out alone.
+    We fingerprint by either (a) the presence
+    of module-config attributes like `num_heads` / `intermediate_size`, or
+    (b) the names of projection submodules (`q_proj`, `gate_proj`, …) — both
+    constrained by HF's state-dict naming convention. See `_naming.py`.
+    """
+    if _looks_like_attention(module):
         return _attention_intermediates(module, ctx)
-    if any(name in class_name for name in ("MLP", "FeedForward", "FFN")):
+    if _looks_like_mlp(module):
         return _mlp_intermediates(module, ctx)
     return None
 
 
+def _looks_like_attention(module: nn.Module) -> bool:
+    if _first_attr(module, ATTENTION_HEAD_ATTRS):
+        return True
+    return _has_any_child(module, ATTENTION_PROJECTION_NAMES)
+
+
+def _looks_like_mlp(module: nn.Module) -> bool:
+    if _first_attr(module, MLP_SIZE_ATTRS):
+        return True
+    return _has_any_child(module, MLP_PROJECTION_NAMES)
+
+
 def _attention_intermediates(module: nn.Module, ctx: WalkContext) -> dict[str, str] | None:
-    num_heads = (
-        getattr(module, "num_heads", None)
-        or getattr(module, "num_attention_heads", None)
-        or ctx.num_heads
-    )
+    num_heads = _first_attr(module, ATTENTION_HEAD_ATTRS) or ctx.num_heads
     num_kv_heads = (
-        getattr(module, "num_key_value_heads", None)
-        or getattr(module, "num_kv_heads", None)
-        or ctx.num_kv_heads
-        or num_heads
+        _first_attr(module, ATTENTION_KV_HEAD_ATTRS) or ctx.num_kv_heads or num_heads
     )
-    head_dim = getattr(module, "head_dim", None) or ctx.head_dim
+    head_dim = _first_attr(module, ATTENTION_HEAD_DIM_ATTRS) or ctx.head_dim
     if not num_heads or not head_dim:
         return None
     return {
@@ -140,14 +178,66 @@ def _attention_intermediates(module: nn.Module, ctx: WalkContext) -> dict[str, s
 
 
 def _mlp_intermediates(module: nn.Module, ctx: WalkContext) -> dict[str, str] | None:
-    intermediate_size = (
-        getattr(module, "intermediate_size", None)
-        or getattr(module, "ffn_dim", None)
-        or ctx.intermediate_size
-    )
+    intermediate_size = _first_attr(module, MLP_SIZE_ATTRS) or ctx.intermediate_size
     if not intermediate_size:
         return None
     return {"up": f"[B, S, {intermediate_size}]"}
+
+
+def _first_attr(module: nn.Module, names: tuple[str, ...]) -> Any:
+    """Return the first truthy attribute matching one of `names`."""
+    for name in names:
+        value = getattr(module, name, None)
+        if value:
+            return value
+    return None
+
+
+def _has_any_child(module: nn.Module, names: frozenset[str]) -> bool:
+    return any(name in names for name, _ in module.named_children())
+
+
+# ─── Source-link construction ───────────────────────────────────────────────
+# Why this exists: there is no library-provided schema describing what an
+# attention module looks like (see _naming.py). The honest escape valve is
+# to let students jump straight to the actual source on GitHub. We support
+# stock `transformers.*` and `torch.*` modules; custom code is skipped.
+
+_SOURCE_REPOS: tuple[tuple[str, str, str, str], ...] = (
+    # (package prefix, GitHub owner/repo, in-repo source root, version string)
+    ("transformers", "huggingface/transformers", "src/", transformers.__version__),
+    ("torch", "pytorch/pytorch", "", torch.__version__),
+)
+
+_SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+def source_url(module: nn.Module) -> str | None:
+    """Best-effort GitHub link to the module's class definition.
+
+    Returns None for modules we don't recognise (custom user code, or any
+    package outside `transformers.*` / `torch.*`). Pins the URL to the
+    installed package's release tag when it looks like a clean semver;
+    otherwise falls back to `main` (the URL stays valid; line number may
+    drift).
+    """
+    cls = type(module)
+    module_path = cls.__module__
+    for prefix, repo, src_root, version in _SOURCE_REPOS:
+        if module_path == prefix or module_path.startswith(prefix + "."):
+            ref = f"v{version}" if _SEMVER_RE.match(version) else "main"
+            file_path = src_root + module_path.replace(".", "/") + ".py"
+            anchor = _line_anchor(cls)
+            return f"https://github.com/{repo}/blob/{ref}/{file_path}{anchor}"
+    return None
+
+
+def _line_anchor(cls: type) -> str:
+    try:
+        _, line = inspect.getsourcelines(cls)
+    except (OSError, TypeError):
+        return ""
+    return f"#L{line}"
 
 
 def _is_norm(module: nn.Module, class_name: str) -> bool:

@@ -1,9 +1,14 @@
 /**
  * Block-renderer registry (Strategy pattern).
  *
- * `node.type` → React component. v0.1 ships only `GenericBlockNode`; adding a
- * custom renderer for, say, `sparse_attention` is one new component + one
- * `register()` call in `register.ts`. See docs/block-types.md.
+ * Resolution priority for a node:
+ *   1. `register(type, ...)` — a renderer keyed on `snake_case(module_class)`.
+ *   2. `registerCategory(category, ...)` — a renderer keyed on the backend's
+ *      semantic `category` (e.g. `"activation"`), shared by many classes.
+ *   3. Fallback (`GenericBlockNode`).
+ *
+ * Adding a custom renderer for, say, `sparse_attention` is one new component +
+ * one `register()` call in `register.ts`. See docs/block-types.md.
  */
 
 import type { ComponentType } from "react";
@@ -46,6 +51,7 @@ export type BlockNodeComponent = ComponentType<BlockNodeProps>;
 
 export class BlockRegistry {
   private readonly registry = new Map<string, BlockNodeComponent>();
+  private readonly categoryRegistry = new Map<string, BlockNodeComponent>();
 
   constructor(private readonly fallback: BlockNodeComponent) {}
 
@@ -56,13 +62,30 @@ export class BlockRegistry {
     this.registry.set(type, component);
   }
 
-  resolve(type: string): BlockNodeComponent {
-    return this.registry.get(type) ?? this.fallback;
+  registerCategory(category: string, component: BlockNodeComponent): void {
+    if (this.categoryRegistry.has(category)) {
+      throw new Error(`BlockRegistry: category '${category}' already registered`);
+    }
+    this.categoryRegistry.set(category, component);
+  }
+
+  resolve(node: Pick<Node, "type" | "category">): BlockNodeComponent {
+    const byType = this.registry.get(node.type);
+    if (byType) return byType;
+    if (node.category) {
+      const byCategory = this.categoryRegistry.get(node.category);
+      if (byCategory) return byCategory;
+    }
+    return this.fallback;
   }
 
   /** Inspection helper for tests / debug panels. */
   get registeredTypes(): readonly string[] {
     return Array.from(this.registry.keys());
+  }
+
+  get registeredCategories(): readonly string[] {
+    return Array.from(this.categoryRegistry.keys());
   }
 }
 

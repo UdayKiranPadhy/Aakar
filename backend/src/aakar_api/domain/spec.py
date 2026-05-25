@@ -36,17 +36,25 @@ class Node(BaseModel):
     module_path: str | None = None
     weight_shape: list[int] | None = None
     bias_shape: list[int] | None = None
-    # Recursive memory footprint of this subtree, in bytes, at the model's
-    # declared `param_dtype` (Spec-level). Independent of the meta-device
-    # default float32 we actually allocate.
+    # Recursive memory footprint of this subtree, in bytes, at the model's declared `param_dtype` (Spec-level).
     memory_bytes: int | None = None
     # Non-parameter tensors registered with `register_buffer` — RoPE inv_freq,
     # causal masks, etc. Map of buffer name → shape (only this module's own,
     # not recursive).
     buffers: dict[str, list[int]] | None = None
-    # For MLP-like modules, the class name of the activation callable
-    # (e.g. "SiLU", "GELUActivation").
-    activation: str | None = None
+    # Category derived from the module's Python namespace
+    #   "activation" — torch.nn.modules.activation, transformers.activations
+    #   "norm"       — torch.nn.modules.normalization, torch.nn.modules.batchnorm
+    #   "dropout"    — torch.nn.modules.dropout
+    #   "linear"     — torch.nn.modules.linear
+    #   "embedding"  — torch.nn.modules.sparse
+    #   "container"  — torch.nn.modules.container (ModuleList, Sequential, …)
+    category: str | None = None
+    # GitHub link to the module's class definition. Populated for stock
+    # `transformers.*` and `torch.*` classes (pinned to the installed
+    # package version when it's a clean semver, else `main`). None for
+    # custom user code.
+    source_url: str | None = None
     # Theoretical forward-pass FLOPs at Spec.flops_reference. Only populated for
     # modules whose count is determined by the module alone (Linear, norms).
     flops: int | None = None

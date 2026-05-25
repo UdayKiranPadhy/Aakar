@@ -101,6 +101,11 @@ export function LinearNode({
             {node.module_path}
           </div>
         )}
+        {node.module_class && (
+          <div className={cardStyles.meta}>
+            {node.module_class}
+          </div>
+        )}
 
         {inFeatures && outFeatures && (
           <div className={styles.dimsGrid}>

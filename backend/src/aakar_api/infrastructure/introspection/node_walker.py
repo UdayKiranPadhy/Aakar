@@ -7,13 +7,14 @@ from torch import nn
 from aakar_api.domain.spec import Node
 from aakar_api.infrastructure.introspection.naming import humanize, snake_case
 from aakar_api.infrastructure.introspection.node_metadata import (
-    activation_name,
     buffer_shapes,
+    category,
     extract_params,
     flops,
     intermediates,
     io_shapes,
     parameter_shape,
+    source_url,
 )
 from aakar_api.infrastructure.introspection.walk_context import WalkContext
 
@@ -57,7 +58,8 @@ def walk_module_tree(
         output_shape=output_shape,
         memory_bytes=param_count * ctx.dtype_bytes if param_count else None,
         buffers=buffers or None,
-        activation=activation_name(module),
+        category=category(module),
+        source_url=source_url(module),
         flops=flops(module, ctx),
         intermediates=intermediates(module, ctx),
     )

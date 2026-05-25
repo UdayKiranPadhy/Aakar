@@ -59,9 +59,9 @@ describe("DetailPanel", () => {
       detailOpen: true,
     });
     render(<DetailPanel />);
-    expect(screen.getByText("Transformer block 1")).toBeInTheDocument();
-    expect(screen.getByText("masked attention + FFN")).toBeInTheDocument();
-    expect(screen.getByText("decoder_block")).toBeInTheDocument();
+    expect(screen.getAllByText("Transformer block 1").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("masked attention + FFN").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("decoder_block").length).toBeGreaterThan(0);
   });
 
   it("shows the configuration entries from params", () => {

@@ -7,6 +7,7 @@ import {
   formatShape,
 } from "../components/ui/format";
 import { useArchStore } from "../../store/archStore";
+import { BackendFieldsSection } from "./BackendFieldsSection";
 import styles from "./GenericDetailPanel.module.css";
 
 export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
@@ -77,7 +78,7 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
   
   const inFeatures = node.params.in_features || (node.weight_shape ? node.weight_shape[1] : null);
   const outFeatures = node.params.out_features || (node.weight_shape ? node.weight_shape[0] : null);
-  const hasBias = node.params.has_bias !== undefined ? node.params.has_bias : (node.bias_shape !== null);
+  const hasBias = node.params.has_bias !== undefined ? node.params.has_bias : node.bias_shape != null;
 
   return (
     <div className={styles.panel}>
@@ -111,6 +112,8 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
             <strong>Why it matters:</strong> {usefulness}
           </div>
         </section>
+
+        <BackendFieldsSection node={node} />
 
         {/* Configuration Section */}
         <section className={styles.section}>

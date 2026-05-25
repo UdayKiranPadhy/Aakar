@@ -64,6 +64,21 @@ export function SdpaAttentionNode({ node, level, selected, onSelect }: BlockNode
 }
 ```
 
+### Category-based renderers
+
+Sometimes one renderer should cover *many* classes that share a role — e.g. every activation function (`SiLU`, `GELU`, `ReLU`, HF's `GELUActivation`, …). Hard-coding the snake-cased class names defeats the point.
+
+Instead, the backend tags each `Node` with a `category` field (`"activation"`, with room for `"norm"`, `"dropout"`, … later). `BlockRegistry.registerCategory(category, Component)` registers a renderer keyed on that tag, and `resolve()` falls back to it when no `type`-specific renderer is registered:
+
+```ts
+// presentation/blocks/register.ts
+import { ActivationNode } from "./ActivationNode";
+
+blockRegistry.registerCategory("activation", ActivationNode);
+```
+
+`ActivationNode` then handles `SiLU`, `GELU`, `GELUActivation`, `ReLU`, and anything else the backend tags `"activation"` — without enumerating names anywhere. A more specific `register("relu", CustomReluNode)` would still win for that one class.
+
 ## Step 2 — register it
 
 `frontend/src/presentation/blocks/register.ts`:

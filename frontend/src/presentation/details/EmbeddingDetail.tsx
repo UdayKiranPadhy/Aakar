@@ -6,6 +6,7 @@ import {
   formatShape,
 } from "../components/ui/format";
 import { useArchStore } from "../../store/archStore";
+import { BackendFieldsSection } from "./BackendFieldsSection";
 import styles from "./GenericDetailPanel.module.css";
 
 export function EmbeddingDetail({ node, onExpand, onClose }: DetailPanelProps) {
@@ -62,6 +63,8 @@ export function EmbeddingDetail({ node, onExpand, onClose }: DetailPanelProps) {
             <strong>Why it matters:</strong> {usefulness}
           </div>
         </section>
+
+        <BackendFieldsSection node={node} />
 
         {/* Configuration Section */}
         <section className={styles.section}>

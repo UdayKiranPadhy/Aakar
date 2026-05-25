@@ -45,7 +45,7 @@ const HIDDEN_HANDLE_STYLE = {
 
 export function BlockFlowNode({ data }: NodeProps) {
   const d = data as BlockFlowData;
-  const Component = blockRegistry.resolve(d.specNode.type);
+  const Component = blockRegistry.resolve(d.specNode);
   return (
     <>
       <Handle id="in" type="target" position={Position.Top} style={HIDDEN_HANDLE_STYLE} />

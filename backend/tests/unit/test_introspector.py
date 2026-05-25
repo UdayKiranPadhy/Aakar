@@ -145,15 +145,36 @@ async def test_memory_and_flops(introspector: TransformersIntrospector) -> None:
 
 
 @pytest.mark.asyncio
-async def test_activation_function_extracted(introspector: TransformersIntrospector) -> None:
+async def test_categories_on_real_llama_tree(
+    introspector: TransformersIntrospector,
+) -> None:
     spec = await introspector.introspect(_TINY_LLAMA)
     model = next(c for c in spec.graph[0].children or [] if c.id == "model")
     layers = next(c for c in model.children or [] if c.id == "model.layers")
     layer0 = (layers.children or [])[0]
+
+    # Activation: SiLU/Swish lives as an `act_fn` child of the gated MLP.
     mlp = next(c for c in layer0.children or [] if c.id.endswith(".mlp"))
-    # Llama uses SiLU (a.k.a. swish) inside the gated MLP.
-    assert mlp.activation is not None
-    assert "SiLU" in mlp.activation or "Silu" in mlp.activation
+    act = next(c for c in mlp.children or [] if c.id.endswith(".act_fn"))
+    assert act.category == "activation"
+    assert act.module_class is not None
+    assert "SiLU" in act.module_class or "Silu" in act.module_class
+
+    # Embedding: backbone has `embed_tokens` as a top-level child.
+    embed = next(c for c in model.children or [] if c.id == "model.embed_tokens")
+    assert embed.category == "embedding"
+
+    # Linear: the LM head is a top-level `nn.Linear` projection.
+    lm_head = next(c for c in spec.graph[0].children or [] if c.id == "lm_head")
+    assert lm_head.category == "linear"
+
+    # Container: `model.layers` is an `nn.ModuleList`.
+    assert layers.category == "container"
+
+    # Norm: Llama's `*RMSNorm` lives in the model file, not torch.nn —
+    # namespace-only detection deliberately leaves it untagged.
+    norm = next(c for c in layer0.children or [] if c.id.endswith(".input_layernorm"))
+    assert norm.category is None
 
 
 @pytest.mark.asyncio

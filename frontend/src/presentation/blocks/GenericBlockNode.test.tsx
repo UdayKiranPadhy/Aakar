@@ -84,12 +84,6 @@ describe("GenericBlockNode rendering", () => {
     expect(screen.getByText(/2\.4 MB/)).toBeInTheDocument();
   });
 
-  it("renders the activation function for MLP-like nodes", () => {
-    const withAct: Node = { ...leaf, activation: "SiLUActivation" };
-    render(<GenericBlockNode node={withAct} level={2} selected={false} />);
-    expect(screen.getByText(/act SiLUActivation/)).toBeInTheDocument();
-  });
-
   it("renders the FLOPs line when flops > 0", () => {
     const withFlops: Node = { ...leaf, flops: 2_100_000_000 };
     render(<GenericBlockNode node={withFlops} level={2} selected={false} />);

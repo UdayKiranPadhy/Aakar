@@ -92,7 +92,10 @@ export function GenericBlockNode({
           {node.label}
         </div>
 
-        {node.meta && <div className={styles.meta}>{node.meta}</div>}
+        {(node.module_class || node.meta) && (
+          <div className={styles.meta}>{node.module_class ?? node.meta}</div>
+        )}
+        {node.module_path && <div className={styles.meta}>{node.module_path}</div>}
 
         {(node.input_shape || node.output_shape) && (
           <div className={styles.io}>
@@ -118,10 +121,6 @@ export function GenericBlockNode({
               <span className={styles.shapeAux}>  · +bias</span>
             )}
           </div>
-        )}
-
-        {node.activation && (
-          <div className={styles.activation}>act {node.activation}</div>
         )}
 
         {node.param_count !== undefined && node.param_count > 0 && (

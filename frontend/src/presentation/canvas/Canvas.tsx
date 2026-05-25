@@ -7,20 +7,20 @@
  * / useNavigation.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Controls,
   MiniMap,
   Panel,
   ReactFlow,
   ReactFlowProvider,
+  applyNodeChanges,
   useReactFlow,
   type CoordinateExtent,
   type Edge,
   type FitViewOptions,
   type Node as ReactFlowNode,
   type NodeChange,
-  type XYPosition,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -276,43 +276,23 @@ type CanvasFlowProps = {
 };
 
 function CanvasFlow({ baseNodes, edges, fitViewOptions, translateExtent }: CanvasFlowProps) {
-  // Drag positions are stored as overrides on top of the layout-strategy
-  // positions baked into baseNodes. Keeping them separate means selection /
-  // role-highlight updates (which flow through baseNodes.data) don't have to
-  // be merged into a controlled-nodes state, and Reset is just "clear the
-  // override map + refit".
-  const [positionOverrides, setPositionOverrides] = useState<Map<string, XYPosition>>(
-    () => new Map(),
-  );
+  const [nodes, setNodes] = useState<ReactFlowNode[]>(() => baseNodes);
   const { fitView } = useReactFlow();
 
-  const nodes = useMemo(() => {
-    if (positionOverrides.size === 0) return baseNodes;
-    return baseNodes.map((node) => {
-      const override = positionOverrides.get(node.id);
-      return override ? { ...node, position: override } : node;
-    });
-  }, [baseNodes, positionOverrides]);
+  useEffect(() => {
+    setNodes((currentNodes) => mergeBaseNodeData(baseNodes, currentNodes));
+  }, [baseNodes]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setPositionOverrides((prev) => {
-      let next: Map<string, XYPosition> | null = null;
-      for (const change of changes) {
-        if (change.type === "position" && change.position) {
-          if (!next) next = new Map(prev);
-          next.set(change.id, change.position);
-        }
-      }
-      return next ?? prev;
-    });
+    setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
   }, []);
 
   const handleReset = useCallback(() => {
-    setPositionOverrides(new Map());
+    setNodes(baseNodes);
     // Defer until the position reset has rendered so fitView measures the
     // restored layout, not the dragged one.
     requestAnimationFrame(() => fitView(fitViewOptions));
-  }, [fitView, fitViewOptions]);
+  }, [baseNodes, fitView, fitViewOptions]);
 
   return (
     <ReactFlow
@@ -365,4 +345,24 @@ function CanvasFlow({ baseNodes, edges, fitViewOptions, translateExtent }: Canva
       <Controls position="bottom-right" showInteractive={false} />
     </ReactFlow>
   );
+}
+
+function mergeBaseNodeData(
+  baseNodes: ReactFlowNode[],
+  currentNodes: ReactFlowNode[],
+): ReactFlowNode[] {
+  const currentById = new Map(currentNodes.map((node) => [node.id, node]));
+  return baseNodes.map((baseNode) => {
+    const currentNode = currentById.get(baseNode.id);
+    if (!currentNode) return baseNode;
+    return {
+      ...baseNode,
+      position: currentNode.position,
+      dragging: currentNode.dragging,
+      measured: currentNode.measured,
+      width: currentNode.width,
+      height: currentNode.height,
+      selected: currentNode.selected,
+    };
+  });
 }

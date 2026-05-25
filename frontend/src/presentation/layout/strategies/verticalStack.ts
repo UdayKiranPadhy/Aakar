@@ -4,8 +4,8 @@ import type { LayoutStrategy } from "../LayoutRegistry";
 
 // Vertical stride between adjacent cards. Sized to fit the tallest block the
 // GenericBlockNode can produce — title + class meta + 2 lines of symbolic
-// in/out shape + weight shape + activation + (params · memory) + flops, plus
-// some breathing room and edge length so the dotted connector is visible.
+// in/out shape + weight shape + (params · memory) + flops, plus some breathing
+// room and edge length so the dotted connector is visible.
 const BLOCK_VSPACE = 240;
 
 export const verticalStack: LayoutStrategy = (children) =>

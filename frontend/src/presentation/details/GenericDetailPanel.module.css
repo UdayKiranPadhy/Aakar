@@ -110,6 +110,18 @@
   overflow-wrap: anywhere;
 }
 
+/* Used for the `class` row in the Source section when source_url is present
+ * — clickable, opens the HF/torch class definition on GitHub. The little ↗
+ * glyph after the class name signals "leaves the app." */
+.sourceLink {
+  color: var(--color-accent);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.sourceLink:hover {
+  text-decoration: underline;
+}
+
 /* Secondary line below a primary metric — e.g. memory under param-count, or
  * the (B, S) reference dimensions under FLOPs. */
 .subtle {

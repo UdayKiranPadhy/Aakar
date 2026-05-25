@@ -42,7 +42,8 @@ type Node = {
   bias_shape?: number[];
   memory_bytes?: number;   // param_count × bytes_per_element at Spec.param_dtype
   buffers?: Record<string, number[]>; // non-parameter tensors (RoPE inv_freq, masks)
-  activation?: string;     // MLP-like modules: class name of `act_fn`
+  category?: string;       // free-form semantic tag (e.g. "activation"); frontend uses it as a fallback registry key
+  source_url?: string;     // GitHub link to the class definition (HF transformers / PyTorch)
   flops?: number;          // theoretical forward FLOPs at Spec.flops_reference (Linear / norms only)
   intermediates?: Record<string, string>; // per-class intermediate shapes (attention q/k/v/scores, MLP up)
 };
@@ -66,7 +67,8 @@ type Node = {
 | `weight_shape` / `bias_shape` | no | Tensor shapes captured from `module.weight.shape` / `module.bias.shape`. None for modules without that parameter. |
 | `memory_bytes` | no       | `param_count × bytes_per_element` using `Spec.param_dtype` (not the meta device's default fp32). Recursive — same scope as `param_count`. |
 | `buffers`      | no       | Map of this module's *own* (non-recursive) `register_buffer` tensors → shape. Captures RoPE `inv_freq`, causal masks, running stats. |
-| `activation`   | no       | Class name of the MLP's `act_fn` callable (e.g. `"SiLUActivation"`, `"GELUActivation"`). |
+| `source_url`   | no       | GitHub permalink to the module's class definition. Populated for `transformers.*` and `torch.*` classes — pinned to the installed package's semver tag (`v5.9.0`) when one matches, else `main`. Includes a `#L<line>` anchor pointing to the `class X(nn.Module):` line. Custom user code is left without a link. Renders as a clickable class name in the detail panel's Source section. |
+| `category`     | no       | Free-form semantic tag derived purely from the module's Python namespace — no class-name matching, so every class within a namespace is tagged automatically. Current values: `"activation"` (`torch.nn.modules.activation`, `transformers.activations`), `"norm"` (`torch.nn.modules.normalization`, `torch.nn.modules.batchnorm`), `"dropout"`, `"linear"`, `"embedding"` (`torch.nn.modules.sparse`), `"container"` (`ModuleList`, `Sequential`, `ModuleDict`, …). The frontend's `BlockRegistry` looks this up *after* `type`, so one renderer can serve every class in a category without enumerating them. |
 | `flops`        | no       | Theoretical forward-pass FLOPs at `Spec.flops_reference`. Populated only for modules with closed-form formulas: `Linear` (2·S·in·out), norms (~5·S·H), `Embedding` (0). |
 | `intermediates` | no      | Symbolic shapes of tensors that live *inside* opaque blocks. Attention modules report `q`, `k`, `v` (with GQA grouping on K/V), and `attn_scores` (the `[B, num_heads, S, S]` quadratic intermediate). MLP modules report `up` (the `[B, S, intermediate_size]` expansion). Derived from generic config attrs — no per-family branching. |
 | `notes`        | no       | Optional UI banner. Currently unused after the adapter system was removed. |

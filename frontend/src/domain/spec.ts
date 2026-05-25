@@ -24,7 +24,26 @@ export type Node = Readonly<{
   bias_shape?: ReadonlyArray<number>;
   memory_bytes?: number;
   buffers?: Readonly<Record<string, ReadonlyArray<number>>>;
-  activation?: string;
+  /**
+   * Free-form semantic category derived from the module's Python namespace
+   * (no class-name matching). Current values:
+   *   - `"activation"` — torch.nn.modules.activation, transformers.activations
+   *   - `"norm"`       — torch.nn.modules.normalization, batchnorm
+   *   - `"dropout"`    — torch.nn.modules.dropout
+   *   - `"linear"`     — torch.nn.modules.linear
+   *   - `"embedding"`  — torch.nn.modules.sparse
+   *   - `"container"`  — torch.nn.modules.container (ModuleList, Sequential, …)
+   * Used by `BlockRegistry` as a fallback key when no `type`-specific renderer
+   * is registered.
+   */
+  category?: string;
+  /**
+   * GitHub link to the module's class definition. Populated for stock
+   * `transformers.*` and `torch.*` classes (pinned to the installed package
+   * version when it's a clean semver, otherwise `main`). Absent for custom
+   * user code.
+   */
+  source_url?: string;
   flops?: number;
   /**
    * Per-class intermediate tensor shapes derived from the module + config.

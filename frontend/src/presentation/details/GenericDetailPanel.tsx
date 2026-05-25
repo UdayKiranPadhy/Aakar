@@ -2,8 +2,8 @@
  * Default detail-panel content — used for every node type in v0.1.
  *
  * Renders sections for: Configuration (params), Shapes (input/output/weight/
- * bias), Parameters (param_count + memory), Compute (FLOPs), Activation,
- * Buffers, plus a Model-level info strip pulled from the Spec.
+ * bias), Parameters (param_count + memory), Compute (FLOPs), Buffers, plus a
+ * Model-level info strip pulled from the Spec.
  *
  * Sections are hidden if the relevant data is absent.
  */
@@ -18,6 +18,7 @@ import {
 } from "../components/ui/format";
 import { useArchStore } from "../../store/archStore";
 import type { Spec } from "../../domain/spec";
+import { BackendFieldsSection } from "./BackendFieldsSection";
 import styles from "./GenericDetailPanel.module.css";
 
 export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps) {
@@ -48,6 +49,7 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
       <div className={styles.body}>
         {isRoot && spec && <ModelInfoSection spec={spec} />}
         <SourceSection node={node} />
+        <BackendFieldsSection node={node} />
         <TensorPathSection node={node} />
         <ParamsSection params={node.params} />
         <ShapesSection
@@ -62,7 +64,6 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
           dtype={spec?.param_dtype}
         />
         <ComputeSection flops={node.flops} flopsReference={spec?.flops_reference} />
-        <ActivationSection activation={node.activation} />
         <SubmoduleBreakdownSection node={node} />
         <BuffersSection buffers={node.buffers} />
       </div>
@@ -89,7 +90,26 @@ function SourceSection({ node }: { node: DetailPanelProps["node"] }) {
     <Section title="Source">
       <dl className={styles.kvGrid}>
         {node.module_path && <Row k="path" v={node.module_path} />}
-        {node.module_class && <Row k="class" v={node.module_class} />}
+        {node.module_class && (
+          <>
+            <dt className={styles.kvKey}>class</dt>
+            <dd className={styles.kvValue}>
+              {node.source_url ? (
+                <a
+                  href={node.source_url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className={styles.sourceLink}
+                  title="Open class definition on GitHub"
+                >
+                  {node.module_class} ↗
+                </a>
+              ) : (
+                node.module_class
+              )}
+            </dd>
+          </>
+        )}
       </dl>
     </Section>
   );
@@ -245,15 +265,6 @@ function ComputeSection({
         </span>
       </div>
       {ref && <div className={styles.subtle}>at {ref}</div>}
-    </Section>
-  );
-}
-
-function ActivationSection({ activation }: { activation?: string }) {
-  if (!activation) return null;
-  return (
-    <Section title="Activation">
-      <div className={styles.kvValue}>{activation}</div>
     </Section>
   );
 }

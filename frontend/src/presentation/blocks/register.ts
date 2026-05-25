@@ -11,6 +11,7 @@
  * Imported once from `main.tsx` for side effects.
  */
 
+import { ActivationNode } from "./ActivationNode";
 import { AttentionHeadNode } from "./AttentionHeadNode";
 import { blockRegistry } from "./BlockRegistry";
 import { EmbeddingNode } from "./EmbeddingNode";
@@ -31,4 +32,8 @@ blockRegistry.register("mlp_multiply", FlowGlyphNode);
 // Custom block renderers for core layers
 blockRegistry.register("embedding", EmbeddingNode);
 blockRegistry.register("linear", LinearNode);
+
+// Category-keyed renderers — one component handles every activation class
+// regardless of name (SiLU, GELU, ReLU, …).
+blockRegistry.registerCategory("activation", ActivationNode);
 

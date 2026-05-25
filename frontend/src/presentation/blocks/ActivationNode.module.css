@@ -1,0 +1,75 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 140px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  border: 1px solid var(--color-hairline);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
+  /* See GenericBlockNode.module.css — opt back into pointer events that
+   * React Flow disables on non-draggable, non-selectable node wrappers. */
+  pointer-events: auto;
+  color: var(--color-accent);
+}
+.pill:hover {
+  border-color: var(--color-hairline-strong);
+}
+.pill:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-block);
+}
+
+.pillSelected {
+  border: 2px solid var(--color-accent);
+}
+.pillSelected:hover {
+  border-color: var(--color-accent);
+}
+
+.pillInput {
+  border: 2px solid #34a853;
+}
+.pillInput:hover {
+  border-color: #34a853;
+}
+.pillOutput {
+  border: 2px solid #fbbc04;
+}
+.pillOutput:hover {
+  border-color: #fbbc04;
+}
+
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-subtle);
+}
