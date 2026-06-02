@@ -1,0 +1,13 @@
+{
+  // Cloudflare Workers config for the Aakar frontend.
+  // This is an assets-only Worker: no server code, just the Vite-built SPA
+  // in ./dist served as static files. `not_found_handling` mirrors the nginx
+  // `try_files ... /index.html` rule so client-side routes resolve.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aakar-web",
+  "compatibility_date": "2025-05-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
