@@ -6,6 +6,8 @@
 
 import { useArchStore } from "../../store/archStore";
 import { ErrorState } from "../components/ErrorState";
+import { ModelGatedState } from "../components/ModelGatedState";
+import { ModelIntrospectionErrorState } from "../components/ModelIntrospectionErrorState";
 import { ModelNotFoundState } from "../components/ModelNotFoundState";
 import { ModelServerErrorState } from "../components/ModelServerErrorState";
 import { ModelUnsupportedState } from "../components/ModelUnsupportedState";
@@ -18,12 +20,11 @@ export function ModelViewHost() {
   const modelView = useArchStore((s) => s.modelView);
 
   if (!spec) {
-    // A failed load takes over the whole content area with a detailed,
-    // illustrated error — not the neutral "nothing here yet" placeholder.
-    // "Model not found" and "Architecture not supported" each get their own
-    // richer, guidance-led page; everything else uses the compact ErrorState.
     if (error?.kind === "not_found") return <ModelNotFoundState error={error} />;
     if (error?.kind === "unsupported") return <ModelUnsupportedState error={error} />;
+    if (error?.kind === "gated") return <ModelGatedState error={error} />;
+    if (error?.kind === "timeout" || error?.kind === "failed")
+      return <ModelIntrospectionErrorState error={error} />;
     if (error?.kind === "server_error") return <ModelServerErrorState error={error} />;
     if (error) return <ErrorState error={error} />;
     return (
