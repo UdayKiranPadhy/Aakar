@@ -20,6 +20,9 @@ def load_config(model_id: str) -> Any:
     from transformers import AutoConfig
 
     try:
+        # NEVER True here: this runs in the API process. Models that need custom
+        # code are refused at this step and (when opted in) handled out-of-process
+        # by SandboxedIntrospector — see infrastructure/sandbox/.
         return AutoConfig.from_pretrained(model_id, trust_remote_code=False)
     except GatedRepoError as exc:
         raise ModelGated(model_id) from exc

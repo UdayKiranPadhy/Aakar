@@ -1,0 +1,350 @@
+.root {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-10);
+  overflow: auto;
+}
+
+.copy {
+  flex: 0 1 420px;
+  max-width: 460px;
+}
+
+.badge {
+  margin-bottom: var(--space-6);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 44px;
+  line-height: 1.08;
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+
+.subtitle {
+  margin: var(--space-4) 0 0;
+  max-width: 36ch;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--color-ink-muted);
+}
+
+.factsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.factsRow .requested {
+  margin-top: 0;
+}
+
+.requested {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: 6px 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+}
+.requestedLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.requestedId {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.divider {
+  margin: var(--space-6) 0;
+  border: none;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.tryLabel {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+
+.tips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--color-ink-muted);
+}
+
+.tipIcon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.tipIcon[data-tone="blue"] {
+  color: #1a73e8;
+}
+.tipIcon[data-tone="green"] {
+  color: #34a853;
+}
+.tipIcon[data-tone="yellow"] {
+  color: #f9ab00;
+}
+
+.art {
+  flex: 1 1 560px;
+  max-width: 620px;
+  min-width: 0;
+}
+.artImg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Crisp DOM overlays masking the source illustration's faint floating UI.
+ * Both corners sit on the art's white field (no character there), so a
+ * white-backed overlay hides the source paths while presenting sharp text. */
+.stage {
+  position: relative;
+  width: 100%;
+}
+
+/* --- left: search bar + model chips --- */
+/* Opaque cards sit directly ON TOP of the source's faint search bar + chips
+ * (which live at ~x6–27%, lower than this used to be) and are kept narrow so
+ * their right edge (~x24%) never reaches the character (whose left edge is
+ * ~x26%+). No backing mask, so nothing of the character can be covered. */
+.searchOverlay {
+  position: absolute;
+  top: 12%;
+  left: 0;
+  width: 28%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.searchBar {
+  display: flex;
+  width: 104%;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+.searchIcon {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--color-ink-subtle);
+}
+.searchText {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+}
+.chip {
+  display: flex;
+  width: 86%;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  background: var(--color-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.chipTile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  color: #fff;
+}
+.chipTile[data-tone="blue"] {
+  background: #1a73e8;
+}
+.chipTile[data-tone="green"] {
+  background: #34a853;
+}
+.chipTile[data-tone="yellow"] {
+  background: #f9ab00;
+}
+.chipLines {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+.chipName {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  line-height: 1;
+}
+.chipSub {
+  width: 82%;
+  height: 7px;
+  border-radius: 4px;
+  background: var(--color-hairline);
+}
+
+/* Kept in the top-right margin (≥ ~67%, above the desk) so the mask never
+ * reaches the character, the laptop, or the plant. */
+.reqOverlay {
+  position: absolute;
+  top: 1%;
+  right: 0;
+  width: 42%;
+  height: 48%;
+  background: #fefefe;
+}
+.notFoundPill {
+  position: absolute;
+  top: 4%;
+  right: 4%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+.notFoundDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: #ea4335;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.reqArrow {
+  position: absolute;
+  top: 15%;
+  left: 40%;
+  width: 48%;
+  height: 30%;
+  overflow: visible;
+}
+.reqCard {
+  position: absolute;
+  top: 34%;
+  left: 2%;
+  display: flex;
+  width: 74%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  transform: rotate(5deg);
+  transform-origin: 60% 40%;
+  border: 2px dashed var(--color-hairline-strong);
+  border-radius: 16px;
+  background: var(--color-bg);
+}
+.reqIcon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  color: var(--color-ink-subtle);
+}
+.reqTitle {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+}
+.reqBar {
+  width: 78%;
+  height: 9px;
+  border-radius: 5px;
+  background: var(--color-hairline);
+}
+.reqBar[data-short] {
+  width: 52%;
+}
+
+/* Stack on narrow content areas; illustration leads. */
+@media (max-width: 920px) {
+  .root {
+    flex-direction: column;
+    gap: var(--space-6);
+    justify-content: flex-start;
+    padding-top: var(--space-10);
+  }
+  .copy {
+    flex: none;
+    order: 2;
+    text-align: center;
+    max-width: 540px;
+  }
+  .badge {
+    display: flex;
+    justify-content: center;
+  }
+  .subtitle,
+  .requested {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .tips {
+    display: inline-flex;
+    text-align: start;
+  }
+  .art {
+    order: 1;
+    flex: none;
+    width: 100%;
+    max-width: 560px;
+  }
+  .title {
+    font-size: 36px;
+  }
+}

@@ -66,7 +66,7 @@ local-dev: preflight kill-ports  ## Run backend (:8000) + frontend (:5173) local
 	$(MAKE) -j 2 backend-dev frontend-dev
 
 backend-dev:  ## Run just the backend (uvicorn --reload on :8000)
-	cd $(BACKEND) && uv run uvicorn aakar_api.main:app --host 127.0.0.1 --port 8000 --reload
+	cd $(BACKEND) && AAKAR_ALLOW_REMOTE_CODE=1 uv run uvicorn aakar_api.main:app --reload
 
 frontend-dev:  ## Run just the frontend (vite on :5173)
 	cd $(FRONTEND) && pnpm dev

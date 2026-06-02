@@ -9,60 +9,34 @@
 import { useCallback } from "react";
 
 import { useArchStore } from "../store/archStore";
-import {
-  ApiError,
-  ModelGatedError,
-  ModelNotFoundError,
-  NetworkError,
-  UnsupportedArchitectureError,
-} from "../infrastructure/api/errors";
+import { toLoadError } from "./loadError";
 import type { ArchitectureRepository } from "./interfaces";
-
-function toUserMessage(error: unknown): string {
-  if (error instanceof ModelNotFoundError) {
-    return `Model not found or unavailable: ${error.modelId}`;
-  }
-  if (error instanceof ModelGatedError) {
-    return `Model is gated or private (Aakar uses no HuggingFace token): ${error.modelId}`;
-  }
-  if (error instanceof UnsupportedArchitectureError) {
-    const arch = error.architecture ? ` (${error.architecture})` : "";
-    return `Aakar doesn't load custom-code models${arch}. Try a model with a stock HuggingFace architecture.`;
-  }
-  if (error instanceof NetworkError) {
-    return `Network error: ${error.message}`;
-  }
-  if (error instanceof ApiError) {
-    return error.message || `Request failed (HTTP ${error.status}).`;
-  }
-  return error instanceof Error ? error.message : "Unknown error.";
-}
 
 export function useArchitecture(repo: ArchitectureRepository) {
   const reset = useArchStore((s) => s.reset);
   const setLoading = useArchStore((s) => s.setLoading);
   const setSpec = useArchStore((s) => s.setSpec);
   const setError = useArchStore((s) => s.setError);
-  const setView = useArchStore((s) => s.setView);
+  const setAppMode = useArchStore((s) => s.setAppMode);
 
   const loadModel = useCallback(
     async (modelId: string): Promise<void> => {
       const trimmed = modelId.trim();
       if (!trimmed) return;
       reset();
-      // Switch to the visualizer up-front so the user sees the loading state
-      // there, not on the Home view. On error we stay on visualizer (the
-      // pill's inline error remains visible regardless of view).
-      setView("visualizer");
+      // Switch to the model dashboard up-front so the user sees the loading
+      // state there, not on the Home view. On error we stay in the dashboard
+      // (the pill's inline error remains visible regardless of mode).
+      setAppMode("model");
       setLoading(true);
       try {
         const spec = await repo.fetch(trimmed);
         setSpec(spec);
       } catch (e) {
-        setError(toUserMessage(e));
+        setError(toLoadError(e));
       }
     },
-    [repo, reset, setLoading, setSpec, setError, setView],
+    [repo, reset, setLoading, setSpec, setError, setAppMode],
   );
 
   return { loadModel };

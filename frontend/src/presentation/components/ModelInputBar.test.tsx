@@ -35,14 +35,6 @@ describe("ModelInputBar", () => {
     expect(screen.getByRole("textbox")).toBeDisabled();
   });
 
-  it("renders the error message below the pill when one is set", () => {
-    useArchStore.setState({ error: "Model not found: gpt-99" });
-    render(<ModelInputBar onSubmit={() => {}} />);
-    expect(
-      screen.getByRole("alert").textContent,
-    ).toContain("Model not found: gpt-99");
-  });
-
   it("two-way binds the input to store.modelInput", async () => {
     render(<ModelInputBar onSubmit={() => {}} />);
     const input = screen.getByRole("textbox");

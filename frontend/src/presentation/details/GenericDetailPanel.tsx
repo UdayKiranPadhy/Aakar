@@ -10,6 +10,7 @@
 
 import { Button } from "../components/ui/Button";
 import type { DetailPanelProps } from "./DetailRegistry";
+import { SourceViewer } from "./SourceViewer";
 import {
   formatBytes,
   formatFlops,
@@ -111,6 +112,7 @@ function SourceSection({ node }: { node: DetailPanelProps["node"] }) {
           </>
         )}
       </dl>
+      {node.source_url && <SourceViewer url={node.source_url} />}
     </Section>
   );
 }

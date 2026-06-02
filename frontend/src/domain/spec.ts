@@ -64,4 +64,10 @@ export type Spec = Readonly<{
   position_encoding?: string;
   tied_word_embeddings?: boolean;
   flops_reference?: Readonly<{ batch_size: number; seq_len: number }>;
+  /**
+   * The complete, unfiltered config (`config.to_dict()`). Unlike the curated
+   * `config_summary`, this is NOT key-filtered — the Config Explorer renders
+   * every key generically. May contain nested objects (e.g. `rope_scaling`).
+   */
+  config_full?: Readonly<Record<string, unknown>>;
 }>;

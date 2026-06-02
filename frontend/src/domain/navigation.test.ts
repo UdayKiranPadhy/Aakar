@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   findNodeByPath,
   levelFromExpansion,
+  matchOutline,
   resolveBreadcrumbNodes,
   resolveCurrentView,
 } from "./navigation";
@@ -139,5 +140,45 @@ describe("resolveBreadcrumbNodes", () => {
     const crumbs = resolveBreadcrumbNodes(fakeGraph, ["block_1", "ghost"]);
     expect(crumbs).toHaveLength(1);
     expect(crumbs[0]?.id).toBe("block_1");
+  });
+});
+
+describe("matchOutline", () => {
+  it("returns null for an empty / whitespace query (no filter)", () => {
+    expect(matchOutline(fakeGraph, "")).toBeNull();
+    expect(matchOutline(fakeGraph, "   ")).toBeNull();
+  });
+
+  it("matches a leaf by label and exposes its full ancestor chain", () => {
+    const filter = matchOutline(fakeGraph, "Q proj");
+    expect(filter).not.toBeNull();
+    // The match itself plus every ancestor is visible.
+    expect(filter!.visible).toContain("block_1/block_1.attn/block_1.attn.q");
+    expect(filter!.visible).toContain("block_1/block_1.attn");
+    expect(filter!.visible).toContain("block_1");
+    // Unrelated branches are pruned.
+    expect(filter!.visible).not.toContain("embed");
+    expect(filter!.visible).not.toContain("lm_head");
+  });
+
+  it("auto-expands ancestors of a match but not the leaf match itself", () => {
+    const filter = matchOutline(fakeGraph, "SDPA");
+    expect(filter!.expanded).toContain("block_1");
+    expect(filter!.expanded).toContain("block_1/block_1.attn");
+    // The matched leaf has no descendants to unfold.
+    expect(filter!.expanded).not.toContain(
+      "block_1/block_1.attn/block_1.attn.sdpa",
+    );
+  });
+
+  it("is case-insensitive and matches on module_class too", () => {
+    const byLabel = matchOutline(fakeGraph, "transformer block");
+    expect(byLabel!.visible).toContain("block_1");
+  });
+
+  it("returns empty sets when nothing matches", () => {
+    const filter = matchOutline(fakeGraph, "zzz-no-such-module");
+    expect(filter!.visible.size).toBe(0);
+    expect(filter!.expanded.size).toBe(0);
   });
 });

@@ -1,0 +1,64 @@
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-hairline-strong);
+  background: var(--color-bg);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.chip:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-panel);
+}
+/* Each chip lights up in a different Google colour on hover. */
+.chip:nth-child(4n + 1):hover:not(:disabled) {
+  border-color: var(--g-blue);
+  color: var(--g-blue-strong);
+}
+.chip:nth-child(4n + 2):hover:not(:disabled) {
+  border-color: var(--g-red);
+  color: var(--g-red);
+}
+.chip:nth-child(4n + 3):hover:not(:disabled) {
+  border-color: var(--g-yellow-ink);
+  color: var(--g-yellow-ink);
+}
+.chip:nth-child(4n + 4):hover:not(:disabled) {
+  border-color: var(--g-green);
+  color: var(--g-green);
+}
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.skeleton {
+  width: 132px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}

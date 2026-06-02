@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aakar · Sandboxed introspection of untrusted models (Option B)</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --canvas: #f6f8fa;
+    --panel: #ffffff;
+    --ink: #1f2328;
+    --muted: #57606a;
+    --subtle: #8b949e;
+    --hairline: #e4e7eb;
+    --hairline-strong: #d0d7de;
+    --accent: #1a73e8;
+    --accent-subtle: #e8f0fe;
+    --ok: #1a7f37;
+    --ok-subtle: #e6f4ea;
+    --warn: #9a6700;
+    --warn-subtle: #fff8e1;
+    --danger: #cf222e;
+    --danger-subtle: #ffebe9;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  html[data-theme="dark"] {
+    --bg: #0d1117;
+    --canvas: #161b22;
+    --panel: #161b22;
+    --ink: #e6edf3;
+    --muted: #9aa4af;
+    --subtle: #6e7681;
+    --hairline: #232a33;
+    --hairline-strong: #30363d;
+    --accent: #4493f8;
+    --accent-subtle: #112036;
+    --ok: #3fb950;
+    --ok-subtle: #11261a;
+    --warn: #d29922;
+    --warn-subtle: #2a2310;
+    --danger: #f85149;
+    --danger-subtle: #2c1416;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* Header */
+  header.top {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: saturate(150%) blur(8px);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .top-inner {
+    max-width: 1000px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .brand { font-weight: 700; letter-spacing: -.01em; font-size: 16px; }
+  .brand .dot { color: var(--accent); }
+  .top-spacer { flex: 1; }
+  .toggle {
+    appearance: none; border: 1px solid var(--hairline-strong);
+    background: var(--panel); color: var(--ink); cursor: pointer;
+    font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: border-color .15s, background .15s;
+  }
+  .toggle:hover { border-color: var(--accent); }
+
+  /* Hero */
+  .hero { padding: 56px 0 28px; border-bottom: 1px solid var(--hairline); }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); font-weight: 650; margin: 0 0 12px;
+  }
+  h1 { font-size: 34px; line-height: 1.15; letter-spacing: -.02em; margin: 0 0 14px; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 70ch; margin: 0; }
+
+  h2 {
+    font-size: 22px; letter-spacing: -.01em; margin: 52px 0 6px;
+    padding-top: 12px;
+  }
+  h2 .num {
+    font: 600 13px/1 var(--mono); color: var(--accent);
+    background: var(--accent-subtle); padding: 4px 8px; border-radius: 6px;
+    margin-right: 10px; vertical-align: middle;
+  }
+  h3 { font-size: 16px; margin: 26px 0 8px; }
+  p { margin: 10px 0; }
+  a { color: var(--accent); }
+  code {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--canvas); border: 1px solid var(--hairline);
+    padding: 1px 6px; border-radius: 5px; white-space: nowrap;
+  }
+  .section-sub { color: var(--muted); margin-top: 2px; }
+
+  /* Callout */
+  .callout {
+    border: 1px solid var(--hairline-strong); border-left: 4px solid var(--accent);
+    background: var(--canvas); border-radius: 10px; padding: 18px 20px; margin: 22px 0;
+  }
+  .callout.principle { border-left-color: var(--accent); }
+  .callout h3 { margin: 0 0 6px; }
+  .callout.danger { border-left-color: var(--danger); background: var(--danger-subtle); }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-subtle); }
+
+  /* Flow diagram */
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 24px 0; }
+  .phase {
+    border: 1px solid var(--hairline-strong); border-radius: 12px;
+    padding: 16px 18px; background: var(--panel); box-shadow: var(--shadow);
+  }
+  .phase.trusted { border-left: 5px solid var(--ok); }
+  .phase.untrusted { border-left: 5px solid var(--danger); }
+  .phase-tag {
+    display: inline-flex; align-items: center; gap: 7px;
+    font: 650 11px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .phase.trusted .phase-tag { color: var(--ok); background: var(--ok-subtle); }
+  .phase.untrusted .phase-tag { color: var(--danger); background: var(--danger-subtle); }
+  .phase b { font-weight: 650; }
+  .phase ul { margin: 8px 0 0; padding-left: 18px; }
+  .phase li { margin: 4px 0; color: var(--muted); }
+  .phase li b { color: var(--ink); font-weight: 600; }
+  .arrow {
+    align-self: center; color: var(--subtle); font-size: 22px; line-height: 1;
+    padding: 8px 0;
+  }
+  .pill {
+    display: inline-block; font: 600 11px/1.4 var(--mono);
+    background: var(--accent-subtle); color: var(--accent);
+    padding: 2px 7px; border-radius: 5px;
+  }
+
+  /* Component map */
+  .map { display: grid; gap: 10px; margin: 22px 0; }
+  .layer-label {
+    font: 650 11px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase;
+    color: var(--subtle); margin: 14px 0 2px;
+  }
+  .node {
+    border: 1px solid var(--hairline-strong); border-radius: 10px;
+    padding: 12px 14px; background: var(--panel);
+  }
+  .node .t { font-weight: 650; }
+  .node .d { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  .node.accent { border-color: var(--accent); background: var(--accent-subtle); }
+  .node.danger { border-left: 4px solid var(--danger); }
+  .node.ok { border-left: 4px solid var(--ok); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 720px) { .row2 { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  .tablecard { border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden; margin: 20px 0; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  th { background: var(--canvas); font-weight: 650; font-size: 12.5px; letter-spacing: .02em; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { white-space: normal; }
+  .tag { display: inline-block; font: 600 11px/1 var(--sans); padding: 3px 8px; border-radius: 999px; }
+  .tag.ok { color: var(--ok); background: var(--ok-subtle); }
+  .tag.warn { color: var(--warn); background: var(--warn-subtle); }
+  .tag.danger { color: var(--danger); background: var(--danger-subtle); }
+  .tag.muted { color: var(--muted); background: var(--canvas); }
+
+  /* Code block */
+  pre {
+    background: var(--canvas); border: 1px solid var(--hairline);
+    border-radius: 10px; padding: 14px 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: 12.8px; line-height: 1.55; margin: 16px 0;
+  }
+  pre .c { color: var(--subtle); }
+  pre .k { color: var(--accent); }
+
+  /* Checklist */
+  .phases { display: grid; gap: 12px; margin: 20px 0; counter-reset: ph; }
+  .pstep { display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--hairline); border-radius: 12px; padding: 14px 16px; background: var(--panel); }
+  .pstep .n {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 999px;
+    background: var(--accent-subtle); color: var(--accent);
+    display: grid; place-items: center; font: 700 13px/1 var(--mono);
+  }
+  .pstep .t { font-weight: 650; }
+  .pstep .d { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+
+  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--hairline); color: var(--subtle); font-size: 13px; }
+  .kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--hairline-strong); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <span class="brand">Aakar<span class="dot">.</span></span>
+    <span style="color:var(--muted);font-size:13.5px;">Sandboxed introspection — design</span>
+    <span class="top-spacer"></span>
+    <button class="toggle" id="themeToggle" aria-label="Toggle theme">
+      <span id="themeIcon">🌙</span><span id="themeLabel">Dark</span>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Option B · Safe path for <code>trust_remote_code</code> models</p>
+    <h1>Introspect untrusted models without exposing the backend to RCE</h1>
+    <p class="lede">
+      Custom-architecture repos (e.g. <code>nvidia/LocateAnything-3B</code>) ship Python that must execute to
+      build the module tree. Rather than run that code in the API process, we run it in a disposable,
+      capability-stripped, <em>offline</em> sandbox — and keep the trusted parts (downloading, parsing,
+      caching) where they belong. Default <strong>off</strong>; opt-in per deployment.
+    </p>
+  </section>
+
+  <div class="callout principle">
+    <h3>The one idea that makes this safe</h3>
+    <p style="margin:0;">
+      <strong>Separate <em>fetching</em> from <em>executing.</em></strong> Downloading a repo's files runs
+      no code, so it can have network. Executing the model code can run anything, so it gets
+      <em>no network at all.</em> Untrusted code never touches secrets, the host filesystem, or the
+      network — only a read-only snapshot and the meta device. The only thing that crosses back is a
+      validated <code>Spec</code> JSON.
+    </p>
+  </div>
+
+  <h2><span class="num">01</span>What we're defending against</h2>
+  <p class="section-sub">Model ids are user-supplied, so any visitor can pick which repo's code runs. The threat model is hostile.</p>
+  <div class="tablecard">
+    <table>
+      <thead><tr><th style="width:34%">Threat</th><th>Concretely</th><th style="width:26%">Neutralised by</th></tr></thead>
+      <tbody>
+        <tr><td><b>Exfiltration</b></td><td>Custom code reads env/secrets and POSTs them out</td><td><span class="tag ok">no network</span> + scrubbed env</td></tr>
+        <tr><td><b>Credential theft</b></td><td>Steals the HF token / cloud creds in the API process</td><td>secrets never enter the sandbox</td></tr>
+        <tr><td><b>Host compromise</b></td><td>Reads/writes host files, plants a backdoor</td><td>read-only FS, non-root, dropped caps</td></tr>
+        <tr><td><b>Persistence</b></td><td>Writes a cron/job that survives the request</td><td><code>--rm</code> disposable, <code>noexec</code> tmpfs</td></tr>
+        <tr><td><b>Denial of service</b></td><td>Fork bomb, infinite loop, OOM, fills disk</td><td>cpu/mem/pids/file ulimits + wall-clock kill</td></tr>
+        <tr><td><b>Kernel / escape</b></td><td>Syscall exploit to break out of the container</td><td>seccomp default, optionally gVisor / microVM</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span class="num">02</span>The two-phase flow</h2>
+  <p class="section-sub">Phase 1 is trusted and online but runs no repo code. Phase 2 runs repo code but is fully offline and sandboxed.</p>
+
+  <div class="flow">
+    <div class="phase trusted">
+      <span class="phase-tag">● Phase 1 · Trusted · network ON · no code exec</span>
+      <div><b>Snapshot fetch</b> — pull only what introspection needs, into an ephemeral dir.</div>
+      <ul>
+        <li><code>huggingface_hub.snapshot_download(repo_id, allow_patterns=["*.json","*.py"])</code> — config + modeling source, <b>no weights</b> (meta device needs none).</li>
+        <li>Runs in the API process: downloading files <b>executes nothing</b>, so it's safe here.</li>
+        <li>Handles auth/gating/not-found with the existing typed errors. <b>No token is passed downstream.</b></li>
+      </ul>
+    </div>
+
+    <div class="arrow">↓ &nbsp;hand off a read-only directory path</div>
+
+    <div class="phase untrusted">
+      <span class="phase-tag">● Phase 2 · Untrusted · network OFF · code executes</span>
+      <div><b>Sandboxed build &amp; walk</b> — the only place repo code runs.</div>
+      <ul>
+        <li>Disposable container, <b><code>--network none</code></b>, <code>HF_HUB_OFFLINE=1</code>, pointed at the snapshot.</li>
+        <li>Worker does <code>AutoModel.from_config(cfg, trust_remote_code=True)</code> under <code>init_empty_weights()</code> → walks the <code>nn.Module</code> tree → builds the <code>Spec</code>.</li>
+        <li>Emits <span class="pill">Spec JSON</span> on stdout, or a structured error + non-zero exit. Nothing else can leave.</li>
+      </ul>
+    </div>
+
+    <div class="arrow">↓ &nbsp;stdout (bounded, validated)</div>
+
+    <div class="phase trusted">
+      <span class="phase-tag">● Back in the API · Trusted</span>
+      <div><b>Validate, cache, return.</b></div>
+      <ul>
+        <li>Re-parse stdout through Pydantic <code>Spec</code> (untrusted output is still untrusted — validate it).</li>
+        <li>Store in the existing <code>DiskSpecCache</code> keyed by <code>(model_id, config_hash)</code> — the costly run happens once.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p style="margin:0;">Why no weights? Aakar already builds on the <b>meta device</b> (<code>init_empty_weights()</code>), so it never needs the multi-GB weight files — Phase 1 downloads only <code>*.json</code> + <code>*.py</code> (kilobytes). This keeps the sandbox tiny and the fetch fast.</p>
+  </div>
+
+  <h2><span class="num">03</span>Isolation knobs</h2>
+  <p class="section-sub">Defense in depth — each control closes one escape route. A bare subprocess has none of these.</p>
+  <div class="tablecard">
+    <table>
+      <thead><tr><th style="width:20%">Control</th><th style="width:46%">Setting</th><th>Stops</th></tr></thead>
+      <tbody>
+        <tr><td><b>Network</b></td><td><code>--network none</code> (phase 2) + <code>HF_HUB_OFFLINE=1</code></td><td>exfiltration, lateral movement, drive-by fetch</td></tr>
+        <tr><td><b>Filesystem</b></td><td><code>--read-only</code>, <code>--tmpfs /tmp:rw,noexec,size=512m</code>, snapshot mounted <code>:ro</code></td><td>persistence, dropping executables, host writes</td></tr>
+        <tr><td><b>Privileges</b></td><td><code>--user 65534:65534</code>, <code>--cap-drop ALL</code>, <code>--security-opt no-new-privileges</code></td><td>privilege escalation, capability abuse</td></tr>
+        <tr><td><b>Resources</b></td><td><code>--memory 2g --cpus 1.5 --pids-limit 128</code>, <code>RLIMIT_*</code>, orchestrator wall-clock kill</td><td>OOM, fork bombs, hangs, disk fill</td></tr>
+        <tr><td><b>Secrets</b></td><td>empty env allowlist; no token, no volumes except the ro snapshot</td><td>credential theft</td></tr>
+        <tr><td><b>Syscalls</b></td><td>seccomp default profile; <span class="tag muted">optional</span> <code>--runtime=runsc</code> (gVisor)</td><td>kernel exploits / container escape</td></tr>
+        <tr><td><b>Accelerators</b></td><td>no GPU device exposed (CPU-only — matches the pinned CPU torch)</td><td>driver attack surface</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Choosing the isolation tier</h3>
+  <div class="tablecard">
+    <table>
+      <thead><tr><th>Mechanism</th><th>Isolation</th><th>Startup</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Bare subprocess + rlimits + scrubbed env</td><td><span class="tag danger">weak</span> shared kernel/fs/net</td><td>instant</td><td>Not sufficient on its own</td></tr>
+        <tr><td><code>bubblewrap</code>/<code>nsjail</code> (namespaces + seccomp)</td><td><span class="tag warn">medium–strong</span></td><td>fast</td><td>Good if no container runtime available</td></tr>
+        <tr><td>OCI container (Docker/Podman), hardened flags</td><td><span class="tag ok">strong</span></td><td>seconds</td><td><b>Recommended baseline</b></td></tr>
+        <tr><td>gVisor <code>runsc</code> / Kata / Firecracker µVM</td><td><span class="tag ok">very strong</span></td><td>seconds+</td><td>For hostile / multi-tenant prod</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span class="num">04</span>How it fits Aakar's layers</h2>
+  <p class="section-sub">No per-family adapters, no new boundary. We add another <code>Introspector</code> implementation and a fallback decorator — the existing Protocol/Repository patterns absorb it cleanly.</p>
+
+  <div class="map">
+    <div class="layer-label">API / Application — unchanged</div>
+    <div class="node"><div class="t">routes → ArchitectureService → <code>Introspector</code> (Protocol)</div><div class="d">The service still asks "give me a Spec for this model_id." It has no idea a sandbox exists.</div></div>
+
+    <div class="layer-label">Infrastructure — composition root picks the implementation</div>
+    <div class="node accent"><div class="t">FallbackIntrospector <span style="font-weight:400;color:var(--muted)">(Decorator / Chain of Responsibility)</span></div><div class="d">Try the fast in-process path; only if it raises <code>UnsupportedArchitecture</code> <em>because of remote code</em> — and <code>AAKAR_ALLOW_REMOTE_CODE</code> is set — fall through to the sandbox.</div></div>
+    <div class="row2">
+      <div class="node ok"><div class="t">TransformersIntrospector <span class="pill">primary</span></div><div class="d">Existing, in-process, <code>trust_remote_code=False</code>. Handles ~99% of models. Unchanged.</div></div>
+      <div class="node danger"><div class="t">SandboxedIntrospector <span class="pill">fallback</span></div><div class="d">Orchestrates: <b>HubSnapshotFetcher</b> (trusted) → <b>SandboxRunner</b> (spawns the container) → parse &amp; validate Spec.</div></div>
+    </div>
+
+    <div class="layer-label">Sandbox boundary — disposable worker image</div>
+    <div class="node danger"><div class="t">aakar-introspect-worker (container)</div><div class="d">Reuses the <em>same</em> tree-walk + Spec-builder code as the in-process path, imported as a shared module. Runs it with <code>trust_remote_code=True</code>, offline, then prints Spec JSON. This is the only process that ever executes repo code.</div></div>
+
+    <div class="layer-label">Cross-cutting</div>
+    <div class="node"><div class="t">DiskSpecCache</div><div class="d">A Spec is just JSON regardless of how it was produced — cache the sandbox result like any other, so repeats skip the sandbox entirely.</div></div>
+  </div>
+
+  <div class="callout">
+    <p style="margin:0;">This honours CLAUDE.md's rule that <em>"the introspector is the only place that turns a model id into a Spec"</em> — <code>SandboxedIntrospector</code> is just another implementation of the same Protocol, not a per-architecture branch.</p>
+  </div>
+
+  <h2><span class="num">05</span>The worker contract</h2>
+  <p class="section-sub">A dead-simple, one-shot process boundary: id in, Spec (or error) out. Easy to fake in unit tests.</p>
+
+<pre><span class="c"># orchestrator side (trusted) — pseudocode</span>
+snapshot = hub.snapshot_download(model_id, allow_patterns=[<span class="k">"*.json"</span>, <span class="k">"*.py"</span>])
+proc = run_sandbox(
+    image=<span class="k">"aakar-introspect-worker"</span>,
+    mounts={snapshot: <span class="k">"/snapshot:ro"</span>},
+    argv=[<span class="k">"--model-id"</span>, model_id, <span class="k">"--snapshot"</span>, <span class="k">"/snapshot"</span>],
+    network=<span class="k">"none"</span>, read_only=<span class="k">True</span>, cap_drop=<span class="k">"ALL"</span>,
+    user=<span class="k">"65534:65534"</span>, memory=<span class="k">"2g"</span>, cpus=<span class="k">1.5</span>,
+    pids_limit=<span class="k">128</span>, timeout_s=<span class="k">45</span>,
+)
+spec = Spec.model_validate_json(proc.stdout)   <span class="c"># validate untrusted output</span>
+cache.put(model_id, config_hash, spec)</pre>
+
+  <div class="tablecard">
+    <table>
+      <thead><tr><th style="width:38%">Sandbox outcome</th><th>Domain mapping</th><th style="width:14%">HTTP</th></tr></thead>
+      <tbody>
+        <tr><td>Spec JSON on stdout, exit 0</td><td><span class="tag ok">success</span></td><td>200</td></tr>
+        <tr><td>Wall-clock timeout (killed)</td><td><code>IntrospectionTimeout</code></td><td>504</td></tr>
+        <tr><td>Non-zero exit / crash / bad JSON</td><td><code>IntrospectionFailed</code></td><td>502</td></tr>
+        <tr><td>Output exceeds size cap</td><td><code>IntrospectionFailed</code></td><td>502</td></tr>
+        <tr><td>Runtime missing, or flag not set</td><td><code>UnsupportedArchitecture</code> (today's behaviour)</td><td>422</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span class="num">06</span>Rollout — incremental, low-risk</h2>
+  <div class="phases">
+    <div class="pstep"><div class="n">1</div><div><div class="t">Extract a worker entrypoint</div><div class="d">Pull the tree-walk + Spec-builder into a module callable as <code>python -m aakar_api.worker</code>. Pure refactor — zero behaviour change for the in-process path; covered by existing tests.</div></div></div>
+    <div class="pstep"><div class="n">2</div><div><div class="t">Build the hardened worker image</div><div class="d">Multi-stage Dockerfile (CPU torch + transformers + the worker). Non-root user, minimal base. Reuses the pinned-deps discipline already in the repo.</div></div></div>
+    <div class="pstep"><div class="n">3</div><div><div class="t">Implement SandboxedIntrospector + HubSnapshotFetcher</div><div class="d">Snapshot fetch (allowlisted patterns) → spawn the container with the hardening flags → validate stdout. Gated behind <code>AAKAR_ALLOW_REMOTE_CODE</code>, default off.</div></div></div>
+    <div class="pstep"><div class="n">4</div><div><div class="t">Wire the fallback + cache + errors</div><div class="d">Compose <code>FallbackIntrospector</code> in <code>main.py</code>; add <code>IntrospectionFailed/Timeout</code> domain errors + handlers; cache results. Unit tests inject a fake SandboxRunner (no Docker); one integration test (marked, opt-in) runs a real custom-code model.</div></div></div>
+  </div>
+
+  <h2><span class="num">07</span>Residual risks &amp; honest caveats</h2>
+  <div class="callout warn">
+    <ul style="margin:4px 0 0;padding-left:20px;">
+      <li><b>It may still not render.</b> Custom <code>__init__</code>s sometimes allocate real tensors or call <code>.cuda()</code> instead of honouring the meta device, or import packages not in the image. Those just fail safely inside the sandbox → surfaced as <code>IntrospectionFailed</code>. That's fine — we degrade, we don't crash.</li>
+      <li><b>Gated / private models won't load.</b> By design the sandbox has no token, so it can't auth. We never hand credentials to untrusted code — gating stays a Phase-1 (trusted) decision.</li>
+      <li><b>Cold-start latency.</b> First run pays container + torch-import cost (a few seconds). The Spec cache makes every repeat instant; custom-code models are the minority. A warm worker pool is a later optimisation, not a requirement.</li>
+      <li><b>The sandbox's output is still untrusted.</b> We re-validate stdout through Pydantic and bound its size — a compromised worker can't smuggle a malformed Spec into the app.</li>
+    </ul>
+  </div>
+
+  <div class="callout danger">
+    <p style="margin:0;"><b>Until B ships, revert the flag.</b> <code>config_loader.py:23</code> currently has <code>trust_remote_code=True</code> in-process — that already executes repo config code in the API process (the unsafe path). It should go back to <code>False</code>; the sandbox becomes the <em>only</em> route that runs remote code.</p>
+  </div>
+
+  <footer>
+    Aakar · Option B design — sandboxed introspection. Self-contained; toggle theme with the button above.
+    Default posture stays "refuse"; the sandbox is opt-in via <code>AAKAR_ALLOW_REMOTE_CODE</code>.
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var key = "aakar-sandbox-theme";
+    var saved = null;
+    try { saved = localStorage.getItem(key); } catch (e) {}
+    var initial = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    apply(initial);
+    document.getElementById("themeToggle").addEventListener("click", function () {
+      apply(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+    });
+    function apply(theme) {
+      root.setAttribute("data-theme", theme);
+      try { localStorage.setItem(key, theme); } catch (e) {}
+      var dark = theme === "dark";
+      document.getElementById("themeIcon").textContent = dark ? "☀️" : "🌙";
+      document.getElementById("themeLabel").textContent = dark ? "Light" : "Dark";
+    }
+  })();
+</script>
+</body>
+</html>

@@ -23,6 +23,7 @@ type Spec = {
   position_encoding?: string; // "rope" | "alibi" | "learned" | "sinusoidal"
   tied_word_embeddings?: boolean; // checked on the meta-instantiated model
   flops_reference?: { batch_size: number; seq_len: number }; // assumed dims for Node.flops
+  config_full?: Record<string, unknown>; // full config.to_dict() — NOT key-filtered
 };
 
 type Node = {
@@ -82,6 +83,7 @@ type Node = {
 | `position_encoding` | `"rope"` if `config.rope_theta`/`rope_scaling` is set or any submodule class contains `"Rotary"`. `"alibi"` for `*ALiBi*` submodules. `"learned"` if a `wpe` module is present (GPT-2 style). |
 | `tied_word_embeddings` | `model.get_input_embeddings().weight is model.get_output_embeddings().weight` after meta-instantiation. Config flag isn't always honored at runtime. |
 | `flops_reference` | `{batch_size, seq_len}` assumed when computing each `Node.flops`. Defaults to `{1, 2048}`. |
+| `config_full` | The complete `config.to_dict()` — every key, unfiltered (unlike the curated `config_summary`). Backs a generic Config Explorer that must not drop fields as `transformers` evolves. May contain nested sub-configs. Adds ~KB to the cached Spec JSON. |
 
 ### Extra `config_summary` keys
 
@@ -187,6 +189,7 @@ When introspection fails the API returns a JSON body with `kind`:
 | 404  | `model_not_found`            | `RepositoryNotFoundError` / `EntryNotFoundError` from huggingface-hub. |
 | 403  | `model_gated`                | `GatedRepoError` — the model is private. |
 | 422  | `unsupported_architecture`   | `config.architectures[0]` does not resolve to a class in stock `transformers`. |
+| 503  | `hub_unavailable`            | An upstream HTTP dependency (HF Hub, etc.) timed out or returned 5xx. Transient — retryable. Raised by the `/api/model-info`, `/api/model-readme`, `/api/models` routes. |
 
 Body shape:
 ```json

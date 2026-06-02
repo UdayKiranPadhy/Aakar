@@ -111,6 +111,45 @@ describe("HttpArchitectureRepository.fetch", () => {
     });
   });
 
+  it("discriminates on HTTP status even when the body has no `kind`", async () => {
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(
+        JSON.stringify({ message: "gone", model_id: "ghost/m" }), // no kind
+        { status: 404 },
+      ),
+    );
+    const repo = new HttpArchitectureRepository("http://localhost:8000");
+    await expect(repo.fetch("ghost/m")).rejects.toMatchObject({
+      name: "ModelNotFoundError",
+      status: 404,
+      modelId: "ghost/m",
+    });
+  });
+
+  it("carries model_id on a generic 5xx ApiError (e.g. 503)", async () => {
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(
+        JSON.stringify({ kind: "hub_unavailable", message: "down", model_id: "org/m" }),
+        { status: 503 },
+      ),
+    );
+    const repo = new HttpArchitectureRepository("http://localhost:8000");
+    const err = (await repo.fetch("org/m").catch((e) => e)) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(503);
+    expect(err.modelId).toBe("org/m");
+  });
+
+  it("maps a 400 to a generic ApiError (bad request)", async () => {
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(JSON.stringify({ kind: "bad_request", message: "invalid" }), { status: 400 }),
+    );
+    const repo = new HttpArchitectureRepository("http://localhost:8000");
+    const err = (await repo.fetch("bad id").catch((e) => e)) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(400);
+  });
+
   it("returns generic ApiError when the body has no error code", async () => {
     (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       new Response("Internal Server Error", { status: 500 }),

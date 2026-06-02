@@ -40,14 +40,14 @@ describe("useArchitecture.loadModel", () => {
     expect(repo.fetch).not.toHaveBeenCalled();
   });
 
-  it("switches the view to visualizer before fetching", async () => {
+  it("switches to the model dashboard before fetching", async () => {
     const repo = fakeRepo(sampleSpec);
-    useArchStore.setState({ view: "home" });
+    useArchStore.setState({ appMode: "home" });
     const { result } = renderHook(() => useArchitecture(repo));
     await act(async () => {
       await result.current.loadModel("gpt2");
     });
-    expect(useArchStore.getState().view).toBe("visualizer");
+    expect(useArchStore.getState().appMode).toBe("model");
   });
 
   it("stores the spec on success and clears loading", async () => {
@@ -71,25 +71,29 @@ describe("useArchitecture.loadModel", () => {
     expect(repo.fetch).toHaveBeenCalledWith("gpt2");
   });
 
-  it("translates ModelNotFoundError into a user-facing message", async () => {
+  it("maps ModelNotFoundError to a not_found load error carrying the id", async () => {
     const repo = fakeRepo(new ModelNotFoundError("gpt-99", "not found"));
     const { result } = renderHook(() => useArchitecture(repo));
     await act(async () => {
       await result.current.loadModel("gpt-99");
     });
-    expect(useArchStore.getState().error).toContain("gpt-99");
+    const err = useArchStore.getState().error;
+    expect(err?.kind).toBe("not_found");
+    expect(err?.modelId).toBe("gpt-99");
   });
 
-  it("translates ModelGatedError into a 'gated or private' message", async () => {
+  it("maps ModelGatedError to a gated load error", async () => {
     const repo = fakeRepo(new ModelGatedError("meta-llama/Llama-3-70B", "gated"));
     const { result } = renderHook(() => useArchitecture(repo));
     await act(async () => {
       await result.current.loadModel("meta-llama/Llama-3-70B");
     });
-    expect(useArchStore.getState().error).toMatch(/gated|private/i);
+    const err = useArchStore.getState().error;
+    expect(err?.kind).toBe("gated");
+    expect(`${err?.title} ${err?.hint}`).toMatch(/gated|private/i);
   });
 
-  it("translates UnsupportedArchitectureError into a custom-code warning", async () => {
+  it("maps UnsupportedArchitectureError, keeping the architecture + a custom-code hint", async () => {
     const repo = fakeRepo(
       new UnsupportedArchitectureError("custom/model", "DeepSeekV3", "unsupported"),
     );
@@ -97,18 +101,21 @@ describe("useArchitecture.loadModel", () => {
     await act(async () => {
       await result.current.loadModel("custom/model");
     });
-    const msg = useArchStore.getState().error ?? "";
-    expect(msg).toMatch(/custom[- ]code/i);
-    expect(msg).toContain("DeepSeekV3");
+    const err = useArchStore.getState().error;
+    expect(err?.kind).toBe("unsupported");
+    expect(err?.architecture).toBe("DeepSeekV3");
+    expect(err?.hint).toMatch(/custom[- ]code|trust_remote_code/i);
   });
 
-  it("translates NetworkError to a 'Network error' message", async () => {
+  it("maps NetworkError to a network load error", async () => {
     const repo = fakeRepo(new NetworkError("Failed to fetch"));
     const { result } = renderHook(() => useArchitecture(repo));
     await act(async () => {
       await result.current.loadModel("gpt2");
     });
-    expect(useArchStore.getState().error).toMatch(/network error/i);
+    const err = useArchStore.getState().error;
+    expect(err?.kind).toBe("network");
+    expect(err?.detail).toMatch(/failed to fetch/i);
   });
 
   it("resets state (selection/expansion/loading) before each fetch", async () => {

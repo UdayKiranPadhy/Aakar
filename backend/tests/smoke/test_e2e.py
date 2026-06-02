@@ -4,7 +4,7 @@ These tests are the canary for dep upgrades. They cover:
   - Multiple architecture families (Llama-style + GPT-2-style) so a change
     that silently breaks one family is caught.
   - The full HTTP stack (route → service → introspector → cache → response).
-  - Both happy and error paths (404, validation 422, unsupported architecture).
+  - Both happy and error paths (404, validation 400, unsupported architecture 422).
   - The cache layer: warm calls should be substantially faster than cold.
 
 Each model used here is tiny (< 5 MB safetensors) and explicitly published by
@@ -18,9 +18,7 @@ from typing import Any
 
 import pytest
 
-from aakar_api.api.dependencies import get_architecture_service
 from aakar_api.domain.exceptions import UnsupportedArchitecture
-from aakar_api.main import app
 
 pytestmark = pytest.mark.smoke
 
@@ -90,10 +88,11 @@ def test_404_model_not_found(smoke_client) -> None:
     assert body["model_id"] == "aakar-tests/this-org-does-not-exist-xyz123"
 
 
-def test_validation_422_invalid_model_id(smoke_client) -> None:
-    """Whitespace + control chars are rejected at the FastAPI layer (Pydantic)."""
+def test_validation_400_invalid_model_id(smoke_client) -> None:
+    """Whitespace + control chars are rejected at the FastAPI layer (Pydantic),
+    remapped from 422 to 400 so 422 stays exclusive to unsupported_architecture."""
     r = smoke_client.get("/api/architecture", params={"model_id": "has spaces"})
-    assert r.status_code == 422
+    assert r.status_code == 400
 
 
 def test_unsupported_architecture_error_path(smoke_client, monkeypatch) -> None:
@@ -136,14 +135,15 @@ def test_warm_call_is_substantially_faster(smoke_client) -> None:
     assert warm <= cold, f"warm ({warm:.3f}s) not faster than cold ({cold:.3f}s)"
 
 
-def test_dependency_override_is_active(smoke_client) -> None:
-    """Guardrail: if `app.dependency_overrides` quietly stopped honoring our
-    fixture, every other smoke test would silently use the *real*
-    lifespan-built cache directory and pollute the dev environment.
-
-    We don't assert on the override outside the fixture (it's cleared on
-    teardown), so check while the fixture is active.
+def test_dependency_override_is_active(smoke_client, tmp_path) -> None:
+    """Guardrail: a real request must populate the per-test tmp cache, proving
+    the DI override reaches the route. If the override silently stopped working,
+    requests would fall through to the real `ArchitectureService` (backed by the
+    shared `_DEFAULT_CACHE_ROOT`) and pollute the dev environment.
     """
-    assert get_architecture_service in app.dependency_overrides, (
-        "smoke fixture isn't wiring its override — tests are touching the real cache"
+    r = smoke_client.get(
+        "/api/architecture",
+        params={"model_id": "hf-internal-testing/tiny-random-LlamaForCausalLM"},
     )
+    assert r.status_code == 200, r.text
+    assert any(tmp_path.iterdir()), "tmp cache empty — DI override isn't reaching the route"

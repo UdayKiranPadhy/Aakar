@@ -1,8 +1,8 @@
 """Integration tests for the /api/architecture route.
 
-Uses FastAPI's TestClient + a fake `ArchitectureService` injected via
-`app.dependency_overrides`. These tests never touch transformers or the
-network — the full HTTP + error-handler flow is what we're exercising.
+Uses FastAPI's TestClient + a fake `ArchitectureService` injected via the Lagom
+container (`deps.override_for_test()`). These tests never touch transformers or
+the network — the full HTTP + error-handler flow is what we're exercising.
 """
 
 from __future__ import annotations
@@ -10,9 +10,11 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from aakar_api.api.dependencies import get_architecture_service
 from aakar_api.application import ArchitectureService
+from aakar_api.di import deps
 from aakar_api.domain.exceptions import (
+    IntrospectionFailed,
+    IntrospectionTimeout,
     ModelGated,
     ModelNotFound,
     UnsupportedArchitecture,
@@ -77,14 +79,10 @@ def client():
         yield c
 
 
-@pytest.fixture(autouse=True)
-def _reset_overrides():
-    yield
-    app.dependency_overrides.clear()
-
-
-def _use_service(service: ArchitectureService) -> None:
-    app.dependency_overrides[get_architecture_service] = lambda: service
+@pytest.fixture
+def overrides():
+    with deps.override_for_test() as container:
+        yield container
 
 
 def test_health(client: TestClient) -> None:
@@ -93,9 +91,11 @@ def test_health(client: TestClient) -> None:
     assert r.json() == {"status": "ok"}
 
 
-def test_architecture_for_llama(client: TestClient) -> None:
+def test_architecture_for_llama(client: TestClient, overrides) -> None:
     spec = _llama_spec("meta-llama/Llama-3-8B")
-    _use_service(FakeArchitectureService(responses={"meta-llama/Llama-3-8B": spec}))
+    overrides[ArchitectureService] = FakeArchitectureService(
+        responses={"meta-llama/Llama-3-8B": spec}
+    )
     r = client.get("/api/architecture", params={"model_id": "meta-llama/Llama-3-8B"})
     assert r.status_code == 200
     body = r.json()
@@ -107,8 +107,8 @@ def test_architecture_for_llama(client: TestClient) -> None:
     assert head["weight_shape"] == [128256, 4096]
 
 
-def test_architecture_404(client: TestClient) -> None:
-    _use_service(FakeArchitectureService())
+def test_architecture_404(client: TestClient, overrides) -> None:
+    overrides[ArchitectureService] = FakeArchitectureService()
     r = client.get("/api/architecture", params={"model_id": "does/not-exist"})
     assert r.status_code == 404
     body = r.json()
@@ -116,9 +116,9 @@ def test_architecture_404(client: TestClient) -> None:
     assert body["model_id"] == "does/not-exist"
 
 
-def test_architecture_403_gated(client: TestClient) -> None:
-    _use_service(
-        FakeArchitectureService(raises={"private/model": ModelGated("private/model")})
+def test_architecture_403_gated(client: TestClient, overrides) -> None:
+    overrides[ArchitectureService] = FakeArchitectureService(
+        raises={"private/model": ModelGated("private/model")}
     )
     r = client.get("/api/architecture", params={"model_id": "private/model"})
     assert r.status_code == 403
@@ -127,11 +127,9 @@ def test_architecture_403_gated(client: TestClient) -> None:
     assert body["model_id"] == "private/model"
 
 
-def test_architecture_422_unsupported_architecture(client: TestClient) -> None:
-    _use_service(
-        FakeArchitectureService(
-            raises={"custom/model": UnsupportedArchitecture("custom/model", "DeepSeekV3")}
-        )
+def test_architecture_422_unsupported_architecture(client: TestClient, overrides) -> None:
+    overrides[ArchitectureService] = FakeArchitectureService(
+        raises={"custom/model": UnsupportedArchitecture("custom/model", "DeepSeekV3")}
     )
     r = client.get("/api/architecture", params={"model_id": "custom/model"})
     assert r.status_code == 422
@@ -140,6 +138,55 @@ def test_architecture_422_unsupported_architecture(client: TestClient) -> None:
     assert body["architecture"] == "DeepSeekV3"
 
 
-def test_architecture_rejects_bad_model_id(client: TestClient) -> None:
+def test_architecture_500_on_unexpected_error_is_cors_friendly(overrides) -> None:
+    # An unexpected (non-domain) exception must surface as a JSON 500 that still
+    # carries CORS headers, so the browser delivers it to JS (not a "failed to
+    # fetch" network error). raise_server_exceptions=False to capture the 500.
+    overrides[ArchitectureService] = FakeArchitectureService(
+        raises={"org/boom": RuntimeError("kaboom")}
+    )
+    with TestClient(app, raise_server_exceptions=False) as c:
+        r = c.get(
+            "/api/architecture",
+            params={"model_id": "org/boom"},
+            headers={"Origin": "http://localhost:5173"},
+        )
+    assert r.status_code == 500
+    body = r.json()
+    assert body["kind"] == "server_error"
+    # The CORS header is the whole point of the fix — without it the browser
+    # hides the 500 from JS.
+    assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+
+def test_architecture_rejects_bad_model_id(client: TestClient, overrides) -> None:
+    overrides[ArchitectureService] = FakeArchitectureService()
     r = client.get("/api/architecture", params={"model_id": "has spaces"})
-    assert r.status_code == 422  # FastAPI/Pydantic validation
+    # Request-validation is remapped to 400 so 422 stays exclusive to
+    # unsupported_architecture (the frontend routes purely on status).
+    assert r.status_code == 400
+    body = r.json()
+    assert body["kind"] == "bad_request"
+
+
+def test_architecture_502_introspection_failed(client: TestClient, overrides) -> None:
+    # Sandboxed build of a remote-code model tried and failed.
+    overrides[ArchitectureService] = FakeArchitectureService(
+        raises={"org/custom": IntrospectionFailed("org/custom", "meta build failed")}
+    )
+    r = client.get("/api/architecture", params={"model_id": "org/custom"})
+    assert r.status_code == 502
+    body = r.json()
+    assert body["kind"] == "introspection_failed"
+    assert body["model_id"] == "org/custom"
+
+
+def test_architecture_504_introspection_timeout(client: TestClient, overrides) -> None:
+    overrides[ArchitectureService] = FakeArchitectureService(
+        raises={"org/slow": IntrospectionTimeout("org/slow", timeout_s=90.0)}
+    )
+    r = client.get("/api/architecture", params={"model_id": "org/slow"})
+    assert r.status_code == 504
+    body = r.json()
+    assert body["kind"] == "introspection_timeout"
+    assert body["model_id"] == "org/slow"

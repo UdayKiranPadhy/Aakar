@@ -1,0 +1,57 @@
+.banner {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-amber-200);
+  border-radius: var(--radius-md);
+  background: var(--color-amber-50);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-amber-900);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 240px;
+}
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.sliderValue {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
+.total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.totalValue {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.totalLabel {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}

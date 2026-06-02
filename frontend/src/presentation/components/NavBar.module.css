@@ -5,10 +5,25 @@
   flex-shrink: 0;
   overflow: visible;
   height: 108px;
-  transition: height var(--duration-base) var(--ease-out);
+  transition: transform var(--duration-base) var(--ease-out);
+  will-change: transform;
 }
-.wrapperCollapsed {
-  height: 44px;
+/* Home view: only the top bar (no tab row), so reserve one row's height. */
+.wrapperSingle {
+  height: 64px;
+}
+/* Home view: float over the scrolling landing page instead of reserving layout
+ * height, so hiding/showing the nav never resizes the scroll-snap container. */
+.wrapperOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+}
+/* Headroom: slid up out of view. */
+.wrapperHidden {
+  transform: translateY(-100%);
 }
 
 .header {
@@ -17,11 +32,12 @@
   z-index: 10;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-hairline);
-  transition: transform var(--duration-base) var(--ease-out);
-  will-change: transform;
 }
-.headerCollapsed {
-  transform: translateY(-64px);
+
+@media (prefers-reduced-motion: reduce) {
+  .wrapper {
+    transition: none;
+  }
 }
 
 /* ── Row 1: brand + search + icons ───────────────────────────────────── */
@@ -51,48 +67,20 @@
   letter-spacing: -0.01em;
 }
 
+/* Equal-width flex spacers on either side keep the search pill centred on the
+ * page; the brand sits at the left edge of the left spacer (and won't squish,
+ * being flex-shrink:0). */
+.side {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+}
+
 .searchSlot {
   display: flex;
-  flex: 1;
+  flex: 0 1 640px;
   justify-content: center;
-}
-
-.actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 4px;
-}
-
-.iconButton {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-pill);
-  color: var(--color-ink-muted);
-  transition: background-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-.iconButton:hover {
-  background: var(--color-canvas);
-  color: var(--color-ink);
-}
-.iconButton:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-accent);
-}
-
-.version {
-  margin-left: 12px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--color-ink-subtle);
-}
-@media (max-width: 639px) {
-  .version {
-    display: none;
-  }
 }
 
 /* ── Row 2: section + quick-model tabs, separated by a hairline ──────── */

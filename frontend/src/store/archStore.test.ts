@@ -23,7 +23,10 @@ describe("archStore", () => {
 
   describe("setSpec", () => {
     it("stores the spec and clears loading + error", () => {
-      useArchStore.setState({ loading: true, error: "previous error" });
+      useArchStore.setState({
+        loading: true,
+        error: { kind: "unknown", title: "Oops", detail: "previous error" },
+      });
       useArchStore.getState().setSpec(fakeSpec);
       const s = useArchStore.getState();
       expect(s.spec).toBe(fakeSpec);
@@ -38,11 +41,16 @@ describe("archStore", () => {
       expect(useArchStore.getState().loading).toBe(true);
     });
 
-    it("setError stores the message and stops loading", () => {
+    it("setError stores the structured error and stops loading", () => {
       useArchStore.setState({ loading: true });
-      useArchStore.getState().setError("oops");
+      useArchStore.getState().setError({
+        kind: "unsupported",
+        title: "Unsupported architecture",
+        detail: "oops",
+      });
       const s = useArchStore.getState();
-      expect(s.error).toBe("oops");
+      expect(s.error?.detail).toBe("oops");
+      expect(s.error?.kind).toBe("unsupported");
       expect(s.loading).toBe(false);
     });
   });
@@ -61,6 +69,12 @@ describe("archStore", () => {
     it("opens the detail panel", () => {
       useArchStore.getState().selectNode("embed");
       expect(useArchStore.getState().detailOpen).toBe(true);
+    });
+
+    it("un-collapses the detail rail so the selection is visible", () => {
+      useArchStore.setState({ detailCollapsed: true });
+      useArchStore.getState().selectNode("embed");
+      expect(useArchStore.getState().detailCollapsed).toBe(false);
     });
   });
 
@@ -166,39 +180,78 @@ describe("archStore", () => {
     });
   });
 
-  describe("closeDetail / setView", () => {
+  describe("closeDetail / setAppMode / setModelView / toggleSidebar", () => {
     it("closeDetail just flips detailOpen to false", () => {
       useArchStore.setState({ detailOpen: true });
       useArchStore.getState().closeDetail();
       expect(useArchStore.getState().detailOpen).toBe(false);
     });
 
-    it("setView switches between home and visualizer", () => {
-      useArchStore.getState().setView("visualizer");
-      expect(useArchStore.getState().view).toBe("visualizer");
-      useArchStore.getState().setView("home");
-      expect(useArchStore.getState().view).toBe("home");
+    it("setAppMode switches the top-level mode", () => {
+      useArchStore.getState().setAppMode("model");
+      expect(useArchStore.getState().appMode).toBe("model");
+      useArchStore.getState().setAppMode("home");
+      expect(useArchStore.getState().appMode).toBe("home");
+    });
+
+    it("setModelView switches the active sidebar view", () => {
+      useArchStore.getState().setModelView("config");
+      expect(useArchStore.getState().modelView).toBe("config");
+    });
+
+    it("toggleSidebar flips collapse, or sets it explicitly", () => {
+      useArchStore.setState({ sidebarCollapsed: false });
+      useArchStore.getState().toggleSidebar();
+      expect(useArchStore.getState().sidebarCollapsed).toBe(true);
+      useArchStore.getState().toggleSidebar(false);
+      expect(useArchStore.getState().sidebarCollapsed).toBe(false);
+    });
+
+    it("setSidebarWidth / setDetailWidth store the rail widths", () => {
+      useArchStore.getState().setSidebarWidth(320);
+      expect(useArchStore.getState().sidebarWidth).toBe(320);
+      useArchStore.getState().setDetailWidth(420);
+      expect(useArchStore.getState().detailWidth).toBe(420);
+    });
+
+    it("toggleDetail flips the detail rail collapse, or sets it explicitly", () => {
+      useArchStore.setState({ detailCollapsed: false });
+      useArchStore.getState().toggleDetail();
+      expect(useArchStore.getState().detailCollapsed).toBe(true);
+      useArchStore.getState().toggleDetail(false);
+      expect(useArchStore.getState().detailCollapsed).toBe(false);
+    });
+
+    it("setCompareSpec stores and clears the second spec", () => {
+      useArchStore.getState().setCompareSpec(fakeSpec);
+      expect(useArchStore.getState().compareSpec).toBe(fakeSpec);
+      useArchStore.getState().setCompareSpec(null);
+      expect(useArchStore.getState().compareSpec).toBeNull();
     });
   });
 
   describe("reset", () => {
-    it("clears spec / paths / selection but preserves modelInput and view", () => {
+    it("clears spec / paths but preserves modelInput, appMode, modelView", () => {
       useArchStore.setState({
         modelInput: "gpt2",
         spec: fakeSpec,
+        compareSpec: fakeSpec,
         expansionPath: ["block_1"],
         selectionPath: ["block_1"],
         level: 2,
         detailOpen: true,
-        view: "visualizer",
+        appMode: "model",
+        modelView: "config",
         loading: true,
-        error: "stale",
+        error: { kind: "unknown", title: "Stale", detail: "stale" },
       });
       useArchStore.getState().reset();
       const s = useArchStore.getState();
       expect(s.modelInput).toBe("gpt2"); // preserved
-      expect(s.view).toBe("visualizer"); // preserved
+      expect(s.appMode).toBe("model"); // preserved
+      expect(s.modelView).toBe("config"); // preserved
       expect(s.spec).toBeNull();
+      expect(s.compareSpec).toBeNull();
       expect(s.expansionPath).toEqual([]);
       expect(s.selectionPath).toEqual([]);
       expect(s.level).toBe(1);

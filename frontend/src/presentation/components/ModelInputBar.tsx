@@ -2,8 +2,8 @@
  * Pill-style search input for pasting a HuggingFace model ID.
  *
  * Submits on Enter; no explicit submit button (Google-News style). Inline
- * spinner on the right while loading; the error string (if any) renders below
- * the pill so it doesn't collide with the centered layout.
+ * spinner on the right while loading. Load failures are surfaced by the
+ * dashboard's full ErrorState (see ModelViewHost), not inline here.
  */
 
 import { type FormEvent } from "react";
@@ -20,7 +20,6 @@ export function ModelInputBar({ onSubmit }: Props) {
   const modelInput = useArchStore((s) => s.modelInput);
   const setModelInput = useArchStore((s) => s.setModelInput);
   const loading = useArchStore((s) => s.loading);
-  const error = useArchStore((s) => s.error);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -53,11 +52,6 @@ export function ModelInputBar({ onSubmit }: Props) {
           </span>
         )}
       </form>
-      {error && (
-        <div role="alert" className={styles.error} title={error}>
-          {error}
-        </div>
-      )}
     </div>
   );
 }

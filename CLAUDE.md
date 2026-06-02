@@ -15,7 +15,7 @@ Level 3: one layer       (input_layernorm, self_attn, mlp, post_attention_layern
 Level 4: inside attention(q_proj, k_proj, v_proj, o_proj, rotary_emb)
 ```
 
-Any architecture supported by stock `transformers` (Llama, Qwen, Mistral, GPT-2, Gemma, Mixtral, …) works automatically — no per-family backend code. Models requiring `trust_remote_code=True` are refused for safety.
+Any architecture supported by stock `transformers` (Llama, Qwen, Mistral, GPT-2, Gemma, Mixtral, …) works automatically — no per-family backend code.
 
 ## ⚠️ This is a study repo — designed to grow
 
@@ -30,7 +30,7 @@ This shapes every design decision in this repo. When working here, your job is t
 | Side       | Stack                                                                                            |
 | ---------- | ------------------------------------------------------------------------------------------------ |
 | Backend    | Python 3.12 · FastAPI 0.115 · Pydantic v2 · transformers 4.46 · torch 2.5 (CPU) · accelerate · uv|
-| Frontend   | Vite 6 · React 18 · TypeScript 5.7 · Tailwind 3 · `@xyflow/react` (React Flow v12) · Zustand 5   |
+| Frontend   | Vite 6 · React 18 · TypeScript 5.7 · CSS Modules + `tokens.css` (Tailwind removed) · `@xyflow/react` (React Flow v12) · Zustand 5 · framer-motion (landing page only) |
 | Container  | Docker Compose for local dev (hot reload) · standalone multi-stage Dockerfiles for prod         |
 | Package mgr| `uv` (backend) · `pnpm@9.15.0` (frontend)                                                        |
 
@@ -183,7 +183,7 @@ docker build --target prod --build-arg VITE_API_URL=https://api.example.com -t a
 - **One file per concept.** New renderers, new layouts, new detail panels each get their own file.
 - **Comments only where the WHY is non-obvious.** Don't restate what the code does.
 - **Frozen domain objects.** `Spec` and `Node` are `frozen=True` Pydantic models / `Readonly<>` TS types. Treat them as immutable; build new instances, don't mutate.
-- **No CSS `@import` after `@tailwind` directives.** PostCSS rejects this; put `@import` first.
+- **Keep `@import` rules first** in `global.css` (before any other rules), per CSS spec.
 - **React Flow `fitView` is initial-mount only.** When the view changes (level 1 → 2 → 3), pass a changing `key` prop so the canvas remounts and refits. See `Canvas.tsx`.
 - **Selection state lives in our Zustand store, not in React Flow.** Don't read React Flow's `selected` prop in renderers — read `data.isSelected` (set by `Canvas.tsx`).
 
@@ -191,11 +191,7 @@ docker build --target prod --build-arg VITE_API_URL=https://api.example.com -t a
 
 - ❌ **Don't merge backend + frontend into a monorepo** (no `apps/api`, `apps/web`, no shared `packages/`). The user explicitly chose top-level `backend/` and `frontend/` because each deploys independently. The Spec is hand-mirrored on purpose.
 - ❌ **Don't add codegen** for the Spec types (Pydantic → TS). Two hand-maintained files in the same commit is the chosen contract.
-- ❌ **Don't enable `trust_remote_code=True`.** Aakar refuses to execute custom Python from arbitrary HF repos on the server. Models that require it should fail with a clear `unsupported_architecture` error.
 - ❌ **Don't add response validation on the frontend.** Trust the backend's Pydantic-validated output; structural TS typing is sufficient.
-- ❌ **Don't reintroduce per-family backend adapters.** The introspector is the only place that turns a model id into a `Spec`. If you want a richer view of *some* architecture, do it on the frontend with a custom renderer keyed by `module_class`.
-- ❌ **Don't commit `node_modules/`, `.venv/`, `dist/`, `__pycache__/`, `backend/.cache/`** — `.gitignore` and `.dockerignore` already cover these.
-- ❌ **Don't add features outside scope** without checking with the user first: no tokenizer view, no model card, no comparison view, no animation, no 3D, no dark mode, no share-by-URL, no auth.
 
 ## Where to look first
 

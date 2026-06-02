@@ -15,8 +15,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from aakar_api.api.dependencies import get_architecture_service
 from aakar_api.application import ArchitectureService
+from aakar_api.di import deps
 from aakar_api.infrastructure import DiskSpecCache, TransformersIntrospector
 from aakar_api.main import app
 
@@ -27,9 +27,7 @@ def smoke_client(tmp_path: Path) -> Iterator[TestClient]:
     introspector = TransformersIntrospector()
     cache = DiskSpecCache(root=tmp_path)
     service = ArchitectureService(introspector, cache)
-    app.dependency_overrides[get_architecture_service] = lambda: service
-    try:
+    with deps.override_for_test() as container:
+        container[ArchitectureService] = service
         with TestClient(app) as client:
             yield client
-    finally:
-        app.dependency_overrides.clear()

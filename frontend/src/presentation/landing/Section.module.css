@@ -1,0 +1,171 @@
+.panel {
+  position: relative;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: clamp(64px, 10vh, 120px) clamp(16px, 4vw, 40px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Full-bleed band tint per section, fading back to white at top + bottom. */
+.band_blue {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-blue-subtle) 55%, var(--color-bg) 100%);
+}
+.band_red {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-red-subtle) 55%, var(--color-bg) 100%);
+}
+.band_yellow {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-yellow-subtle) 55%, var(--color-bg) 100%);
+}
+.band_green {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-green-subtle) 55%, var(--color-bg) 100%);
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: clamp(32px, 6vw, 88px);
+  align-items: center;
+  width: 100%;
+  max-width: 1120px;
+}
+.flip .copy {
+  order: 2;
+}
+.flip .art {
+  order: 1;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.tone_blue {
+  color: var(--g-blue-strong);
+}
+.tone_red {
+  color: var(--g-red);
+}
+.tone_yellow {
+  color: var(--g-yellow-ink);
+}
+.tone_green {
+  color: var(--g-green);
+}
+
+.h2 {
+  margin-top: 14px;
+  font-family: var(--font-sans);
+  font-size: clamp(28px, 4vw, 46px);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  color: var(--color-ink);
+}
+
+.body {
+  margin-top: 18px;
+  max-width: 46ch;
+  font-family: var(--font-sans);
+  font-size: clamp(15px, 1.6vw, 18px);
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+}
+.body code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  color: var(--color-ink-muted);
+}
+
+.art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0; /* let the SVG shrink inside the grid track */
+  /* Fade in when the card scrolls into view (the `.glided` class is toggled by
+   * an IntersectionObserver). Opacity only — no slide. */
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.glided {
+  opacity: 1;
+}
+
+/* Decorative rounded squares drifting behind the diagram card (lens.google
+ * style). Sit below the frame (z-index) and peek out from opposite corners. */
+.shape {
+  position: absolute;
+  z-index: 0;
+  border-radius: 28px;
+  opacity: 0.16;
+  pointer-events: none;
+  will-change: transform;
+}
+.shapeA {
+  width: clamp(92px, 14vw, 168px);
+  aspect-ratio: 1;
+  top: -26px;
+  left: -34px;
+  animation: floatA 7s var(--ease-out) infinite;
+}
+.shapeB {
+  width: clamp(72px, 11vw, 132px);
+  aspect-ratio: 1;
+  right: -30px;
+  bottom: -30px;
+  animation: floatB 9s var(--ease-out) infinite;
+}
+@keyframes floatA {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(3deg);
+  }
+}
+@keyframes floatB {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(12px) rotate(-3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shapeA,
+  .shapeB {
+    animation: none;
+  }
+}
+
+/* Panels fill the scroll container so each snaps as a full screen — only on
+ * larger viewports where the split content fits. On small screens the columns
+ * stack and we fall back to natural height + normal scroll (snap is disabled
+ * on the container at the same breakpoint). */
+@media (min-width: 880px) and (min-height: 680px) {
+  .panel {
+    min-height: 100%;
+  }
+}
+@media (max-width: 880px) {
+  .split {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .flip .copy {
+    order: 1;
+  }
+  .flip .art {
+    order: 2;
+  }
+}

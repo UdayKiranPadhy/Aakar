@@ -8,6 +8,7 @@ import {
 } from "../components/ui/format";
 import { useArchStore } from "../../store/archStore";
 import { BackendFieldsSection } from "./BackendFieldsSection";
+import { SourceViewer } from "./SourceViewer";
 import styles from "./GenericDetailPanel.module.css";
 
 export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
@@ -135,6 +136,13 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
             {node.bias_shape && <Row k="bias" v={formatShape(node.bias_shape) ?? ""} />}
           </dl>
         </section>
+
+        {node.source_url && (
+          <section className={styles.section}>
+            <h3 className={styles.sectionTitle}>Source</h3>
+            <SourceViewer url={node.source_url} />
+          </section>
+        )}
 
         {/* Parameters Section */}
         {node.param_count !== undefined && node.param_count > 0 && (

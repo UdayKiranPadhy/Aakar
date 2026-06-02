@@ -1,0 +1,174 @@
+.hero {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: clamp(48px, 8vh, 96px) clamp(16px, 4vw, 40px);
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.inner {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 600px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+
+.headline {
+  margin: 14px 0 0;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: clamp(38px, 5.6vw, 68px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--color-ink);
+}
+
+.lead {
+  margin: 20px auto 0;
+  max-width: 48ch;
+  font-family: var(--font-sans);
+  font-size: clamp(15px, 1.7vw, 18px);
+  color: var(--color-ink-muted);
+  line-height: 1.6;
+}
+
+.search {
+  margin: 30px auto 0;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* ── Floating corner cards (reused diagrams) ───────────────────────────── */
+.cards {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.card {
+  position: absolute;
+  width: 280px;
+}
+.cardTL {
+  top: 7%;
+  left: 1.5%;
+  width: 280px;
+  animation: floatA 7s var(--ease-out) infinite;
+}
+.cardTR {
+  top: 5%;
+  right: 1.5%;
+  width: 300px;
+  animation: floatB 8.5s var(--ease-out) infinite;
+}
+.cardBL {
+  bottom: 7%;
+  left: 2.5%;
+  width: 300px;
+  animation: floatC 9s var(--ease-out) infinite;
+}
+.cardBR {
+  bottom: 5%;
+  right: 2%;
+  width: 268px;
+  animation: floatD 7.8s var(--ease-out) infinite;
+}
+
+@keyframes floatA {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(1deg);
+  }
+}
+@keyframes floatB {
+  0%,
+  100% {
+    transform: translateY(0) rotate(1.5deg);
+  }
+  50% {
+    transform: translateY(12px) rotate(-1deg);
+  }
+}
+@keyframes floatC {
+  0%,
+  100% {
+    transform: translateY(0) rotate(1deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(-1.5deg);
+  }
+}
+@keyframes floatD {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(14px) rotate(1.5deg);
+  }
+}
+
+/* ── Scroll cue ────────────────────────────────────────────────────────── */
+.cue {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: var(--color-ink-subtle);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.cueArrow {
+  animation: bob 1.8s var(--ease-out) infinite;
+}
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(7px);
+  }
+}
+
+/* Not enough room for the corner cards on smaller screens — show a clean,
+ * centred hero instead. */
+@media (max-width: 1159px) {
+  .cards {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardTL,
+  .cardTR,
+  .cardBL,
+  .cardBR,
+  .cueArrow {
+    animation: none;
+  }
+}

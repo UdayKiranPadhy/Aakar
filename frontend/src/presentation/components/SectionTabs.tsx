@@ -1,9 +1,10 @@
 /**
  * Section tabs — the left half of the nav's second row.
  *
- * Currently has only "Home". Add more entries here (e.g. "Docs", "About") as
- * the app grows; each new section is a `{ id, label }` row + a corresponding
- * branch in App.tsx's main-area renderer.
+ * App-level tabs (cross-model): the loaded **Model** dashboard, **Compare**,
+ * and **Learn**. Each is an `AppMode`; selecting one switches the main area
+ * (see App.tsx). Per-model view switching (Overview / Config / …) lives in the
+ * left ModelSidebar, not here.
  *
  * Mirrors the visual treatment of `QuickModels` (same height, same active
  * underline) so the two strips read as a single tab row.
@@ -11,29 +12,34 @@
 
 import { clsx } from "clsx";
 
-import { useArchStore, type View } from "../../store/archStore";
+import type { AppMode } from "../../domain/navigation";
+import { useArchStore } from "../../store/archStore";
 import styles from "./SectionTabs.module.css";
 
 type Tab = Readonly<{
-  id: View;
+  id: AppMode;
   label: string;
 }>;
 
-const TABS: ReadonlyArray<Tab> = [{ id: "home", label: "Home" }];
+const TABS: ReadonlyArray<Tab> = [
+  { id: "model", label: "Model" },
+  { id: "compare", label: "Compare" },
+  { id: "learn", label: "Learn" },
+];
 
 export function SectionTabs() {
-  const view = useArchStore((s) => s.view);
-  const setView = useArchStore((s) => s.setView);
+  const appMode = useArchStore((s) => s.appMode);
+  const setAppMode = useArchStore((s) => s.setAppMode);
 
   return (
     <nav aria-label="Sections" className={styles.nav}>
       {TABS.map(({ id, label }) => {
-        const isActive = view === id;
+        const isActive = appMode === id;
         return (
           <button
             key={id}
             type="button"
-            onClick={() => setView(id)}
+            onClick={() => setAppMode(id)}
             aria-current={isActive ? "page" : undefined}
             className={clsx(styles.tab, isActive && styles.tabActive)}
           >

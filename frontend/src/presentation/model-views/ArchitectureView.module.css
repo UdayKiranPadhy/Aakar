@@ -1,0 +1,30 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.canvasArea {
+  position: relative;
+  flex: 1;
+  background-color: var(--color-canvas);
+  /* Static dotted grid — lives on the canvas wrapper so it stays at a fixed
+   * scale regardless of React Flow's pan/zoom. */
+  background-image: radial-gradient(
+    circle,
+    var(--color-hairline-strong) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  background-position: 0 0;
+}

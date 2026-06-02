@@ -1,7 +1,9 @@
 .panel {
   display: flex;
   height: 100%;
-  width: 320px;
+  /* Width is owned by the resizable dock (DetailPanel.module.css); the panel
+   * just fills it. */
+  width: 100%;
   flex-direction: column;
   border-left: 1px solid var(--color-hairline);
   background: var(--color-bg);

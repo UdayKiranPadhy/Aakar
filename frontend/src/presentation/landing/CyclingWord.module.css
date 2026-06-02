@@ -1,0 +1,15 @@
+.cycle {
+  position: relative;
+  display: inline-block;
+}
+.ghost {
+  visibility: hidden;
+}
+.word {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  white-space: nowrap;
+}

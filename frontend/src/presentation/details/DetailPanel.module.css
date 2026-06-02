@@ -1,0 +1,83 @@
+/* Resizable / collapsible dock that hosts a registered detail panel.
+ * The inner panel (.panel in GenericDetailPanel.module.css) fills this dock at
+ * width:100%; the dock owns the actual width and the resize / collapse chrome. */
+.dock {
+  position: relative;
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--color-bg);
+  transition: width var(--duration-base) var(--ease-out);
+}
+
+/* Track the pointer 1:1 while dragging (no easing lag on the edge). */
+.resizing {
+  transition: none;
+}
+
+.collapsed {
+  display: flex;
+  width: 40px;
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--space-2);
+  gap: var(--space-3);
+  border-left: 1px solid var(--color-hairline);
+  overflow: hidden;
+}
+
+/* Collapse toggle for the expanded panel — a small chevron button straddling
+ * the left edge, clear of the panel header title (which starts past the 20px
+ * header padding). Sits above the resize handle so it clicks rather than drags. */
+.collapseBtn {
+  position: absolute;
+  top: var(--space-3);
+  left: 0;
+  z-index: 5;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  color: var(--color-ink-muted);
+  font-size: 16px;
+  line-height: 1;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.collapseBtn:hover {
+  color: var(--color-ink);
+  border-color: var(--color-hairline-strong);
+}
+
+/* Expand toggle shown inside the collapsed rail. */
+.railBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-muted);
+  font-size: 16px;
+  line-height: 1;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.railBtn:hover {
+  color: var(--color-ink);
+}
+
+.railLabel {
+  writing-mode: vertical-rl;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+  user-select: none;
+}

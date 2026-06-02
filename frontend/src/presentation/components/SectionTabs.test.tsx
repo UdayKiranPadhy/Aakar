@@ -6,32 +6,29 @@ import { SectionTabs } from "./SectionTabs";
 import { useArchStore } from "../../store/archStore";
 
 describe("SectionTabs", () => {
-  it("renders the Home tab", () => {
+  it("renders the app-level tabs", () => {
     render(<SectionTabs />);
-    expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
+    for (const label of ["Model", "Compare", "Learn"]) {
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+    }
   });
 
-  it("marks Home as the active tab when view === 'home'", () => {
-    useArchStore.setState({ view: "home" });
+  it("marks the tab matching the current appMode as active", () => {
+    useArchStore.setState({ appMode: "model" });
     render(<SectionTabs />);
-    expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Model" })).toHaveAttribute(
       "aria-current",
       "page",
     );
-  });
-
-  it("removes the active marker when view === 'visualizer'", () => {
-    useArchStore.setState({ view: "visualizer" });
-    render(<SectionTabs />);
-    expect(screen.getByRole("button", { name: "Home" })).not.toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Compare" })).not.toHaveAttribute(
       "aria-current",
     );
   });
 
-  it("clicking Home sets view to 'home'", async () => {
-    useArchStore.setState({ view: "visualizer" });
+  it("clicking a tab sets the corresponding appMode", async () => {
+    useArchStore.setState({ appMode: "model" });
     render(<SectionTabs />);
-    await userEvent.click(screen.getByRole("button", { name: "Home" }));
-    expect(useArchStore.getState().view).toBe("home");
+    await userEvent.click(screen.getByRole("button", { name: "Compare" }));
+    expect(useArchStore.getState().appMode).toBe("compare");
   });
 });

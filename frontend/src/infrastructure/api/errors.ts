@@ -1,8 +1,11 @@
 /**
  * Typed error hierarchy mirroring the backend's domain exceptions.
  *
- * The HTTP repository converts response bodies into these so callers can
- * branch on subclass (and not on numeric status codes).
+ * The discriminator is the **HTTP status code** — the backend's contract — not
+ * a string in the body. `fromResponse` switches on `res.status`; the body only
+ * supplies data (message / model_id / architecture). Status codes are kept
+ * unambiguous on the backend (request-validation is 400, so 422 means exactly
+ * "unsupported architecture").
  */
 
 export class ApiError extends Error {
@@ -11,6 +14,8 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly modelId?: string,
+    public readonly architecture?: string | null,
   ) {
     super(message);
   }
@@ -20,56 +25,47 @@ export class ApiError extends Error {
     try {
       body = (await res.json()) as ApiErrorBody;
     } catch {
-      // Non-JSON body — fall through.
+      // Non-JSON body — fall through with status + statusText.
     }
 
     const message = body?.message ?? (res.statusText || `HTTP ${res.status}`);
+    const modelId = body?.model_id || undefined;
+    const architecture = body?.architecture ?? null;
 
-    switch (body?.kind) {
-      case "model_not_found":
-        return new ModelNotFoundError(body.model_id ?? "", message);
-      case "model_gated":
-        return new ModelGatedError(body.model_id ?? "", message);
-      case "unsupported_architecture":
-        return new UnsupportedArchitectureError(
-          body.model_id ?? "",
-          body.architecture ?? null,
-          message,
-        );
+    switch (res.status) {
+      case 403:
+        return new ModelGatedError(modelId ?? "", message);
+      case 404:
+        return new ModelNotFoundError(modelId ?? "", message);
+      case 422:
+        return new UnsupportedArchitectureError(modelId ?? "", architecture, message);
       default:
-        return new ApiError(res.status, message);
+        // 400 (bad request), 5xx (introspection failed/timeout, hub unavailable),
+        // and anything else are carried as a generic ApiError; the application
+        // layer maps the remaining statuses to a user-facing error.
+        return new ApiError(res.status, message, modelId, architecture);
     }
   }
 }
 
 export class ModelNotFoundError extends ApiError {
   override name = "ModelNotFoundError";
-  constructor(
-    public readonly modelId: string,
-    message: string,
-  ) {
-    super(404, message);
+  constructor(modelId: string, message: string) {
+    super(404, message, modelId);
   }
 }
 
 export class ModelGatedError extends ApiError {
   override name = "ModelGatedError";
-  constructor(
-    public readonly modelId: string,
-    message: string,
-  ) {
-    super(403, message);
+  constructor(modelId: string, message: string) {
+    super(403, message, modelId);
   }
 }
 
 export class UnsupportedArchitectureError extends ApiError {
   override name = "UnsupportedArchitectureError";
-  constructor(
-    public readonly modelId: string,
-    public readonly architecture: string | null,
-    message: string,
-  ) {
-    super(422, message);
+  constructor(modelId: string, architecture: string | null, message: string) {
+    super(422, message, modelId, architecture);
   }
 }
 
@@ -81,6 +77,7 @@ export class NetworkError extends ApiError {
 }
 
 type ApiErrorBody = {
+  /** Informational only — the frontend discriminates on the HTTP status. */
   kind?: string;
   message?: string;
   model_id?: string;

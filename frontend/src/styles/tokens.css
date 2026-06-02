@@ -1,6 +1,5 @@
 /* Design tokens — referenced by every *.module.css file. CSS variables are
- * the single source of truth for design values (previously duplicated in
- * tailwind.config.ts; that file is gone). When updating, check both color
+ * the single source of truth for design values. When updating, check both color
  * palettes (light + any future dark) live here. */
 
 :root {
@@ -8,6 +7,23 @@
   --color-accent: #1a73e8;
   --color-accent-hover: #1765c8;
   --color-accent-subtle: #e8f0fe;
+
+  /* ── Google brand palette (full four colour) ────────────────────────── */
+  /* Promoted to first-class tokens for the marketing landing page, which
+   * leans into all four colours. The rest of the app still uses --color-accent
+   * (== --g-blue-strong). `--g-yellow-ink` is a darker yellow that meets
+   * contrast on white (plain --g-yellow is too light for text/icons). */
+  --g-blue: #4285f4;
+  --g-blue-strong: #1a73e8;
+  --g-red: #ea4335;
+  --g-yellow: #fbbc05;
+  --g-yellow-ink: #f9ab00;
+  --g-green: #34a853;
+
+  --g-blue-subtle: #e8f0fe;
+  --g-red-subtle: #fce8e6;
+  --g-yellow-subtle: #fef7e0;
+  --g-green-subtle: #e6f4ea;
 
   /* ── Ink (text colours — strong → subtle) ──────────────────────────── */
   /* Bumped one notch darker across the board from the original Google AI
@@ -68,4 +84,11 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* ── Scroll-reveal motion (landing page) ───────────────────────────── */
+  --reveal-distance: 26px;
+  --reveal-duration: 0.62s;
+  --reveal-duration-slow: 1.05s; /* SVG line-draw */
+  --reveal-stagger: 0.07s;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }

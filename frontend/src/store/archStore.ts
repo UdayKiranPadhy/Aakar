@@ -4,60 +4,83 @@
  * Holds state and exposes thin setters. Business logic (fetching, deriving
  * the selected node, deciding when to reset) lives in the `application/*`
  * hooks, not here. Keeping the store dumb makes it trivial to swap or mock.
+ *
+ * Navigation has two orthogonal axes:
+ *   - `appMode`   — the second-row tabs (home / model / compare / learn)
+ *   - `modelView` — within a loaded model, which sidebar view is active
  */
 
 import { create } from "zustand";
 
+import type { LoadError } from "../application/loadError";
 import {
+  type AppMode,
   type ExpansionPath,
   type Level,
+  type ModelView,
   type SelectionPath,
   levelFromExpansion,
 } from "../domain/navigation";
 import type { Spec } from "../domain/spec";
 
-// Top-level page the user is currently viewing. Drives whether the main area
-// shows the static HomeView or the architecture Canvas. Loading a model auto-
-// switches to "visualizer"; clicking the Home tab switches back without
-// discarding the loaded spec.
-export type View = "home" | "visualizer";
-
 type State = {
   modelInput: string;
   spec: Spec | null;
+  /** Second model for the Compare view; null otherwise. */
+  compareSpec: Spec | null;
   loading: boolean;
-  error: string | null;
+  error: LoadError | null;
   selectionPath: SelectionPath;
   expansionPath: ExpansionPath;
   level: Level;
   detailOpen: boolean;
-  view: View;
+  appMode: AppMode;
+  modelView: ModelView;
+  sidebarCollapsed: boolean;
+  /** Pixel widths of the resizable left/right rails (ignored while collapsed). */
+  sidebarWidth: number;
+  detailWidth: number;
+  /** Right detail panel collapsed to a thin rail (distinct from closed). */
+  detailCollapsed: boolean;
 };
 
 type Actions = {
   setModelInput(value: string): void;
   setSpec(spec: Spec): void;
+  setCompareSpec(spec: Spec | null): void;
   setLoading(loading: boolean): void;
-  setError(error: string | null): void;
+  setError(error: LoadError | null): void;
   selectNode(id: string): void;
   expandNode(id: string): void;
   collapseToLevel(target: Level): void;
   goToExpansion(path: ExpansionPath): void;
   closeDetail(): void;
-  setView(view: View): void;
+  setAppMode(mode: AppMode): void;
+  setModelView(view: ModelView): void;
+  toggleSidebar(collapsed?: boolean): void;
+  setSidebarWidth(width: number): void;
+  setDetailWidth(width: number): void;
+  toggleDetail(collapsed?: boolean): void;
   reset(): void;
 };
 
 const initialState: State = {
   modelInput: "",
   spec: null,
+  compareSpec: null,
   loading: false,
   error: null,
   selectionPath: [],
   expansionPath: [],
   level: 1,
   detailOpen: false,
-  view: "home",
+  appMode: "home",
+  // Loading a model lands on the diagram, preserving the pre-dashboard behavior.
+  modelView: "architecture",
+  sidebarCollapsed: false,
+  sidebarWidth: 248,
+  detailWidth: 320,
+  detailCollapsed: false,
 };
 
 export const useArchStore = create<State & Actions>()((set) => ({
@@ -66,6 +89,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
   setModelInput: (value) => set({ modelInput: value }),
 
   setSpec: (spec) => set({ spec, error: null, loading: false }),
+
+  setCompareSpec: (compareSpec) => set({ compareSpec }),
 
   setLoading: (loading) => set({ loading }),
 
@@ -77,13 +102,10 @@ export const useArchStore = create<State & Actions>()((set) => ({
     set((s) => ({
       selectionPath: [...s.expansionPath, id],
       detailOpen: true,
+      // Picking a node always reveals its panel, even if the rail was collapsed.
+      detailCollapsed: false,
     })),
 
-  // Expanding pushes into the view stack. The detail panel CLOSES — once
-  // you're inside a block, that block's information is shown by the
-  // canvas-level "Previous block" context card (see PreviousBlockNode),
-  // not by the side panel. This avoids dragging stale parent metadata
-  // forward as the user keeps zooming in.
   expandNode: (id) =>
     set((s) => {
       const next: ExpansionPath = [...s.expansionPath, id];
@@ -110,8 +132,7 @@ export const useArchStore = create<State & Actions>()((set) => ({
     }),
 
   // Jump directly to a specific expansion path — used by the "Previous block"
-  // context card to navigate to the previous sibling's internals in one
-  // click instead of forcing the user to collapse + re-expand.
+  // context card and the sidebar module-tree outline to navigate in one click.
   goToExpansion: (path) =>
     set({
       expansionPath: [...path],
@@ -122,14 +143,30 @@ export const useArchStore = create<State & Actions>()((set) => ({
 
   closeDetail: () => set({ detailOpen: false }),
 
-  setView: (view) => set({ view }),
+  setAppMode: (appMode) => set({ appMode }),
 
-  // Used before fetching a new model; wipes navigation but keeps modelInput
-  // and view (preserves the visualizer tab the user came from).
+  setModelView: (modelView) => set({ modelView }),
+
+  toggleSidebar: (collapsed) =>
+    set((s) => ({ sidebarCollapsed: collapsed ?? !s.sidebarCollapsed })),
+
+  setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
+
+  setDetailWidth: (detailWidth) => set({ detailWidth }),
+
+  toggleDetail: (collapsed) =>
+    set((s) => ({ detailCollapsed: collapsed ?? !s.detailCollapsed })),
+
+  // Used before fetching a new model; wipes navigation + the compare slot but
+  // keeps modelInput, the current app-mode / model-view, and the user's chosen
+  // rail widths (layout preferences shouldn't snap back on every model load).
   reset: () =>
     set((s) => ({
       ...initialState,
       modelInput: s.modelInput,
-      view: s.view,
+      appMode: s.appMode,
+      modelView: s.modelView,
+      sidebarWidth: s.sidebarWidth,
+      detailWidth: s.detailWidth,
     })),
 }));

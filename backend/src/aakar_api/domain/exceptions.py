@@ -50,3 +50,44 @@ class UnsupportedArchitecture(AakarDomainError):
         super().__init__(msg)
         self.model_id = model_id
         self.architecture = architecture
+
+
+class IntrospectionFailed(AakarDomainError):
+    """The sandbox ran but couldn't produce a Spec for a remote-code model.
+
+    The model's custom code errored, didn't honor the meta device, needed a
+    missing dependency, or crashed the worker. Distinct from
+    `UnsupportedArchitecture` (which is "we refuse / can't recognize it") — here
+    we tried in the sandbox and it genuinely failed.
+    """
+
+    def __init__(self, model_id: str, detail: str | None = None) -> None:
+        msg = f"Introspection failed for {model_id!r}"
+        if detail:
+            msg = f"{msg}: {detail}"
+        super().__init__(msg)
+        self.model_id = model_id
+        self.detail = detail
+
+
+class IntrospectionTimeout(AakarDomainError):
+    """The sandboxed introspection exceeded its wall-clock budget and was killed."""
+
+    def __init__(self, model_id: str, *, timeout_s: float | None = None) -> None:
+        super().__init__(f"Introspection timed out for {model_id!r}")
+        self.model_id = model_id
+        self.timeout_s = timeout_s
+
+
+class HubUnavailable(AakarDomainError):
+    """An upstream HTTP dependency (HF Hub, arXiv, GitHub) timed out or failed.
+
+    Distinct from ModelNotFound/ModelGated, which are *answers* from the upstream.
+    This means we couldn't get an answer at all (timeout, transport error, 5xx) —
+    a transient condition, mapped to HTTP 503 so the client can retry.
+    """
+
+    def __init__(self, model_id: str, *, source: str = "huggingface hub") -> None:
+        super().__init__(f"Upstream {source} is unavailable for {model_id!r}")
+        self.model_id = model_id
+        self.source = source

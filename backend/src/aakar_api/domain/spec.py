@@ -92,3 +92,6 @@ class Spec(BaseModel):
     tied_word_embeddings: bool | None = None
     # Hypothetical batch/seq for the FLOPs estimate on each Node.
     flops_reference: dict[str, int] | None = None
+    # The complete, unfiltered config (`config.to_dict()`) so a generic Config
+    # Explorer can render every key
+    config_full: dict[str, Any] | None = None
