@@ -1,0 +1,189 @@
+/* Gated-page extras: the "Access this model" token form and the
+ * "Alternative options" rows. The two-column shell, badge, title, subtitle and
+ * model chip are reused from ModelNotFoundState.module.css. */
+
+.section {
+  margin-top: var(--space-6);
+}
+.sectionTitle {
+  margin: 0 0 4px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+.sectionHint {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 420px;
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 40px 0 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-ink);
+  background: var(--color-bg);
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 10px;
+}
+.input::placeholder {
+  color: var(--color-ink-subtle);
+  letter-spacing: 0;
+}
+.input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+}
+
+.reveal {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--color-ink-subtle);
+  cursor: pointer;
+}
+.reveal:hover {
+  color: var(--color-ink);
+  background: rgba(60, 64, 67, 0.08);
+}
+.reveal svg {
+  width: 17px;
+  height: 17px;
+}
+
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.remember input {
+  width: 15px;
+  height: 15px;
+  accent-color: #1a73e8;
+  cursor: pointer;
+}
+.info {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  color: var(--color-ink-subtle);
+  cursor: help;
+}
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 42px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: #fff;
+  background: #1a73e8;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.submit:hover {
+  background: #1666c8;
+}
+.submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.submit svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Alternative options — actionable rows that open the Hub in a new tab. */
+.alt {
+  margin-top: var(--space-6);
+}
+.altList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.altRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  cursor: pointer;
+}
+.altRow:hover {
+  background: rgba(60, 64, 67, 0.05);
+  border-color: var(--color-hairline);
+  color: var(--color-ink);
+}
+.altIcon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.altIcon[data-tone="purple"] {
+  color: #a142f4;
+}
+.altIcon[data-tone="yellow"] {
+  color: #f9ab00;
+}
+.altText {
+  flex: 1;
+  min-width: 0;
+}
+.altText code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+.altChevron {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--color-ink-subtle);
+}

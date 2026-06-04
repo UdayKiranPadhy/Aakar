@@ -35,22 +35,24 @@ class FallbackIntrospector:
         self._sandbox = sandbox
         self._allow_remote_code = allow_remote_code
 
-    async def fetch_config_hash(self, model_id: str) -> str:
+    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str:
         try:
-            return await self._primary.fetch_config_hash(model_id)
+            return await self._primary.fetch_config_hash(model_id, token=token)
         except UnsupportedArchitecture:
             if not self._allow_remote_code:
                 raise
+            # The sandbox runs fully offline with a scrubbed env — no token by
+            # design, so gated + custom-code stays out of scope.
             return await self._sandbox.fetch_config_hash(model_id)
 
-    async def introspect(self, model_id: str) -> Spec:
+    async def introspect(self, model_id: str, *, token: str | None = None) -> Spec:
         try:
-            return await self._primary.introspect(model_id)
+            return await self._primary.introspect(model_id, token=token)
         except UnsupportedArchitecture as primary_exc:
             if not self._allow_remote_code:
                 raise
             try:
-                return await self._sandbox.introspect(model_id)
+                return await self._sandbox.introspect(model_id)  # offline; token never forwarded
             except IntrospectionFailed:
                 # The sandbox tried and couldn't — this model is genuinely
                 # unsupported. Keep the original, clearer error (→ 422).

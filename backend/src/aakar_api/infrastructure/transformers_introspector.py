@@ -32,23 +32,23 @@ _WalkCtx = WalkContext
 class TransformersIntrospector:
     """Build Specs by walking the real transformers nn.Module tree on meta."""
 
-    async def introspect(self, model_id: str) -> Spec:
-        return await asyncio.to_thread(self._introspect_sync, model_id)
+    async def introspect(self, model_id: str, *, token: str | None = None) -> Spec:
+        return await asyncio.to_thread(self._introspect_sync, model_id, token)
 
-    async def fetch_config_hash(self, model_id: str) -> str:
-        return await asyncio.to_thread(self._fetch_config_hash_sync, model_id)
+    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str:
+        return await asyncio.to_thread(self._fetch_config_hash_sync, model_id, token)
 
-    def _fetch_config_hash_sync(self, model_id: str) -> str:
-        return config_hash(self._load_config(model_id))
+    def _fetch_config_hash_sync(self, model_id: str, token: str | None) -> str:
+        return config_hash(self._load_config(model_id, token))
 
-    def _introspect_sync(self, model_id: str) -> Spec:
-        config = self._load_config(model_id)
+    def _introspect_sync(self, model_id: str, token: str | None) -> Spec:
+        config = self._load_config(model_id, token)
         architecture_name, model_factory = resolve_model_class(config, model_id)
         model = build_model_on_meta_device(config, model_factory)
         return build_spec(model_id, config, architecture_name, model)
 
     @staticmethod
-    def _load_config(model_id: str) -> Any:
-        return load_config(model_id)
+    def _load_config(model_id: str, token: str | None = None) -> Any:
+        return load_config(model_id, token=token)
 
     _intermediates = staticmethod(intermediates)

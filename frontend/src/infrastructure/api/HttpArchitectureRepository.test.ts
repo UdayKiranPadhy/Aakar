@@ -45,6 +45,25 @@ describe("HttpArchitectureRepository.fetch", () => {
     expect(url).not.toContain("//api");
   });
 
+  it("sends the X-HF-Token header only when a token is provided", async () => {
+    // Fresh Response per call — a body can only be read once.
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      async () => new Response(JSON.stringify(successSpec), { status: 200 }),
+    );
+    const repo = new HttpArchitectureRepository("http://localhost:8000");
+
+    await repo.fetch("gpt2");
+    let headers = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+    expect(headers["X-HF-Token"]).toBeUndefined();
+    // and the token never leaks into the URL
+    expect((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0]).not.toContain("hf_");
+
+    await repo.fetch("meta-llama/Llama-3-8B", "hf_secret");
+    headers = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[1][1].headers;
+    expect(headers["X-HF-Token"]).toBe("hf_secret");
+    expect((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[1][0]).not.toContain("hf_secret");
+  });
+
   it("uses cache: no-store so a stale spec doesn't persist across backend restarts", async () => {
     (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       new Response(JSON.stringify(successSpec), { status: 200 }),

@@ -80,3 +80,54 @@ def test_gated_repo_wrapped_as_oserror_maps_to_model_gated(monkeypatch: pytest.M
     monkeypatch.setattr(transformers.AutoConfig, "from_pretrained", _raise)
     with pytest.raises(ModelGated):
         load_config("org/gated-model")
+
+
+def test_token_is_forwarded_to_autoconfig(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _capture(model_id: str, **kwargs: object) -> object:
+        captured.update(model_id=model_id, **kwargs)
+        return object()
+
+    import transformers
+    monkeypatch.setattr(transformers.AutoConfig, "from_pretrained", _capture)
+    load_config("org/model", token="hf_secret")
+    assert captured["token"] == "hf_secret"
+    assert captured["trust_remote_code"] is False  # never run remote code in-process
+
+
+def test_token_defaults_to_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _capture(model_id: str, **kwargs: object) -> object:
+        captured.update(model_id=model_id, **kwargs)
+        return object()
+
+    import transformers
+    monkeypatch.setattr(transformers.AutoConfig, "from_pretrained", _capture)
+    load_config("org/model")
+    assert captured["token"] is None
+
+
+def test_http_401_maps_to_model_gated(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A bare 401 (missing/invalid/expired token on a gated repo) → the access
+    # page with a retry, not an opaque 5xx.
+    from huggingface_hub.errors import HfHubHTTPError
+
+    class _Resp:
+        status_code = 401
+
+    # Bypass HfHubHTTPError.__init__ (it requires a real response) while keeping
+    # isinstance checks valid — same trick as the gated-repo test above.
+    class _FakeHTTPError(HfHubHTTPError):
+        def __init__(self) -> None:
+            Exception.__init__(self, "unauthorized")
+            self.response = _Resp()  # type: ignore[assignment]
+
+    def _raise(*_a: object, **_kw: object) -> object:
+        raise _FakeHTTPError()
+
+    import transformers
+    monkeypatch.setattr(transformers.AutoConfig, "from_pretrained", _raise)
+    with pytest.raises(ModelGated):
+        load_config("org/gated", token="hf_bad")

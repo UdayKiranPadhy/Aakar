@@ -11,7 +11,8 @@ import type { Spec } from "../domain/spec";
 import type { TrendingModel } from "../domain/trending";
 
 export interface ArchitectureRepository {
-  fetch(modelId: string): Promise<Spec>;
+  /** `token` is an optional HF read token for gated models (sent as a header). */
+  fetch(modelId: string, token?: string): Promise<Spec>;
 }
 
 export interface ModelInfoRepository {

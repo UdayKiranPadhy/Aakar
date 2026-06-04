@@ -14,7 +14,12 @@ import { ModelUnsupportedState } from "../components/ModelUnsupportedState";
 import { PlaceholderScreen } from "../components/PlaceholderScreen";
 import { modelViewRegistry } from "./ModelViewRegistry";
 
-export function ModelViewHost() {
+export function ModelViewHost({
+  onRetryWithToken,
+}: {
+  /** Re-run a load with a just-entered HF token (used by the gated page). */
+  onRetryWithToken?: (modelId: string, token: string) => void;
+} = {}) {
   const spec = useArchStore((s) => s.spec);
   const error = useArchStore((s) => s.error);
   const modelView = useArchStore((s) => s.modelView);
@@ -22,7 +27,8 @@ export function ModelViewHost() {
   if (!spec) {
     if (error?.kind === "not_found") return <ModelNotFoundState error={error} />;
     if (error?.kind === "unsupported") return <ModelUnsupportedState error={error} />;
-    if (error?.kind === "gated") return <ModelGatedState error={error} />;
+    if (error?.kind === "gated")
+      return <ModelGatedState error={error} onRetryWithToken={onRetryWithToken} />;
     if (error?.kind === "timeout" || error?.kind === "failed")
       return <ModelIntrospectionErrorState error={error} />;
     if (error?.kind === "server_error") return <ModelServerErrorState error={error} />;

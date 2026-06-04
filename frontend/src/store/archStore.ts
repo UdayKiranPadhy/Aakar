@@ -23,6 +23,26 @@ import {
 } from "../domain/navigation";
 import type { Spec } from "../domain/spec";
 
+// Optional HF read token for gated models. Persisted to localStorage only when
+// the user opts in ("remember"); otherwise it lives in memory for the session.
+// Guarded so private-mode / disabled storage never throws.
+const HF_TOKEN_KEY = "aakar.hfToken";
+function readStoredToken(): string | null {
+  try {
+    return localStorage.getItem(HF_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+function persistToken(token: string | null, remember: boolean): void {
+  try {
+    if (remember && token) localStorage.setItem(HF_TOKEN_KEY, token);
+    else localStorage.removeItem(HF_TOKEN_KEY);
+  } catch {
+    /* storage unavailable — keep the in-memory value only */
+  }
+}
+
 type State = {
   modelInput: string;
   spec: Spec | null;
@@ -42,6 +62,8 @@ type State = {
   detailWidth: number;
   /** Right detail panel collapsed to a thin rail (distinct from closed). */
   detailCollapsed: boolean;
+  /** Optional HF read token for gated repos; null when none provided. */
+  hfToken: string | null;
 };
 
 type Actions = {
@@ -61,6 +83,8 @@ type Actions = {
   setSidebarWidth(width: number): void;
   setDetailWidth(width: number): void;
   toggleDetail(collapsed?: boolean): void;
+  /** Set/clear the HF token; `remember` persists it to localStorage. */
+  setHfToken(token: string | null, remember: boolean): void;
   reset(): void;
 };
 
@@ -81,6 +105,7 @@ const initialState: State = {
   sidebarWidth: 248,
   detailWidth: 320,
   detailCollapsed: false,
+  hfToken: readStoredToken(),
 };
 
 export const useArchStore = create<State & Actions>()((set) => ({
@@ -157,6 +182,11 @@ export const useArchStore = create<State & Actions>()((set) => ({
   toggleDetail: (collapsed) =>
     set((s) => ({ detailCollapsed: collapsed ?? !s.detailCollapsed })),
 
+  setHfToken: (token, remember) => {
+    persistToken(token, remember);
+    set({ hfToken: token });
+  },
+
   // Used before fetching a new model; wipes navigation + the compare slot but
   // keeps modelInput, the current app-mode / model-view, and the user's chosen
   // rail widths (layout preferences shouldn't snap back on every model load).
@@ -168,5 +198,6 @@ export const useArchStore = create<State & Actions>()((set) => ({
       modelView: s.modelView,
       sidebarWidth: s.sidebarWidth,
       detailWidth: s.detailWidth,
+      hfToken: s.hfToken,
     })),
 }));

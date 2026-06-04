@@ -68,7 +68,7 @@ describe("useArchitecture.loadModel", () => {
     await act(async () => {
       await result.current.loadModel("  gpt2  ");
     });
-    expect(repo.fetch).toHaveBeenCalledWith("gpt2");
+    expect(repo.fetch).toHaveBeenCalledWith("gpt2", undefined);
   });
 
   it("maps ModelNotFoundError to a not_found load error carrying the id", async () => {

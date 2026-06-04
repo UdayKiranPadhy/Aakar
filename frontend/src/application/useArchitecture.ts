@@ -18,9 +18,13 @@ export function useArchitecture(repo: ArchitectureRepository) {
   const setSpec = useArchStore((s) => s.setSpec);
   const setError = useArchStore((s) => s.setError);
   const setAppMode = useArchStore((s) => s.setAppMode);
+  const hfToken = useArchStore((s) => s.hfToken);
 
   const loadModel = useCallback(
-    async (modelId: string): Promise<void> => {
+    // `tokenOverride` lets the gated page retry with a just-entered token
+    // (before the store-backed value re-renders the hook). Otherwise the
+    // remembered store token (if any) is used; gated models need it.
+    async (modelId: string, tokenOverride?: string): Promise<void> => {
       const trimmed = modelId.trim();
       if (!trimmed) return;
       reset();
@@ -30,13 +34,13 @@ export function useArchitecture(repo: ArchitectureRepository) {
       setAppMode("model");
       setLoading(true);
       try {
-        const spec = await repo.fetch(trimmed);
+        const spec = await repo.fetch(trimmed, tokenOverride ?? hfToken ?? undefined);
         setSpec(spec);
       } catch (e) {
         setError(toLoadError(e));
       }
     },
-    [repo, reset, setLoading, setSpec, setError, setAppMode],
+    [repo, hfToken, reset, setLoading, setSpec, setError, setAppMode],
   );
 
   return { loadModel };

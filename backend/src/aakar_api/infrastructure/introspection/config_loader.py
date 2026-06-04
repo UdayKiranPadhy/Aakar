@@ -10,30 +10,57 @@ from aakar_api.domain.exceptions import ModelGated, ModelNotFound, UnsupportedAr
 from aakar_api.infrastructure.spec_cache import hash_config
 
 
-def load_config(model_id: str) -> Any:
+def load_config(model_id: str, *, token: str | None = None) -> Any:
+    """Load a model's config from the Hub.
+
+    `token` is an optional per-request HuggingFace read token. When None
+    (the default), transformers uses no/ambient credentials — public models
+    only. When provided, gated repos the token has access to become readable.
+    The token is never logged, stored, or used as a cache key.
+    """
     from huggingface_hub.errors import (
         EntryNotFoundError,
         GatedRepoError,
+        HfHubHTTPError,
         RepositoryNotFoundError,
     )
     from transformers import AutoConfig
 
     try:
-        # NEVER True here: Models that need custom code are refused at this step 
-        # and (when opted in) handled out-of-process
-        # by SandboxedIntrospector — see infrastructure/sandbox/.
-        return AutoConfig.from_pretrained(model_id, trust_remote_code=False)
+        # trust_remote_code is NEVER True here: models that need custom code are
+        # refused at this step and (when opted in) handled out-of-process by
+        # SandboxedIntrospector — see infrastructure/sandbox/.
+        return AutoConfig.from_pretrained(model_id, trust_remote_code=False, token=token)
     except GatedRepoError as exc:
         raise ModelGated(model_id) from exc
     except (RepositoryNotFoundError, EntryNotFoundError) as exc:
         raise ModelNotFound(model_id) from exc
     except ValueError as exc:
         raise UnsupportedArchitecture(model_id, _declared_architecture(model_id)) from exc
+    except HfHubHTTPError as exc:
+        # A bare 401/403 (e.g. a missing/invalid/expired token on a gated repo)
+        # surfaces as the access page with a retry — not an opaque 5xx.
+        if _auth_status(exc) is not None:
+            raise ModelGated(model_id) from exc
+        raise
     except OSError as exc:
-        # transformers re-raises GatedRepoError as `OSError(...) from GatedRepoError`
-        if isinstance(exc.__cause__, GatedRepoError):
+        # transformers often re-wraps Hub errors as `OSError(...) from <hub error>`.
+        cause = exc.__cause__
+        if isinstance(cause, GatedRepoError):
+            raise ModelGated(model_id) from exc
+        if isinstance(cause, (RepositoryNotFoundError, EntryNotFoundError)):
+            # HF returns 401 for a missing repo (to avoid leaking its existence);
+            # that's still "not found", not an auth/token problem.
+            raise ModelNotFound(model_id) from exc
+        if _auth_status(cause) is not None:
             raise ModelGated(model_id) from exc
         raise ModelNotFound(model_id) from exc
+
+
+def _auth_status(exc: BaseException | None) -> int | None:
+    """Return 401/403 if `exc` is an HTTP auth failure, else None."""
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    return status if status in (401, 403) else None
 
 
 def config_hash(config: Any) -> str:

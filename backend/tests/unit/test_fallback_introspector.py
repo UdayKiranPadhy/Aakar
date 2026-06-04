@@ -25,16 +25,19 @@ class StubIntrospector:
         self._raises = raises
         self.introspect_calls: list[str] = []
         self.hash_calls: list[str] = []
+        self.seen_tokens: list[str | None] = []
 
-    async def introspect(self, model_id: str) -> Spec:
+    async def introspect(self, model_id: str, *, token: str | None = None) -> Spec:
         self.introspect_calls.append(model_id)
+        self.seen_tokens.append(token)
         if self._raises is not None:
             raise self._raises
         assert self._spec is not None
         return self._spec
 
-    async def fetch_config_hash(self, model_id: str) -> str:
+    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str:
         self.hash_calls.append(model_id)
+        self.seen_tokens.append(token)
         if self._raises is not None:
             raise self._raises
         return "stub-hash"
@@ -100,3 +103,14 @@ async def test_config_hash_falls_through_to_sandbox_when_allowed() -> None:
     fb = FallbackIntrospector(primary, sandbox, allow_remote_code=True)
     assert await fb.fetch_config_hash("org/custom") == "stub-hash"
     assert sandbox.hash_calls == ["org/custom"]
+
+
+async def test_token_forwarded_to_primary_but_never_to_sandbox() -> None:
+    # The HF token reaches the in-process primary; the offline sandbox is always
+    # called token-free (its scrubbed env can't use credentials anyway).
+    primary = StubIntrospector(raises=UnsupportedArchitecture("org/custom", None))
+    sandbox = StubIntrospector(spec=_CUSTOM)
+    fb = FallbackIntrospector(primary, sandbox, allow_remote_code=True)
+    await fb.introspect("org/custom", token="hf_secret")
+    assert primary.seen_tokens == ["hf_secret"]
+    assert sandbox.seen_tokens == [None]

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Header, Query
 
 from aakar_api.application import (
     ArchitectureService,
@@ -72,12 +72,17 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+# Optional per-request HuggingFace read token for gated models.
+HfTokenHeader = Annotated[str | None, Header(alias="X-HF-Token", max_length=200)]
+
+
 @router.get("/architecture", response_model=Spec, tags=["architecture"])
 async def get_architecture(
     model_id: ModelIdQuery,
     service: ArchitectureServiceDep,
+    hf_token: HfTokenHeader = None,
 ) -> Spec:
-    return await service.get_architecture(model_id)
+    return await service.get_architecture(model_id, token=hf_token)
 
 
 @router.get("/model-info", response_model=HubModelInfo, tags=["hub"])

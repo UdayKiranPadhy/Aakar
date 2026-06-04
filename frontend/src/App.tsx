@@ -84,7 +84,7 @@ export function App() {
           <div className={styles.dashboard}>
             {hasSpec && <ModelSidebar />}
             <section className={styles.content}>
-              <ModelViewHost />
+              <ModelViewHost onRetryWithToken={loadModel} />
             </section>
           </div>
         )}

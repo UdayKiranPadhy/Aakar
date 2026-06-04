@@ -281,7 +281,7 @@ async def test_unsupported_architecture(monkeypatch: pytest.MonkeyPatch) -> None
 
     introspector = TransformersIntrospector()
 
-    def _load_fake(_model_id: str) -> FakeConfig:
+    def _load_fake(_model_id: str, _token: str | None = None) -> FakeConfig:
         return FakeConfig()
 
     monkeypatch.setattr(TransformersIntrospector, "_load_config", staticmethod(_load_fake))

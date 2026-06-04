@@ -11,18 +11,19 @@ import { ApiError, NetworkError } from "./errors";
 export class HttpArchitectureRepository implements ArchitectureRepository {
   constructor(private readonly baseUrl: string) {}
 
-  async fetch(modelId: string): Promise<Spec> {
+  async fetch(modelId: string, token?: string): Promise<Spec> {
     const url = `${this.baseUrl.replace(/\/$/, "")}/api/architecture?model_id=${encodeURIComponent(modelId)}`;
+    // The token rides in a header, never the query string — so it stays out of
+    // logs, referrers, and proxy caches. Only sent when the user supplied one.
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) headers["X-HF-Token"] = token;
     let response: Response;
     try {
       // `no-store` so the browser doesn't serve a stale spec when an adapter
       // is edited and the backend restarts mid-session. Model specs are cheap
       // (one HTTP round-trip + an HF config fetch) so we don't lose much by
       // skipping the cache.
-      response = await fetch(url, {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      });
+      response = await fetch(url, { headers, cache: "no-store" });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Network request failed";
       throw new NetworkError(message);

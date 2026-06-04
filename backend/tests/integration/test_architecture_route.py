@@ -33,8 +33,10 @@ class FakeArchitectureService(ArchitectureService):
     ) -> None:
         self._responses = responses or {}
         self._raises = raises or {}
+        self.seen_tokens: list[str | None] = []
 
-    async def get_architecture(self, model_id: str) -> Spec:
+    async def get_architecture(self, model_id: str, *, token: str | None = None) -> Spec:
+        self.seen_tokens.append(token)
         if model_id in self._raises:
             raise self._raises[model_id]
         if model_id in self._responses:
@@ -105,6 +107,26 @@ def test_architecture_for_llama(client: TestClient, overrides) -> None:
     head = body["graph"][0]["children"][0]
     assert head["module_class"] == "Linear"
     assert head["weight_shape"] == [128256, 4096]
+
+
+def test_architecture_forwards_hf_token_header(client: TestClient, overrides) -> None:
+    fake = FakeArchitectureService(responses={"gated/model": _llama_spec("gated/model")})
+    overrides[ArchitectureService] = fake
+    r = client.get(
+        "/api/architecture",
+        params={"model_id": "gated/model"},
+        headers={"X-HF-Token": "hf_secret"},
+    )
+    assert r.status_code == 200
+    assert fake.seen_tokens == ["hf_secret"]
+
+
+def test_architecture_without_token_passes_none(client: TestClient, overrides) -> None:
+    fake = FakeArchitectureService(responses={"public/model": _llama_spec("public/model")})
+    overrides[ArchitectureService] = fake
+    r = client.get("/api/architecture", params={"model_id": "public/model"})
+    assert r.status_code == 200
+    assert fake.seen_tokens == [None]
 
 
 def test_architecture_404(client: TestClient, overrides) -> None:

@@ -52,11 +52,14 @@ class SandboxedIntrospector:
         # which already has aakar_api + transformers importable.
         self._python = python_executable or sys.executable
 
-    async def fetch_config_hash(self, model_id: str) -> str:
+    # `token` is accepted to satisfy the Introspector Protocol but deliberately
+    # ignored: the sandbox runs offline with a scrubbed env (no credentials),
+    # so gated custom-code repos remain out of scope.
+    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str:
         raw = await asyncio.to_thread(self._fetcher.read_config, model_id)
         return hash_config(raw)
 
-    async def introspect(self, model_id: str) -> Spec:
+    async def introspect(self, model_id: str, *, token: str | None = None) -> Spec:
         return await asyncio.to_thread(self._introspect_sync, model_id)
 
     def _introspect_sync(self, model_id: str) -> Spec:
