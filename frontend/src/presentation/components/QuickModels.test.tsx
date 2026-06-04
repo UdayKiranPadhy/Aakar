@@ -6,21 +6,11 @@ import { QuickModels } from "./QuickModels";
 import { useArchStore } from "../../store/archStore";
 import type { Spec } from "../../domain/spec";
 
-// Trending is fetched; stub it with a fixed list so the chips are deterministic.
-vi.mock("../../application/useTrendingModels", () => ({
-  useTrendingModels: () => ({
-    models: [
-      { model_id: "openai-community/gpt2", tags: [] },
-      { model_id: "mistralai/Mistral-7B-v0.1", tags: [] },
-    ],
-    loading: false,
-    error: false,
-  }),
-}));
+const FLASH_ID = "deepseek-ai/DeepSeek-V4-Flash";
 
-const gpt2Spec: Spec = {
-  model_id: "openai-community/gpt2",
-  model_type: "gpt2",
+const flashSpec: Spec = {
+  model_id: FLASH_ID,
+  model_type: "deepseek_v3",
   config_summary: {},
   graph: [],
 };
@@ -30,38 +20,38 @@ beforeEach(() => {
 });
 
 describe("QuickModels", () => {
-  it("renders a chip per trending model, labelled by the short name", () => {
+  it("renders a chip per featured model, labelled by the short name", () => {
     render(<QuickModels onSubmit={() => {}} />);
-    expect(screen.getByRole("button", { name: "gpt2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mistral-7B-v0.1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "DeepSeek-V4-Flash" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mistral-Medium-3.5-128B" })).toBeInTheDocument();
   });
 
   it("clicking a chip whose model isn't loaded calls onSubmit with the full id", async () => {
     const onSubmit = vi.fn();
     render(<QuickModels onSubmit={onSubmit} />);
-    await userEvent.click(screen.getByRole("button", { name: "gpt2" }));
-    expect(onSubmit).toHaveBeenCalledWith("openai-community/gpt2");
-    expect(useArchStore.getState().modelInput).toBe("openai-community/gpt2");
+    await userEvent.click(screen.getByRole("button", { name: "DeepSeek-V4-Flash" }));
+    expect(onSubmit).toHaveBeenCalledWith(FLASH_ID);
+    expect(useArchStore.getState().modelInput).toBe(FLASH_ID);
   });
 
   it("when the model is already loaded, clicking just switches to its dashboard", async () => {
-    useArchStore.setState({ spec: gpt2Spec, appMode: "home" });
+    useArchStore.setState({ spec: flashSpec, appMode: "home" });
     const onSubmit = vi.fn();
     render(<QuickModels onSubmit={onSubmit} />);
-    await userEvent.click(screen.getByRole("button", { name: "gpt2" }));
+    await userEvent.click(screen.getByRole("button", { name: "DeepSeek-V4-Flash" }));
     expect(onSubmit).not.toHaveBeenCalled();
     expect(useArchStore.getState().appMode).toBe("model");
   });
 
   it("marks the chip active when its model is loaded in the dashboard", () => {
-    useArchStore.setState({ spec: gpt2Spec, appMode: "model" });
+    useArchStore.setState({ spec: flashSpec, appMode: "model" });
     render(<QuickModels onSubmit={() => {}} />);
-    expect(screen.getByRole("button", { name: "gpt2" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "DeepSeek-V4-Flash" })).toHaveAttribute("aria-current", "page");
   });
 
   it("disables every chip while a model is loading", () => {
     useArchStore.setState({ loading: true });
     render(<QuickModels onSubmit={() => {}} />);
-    expect(screen.getByRole("button", { name: "gpt2" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "DeepSeek-V4-Flash" })).toBeDisabled();
   });
 });

@@ -30,6 +30,9 @@ def load_config(model_id: str) -> Any:
     except ValueError as exc:
         raise UnsupportedArchitecture(model_id, _declared_architecture(model_id)) from exc
     except OSError as exc:
+        # transformers re-raises GatedRepoError as `OSError(...) from GatedRepoError`
+        if isinstance(exc.__cause__, GatedRepoError):
+            raise ModelGated(model_id) from exc
         raise ModelNotFound(model_id) from exc
 
 

@@ -1,21 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { NavBar } from "./NavBar";
 import { useArchStore } from "../../store/archStore";
-
-// QuickModels' chips come from trending (a fetch); stub it deterministically.
-vi.mock("../../application/useTrendingModels", () => ({
-  useTrendingModels: () => ({
-    models: [
-      { model_id: "openai-community/gpt2", tags: [] },
-      { model_id: "mistralai/Mistral-7B-v0.1", tags: [] },
-    ],
-    loading: false,
-    error: false,
-  }),
-}));
 
 describe("NavBar", () => {
   it("renders the brand and the search input", () => {
@@ -29,8 +17,8 @@ describe("NavBar", () => {
     render(<NavBar onSubmit={() => {}} />);
     expect(screen.getByRole("button", { name: "Model" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Compare" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "gpt2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mistral-7B-v0.1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Qwen3.6-27B" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "gpt-oss-20b" })).toBeInTheDocument();
   });
 
   it("hides the tab row on the home view (only the top search bar shows)", () => {
@@ -38,7 +26,7 @@ describe("NavBar", () => {
     render(<NavBar onSubmit={() => {}} />);
     expect(screen.getByRole("textbox")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Model" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "gpt2" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Qwen3.6-27B" })).not.toBeInTheDocument();
   });
 
   it("overlays the page on the home view and is visible by default", () => {

@@ -1,18 +1,13 @@
 /**
- * Second-row nav strip — trending HuggingFace models (no hardcoded list).
- *
- * Each chip prefills the input + invokes `loadModel`. The currently-loaded
- * model (if it's in the trending set) is highlighted. Labels are the short
- * model name; the full id is the tooltip + what gets loaded.
+ * Second-row nav strip — featured models. Each chip prefills the input and
+ * invokes `loadModel`. The currently-loaded model is highlighted.
  */
 
 import { clsx } from "clsx";
 
-import { useTrendingModels } from "../../application/useTrendingModels";
+import { FEATURED_MODEL_IDS } from "../landing/ExampleChips";
 import { useArchStore } from "../../store/archStore";
 import styles from "./QuickModels.module.css";
-
-const CHIP_COUNT = 6;
 
 function shortLabel(modelId: string): string {
   const slash = modelId.lastIndexOf("/");
@@ -24,7 +19,6 @@ type Props = {
 };
 
 export function QuickModels({ onSubmit }: Props) {
-  const { models, loading } = useTrendingModels(CHIP_COUNT);
   const currentModel = useArchStore((s) => s.spec?.model_id);
   const appMode = useArchStore((s) => s.appMode);
   const setModelInput = useArchStore((s) => s.setModelInput);
@@ -41,19 +35,9 @@ export function QuickModels({ onSubmit }: Props) {
     onSubmit(modelId);
   };
 
-  if (loading && models.length === 0) {
-    return (
-      <nav aria-label="Trending models" className={styles.nav}>
-        {Array.from({ length: 4 }, (_, i) => (
-          <span key={i} aria-hidden="true" className={styles.skeleton} />
-        ))}
-      </nav>
-    );
-  }
-
   return (
-    <nav aria-label="Trending models" className={styles.nav}>
-      {models.map(({ model_id }) => {
+    <nav aria-label="Featured models" className={styles.nav}>
+      {FEATURED_MODEL_IDS.map((model_id) => {
         const isActive = appMode === "model" && currentModel === model_id;
         return (
           <button

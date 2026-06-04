@@ -53,7 +53,7 @@ export function ModelUnsupportedState({ error }: { error: LoadError }) {
           </li>
           <li className={styles.tip}>
             <span className={styles.tipIcon} data-tone="green"><RefreshIcon /></span>
-            Brand-new architecture? The pinned transformers may need a bump
+            Brand-new architecture? The current pinned transformers (5.9.0) may need a bump
           </li>
         </ul>
       </div>

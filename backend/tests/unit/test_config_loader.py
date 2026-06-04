@@ -12,8 +12,9 @@ from pathlib import Path
 
 import pytest
 
+from aakar_api.domain.exceptions import ModelGated, ModelNotFound
 from aakar_api.infrastructure.introspection import config_loader
-from aakar_api.infrastructure.introspection.config_loader import _declared_architecture
+from aakar_api.infrastructure.introspection.config_loader import _declared_architecture, load_config
 
 
 def _stub_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, payload: dict | None) -> None:
@@ -53,3 +54,29 @@ def test_module_no_longer_parses_exception_messages() -> None:
     # Guard against regressing back to message/regex matching.
     assert not hasattr(config_loader, "_map_config_value_error")
     assert not hasattr(config_loader, "_MODEL_TYPE_RE")
+
+
+def test_gated_repo_wrapped_as_oserror_maps_to_model_gated(monkeypatch: pytest.MonkeyPatch) -> None:
+    # transformers raises `OSError(...) from GatedRepoError`; verify it maps to
+    # ModelGated, not ModelNotFound (the pre-fix regression).
+    from unittest.mock import MagicMock
+
+    from huggingface_hub.errors import GatedRepoError
+
+    # GatedRepoError requires an HTTP response object; create a minimal subclass
+    # that bypasses HfHubHTTPError.__init__ so isinstance checks still pass.
+    class _FakeGatedRepoError(GatedRepoError):
+        def __init__(self) -> None:
+            Exception.__init__(self, "access restricted")
+
+    cause = _FakeGatedRepoError()
+    wrapped = OSError("You are trying to access a gated repo.")
+    wrapped.__cause__ = cause
+
+    def _raise(*_a: object, **_kw: object) -> None:
+        raise wrapped
+
+    import transformers
+    monkeypatch.setattr(transformers.AutoConfig, "from_pretrained", _raise)
+    with pytest.raises(ModelGated):
+        load_config("org/gated-model")

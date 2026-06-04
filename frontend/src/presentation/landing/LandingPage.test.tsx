@@ -1,20 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { LandingPage } from "./LandingPage";
-
-// Example chips come from trending (a fetch); stub it so a known "gpt2" chip
-// is present for the click assertion below.
-vi.mock("../../application/useTrendingModels", () => ({
-  useTrendingModels: () => ({
-    models: [
-      { model_id: "gpt2", tags: [] },
-      { model_id: "mistralai/Mistral-7B-v0.1", tags: [] },
-    ],
-    loading: false,
-    error: false,
-  }),
-}));
 
 // IntersectionObserver / matchMedia / getTotalLength are stubbed globally in
 // tests/setup.ts so framer-motion runs under jsdom. whileInView never fires, so
@@ -41,8 +28,8 @@ describe("LandingPage", () => {
   it("loads a model when an example chip is clicked", () => {
     const onSubmit = vi.fn();
     render(<LandingPage onSubmit={onSubmit} />);
-    // gpt2 appears in both the hero and the CTA chip rows; the first is enough.
-    fireEvent.click(screen.getAllByRole("button", { name: "gpt2" })[0]);
-    expect(onSubmit).toHaveBeenCalledWith("gpt2");
+    // Appears in both the hero and the CTA chip rows; the first is enough.
+    fireEvent.click(screen.getAllByRole("button", { name: "openai/gpt-oss-20b" })[0]);
+    expect(onSubmit).toHaveBeenCalledWith("openai/gpt-oss-20b");
   });
 });
