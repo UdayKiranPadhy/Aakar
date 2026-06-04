@@ -119,6 +119,15 @@
 .tipIcon[data-tone="yellow"] {
   color: #f9ab00;
 }
+.tipIcon[data-tone="purple"] {
+  color: #a142f4;
+}
+/* Inline mono token inside a tip (e.g. an org namespace); flows with the text. */
+.tipCode {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: inherit;
+}
 
 .art {
   flex: 1 1 560px;

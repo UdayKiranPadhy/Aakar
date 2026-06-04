@@ -35,6 +35,12 @@ export function ModelGatedState({ error }: { error: LoadError }) {
         <p className={styles.tryLabel}>What you can try:</p>
         <ul className={styles.tips}>
           <li className={styles.tip}>
+            <span className={styles.tipIcon} data-tone="purple"><MirrorIcon /></span>
+            <span>
+              Open a public community mirror &mdash; e.g. an <code className={styles.tipCode}>unsloth/</code> re-upload
+            </span>
+          </li>
+          <li className={styles.tip}>
             <span className={styles.tipIcon} data-tone="blue"><LockIcon /></span>
             Aakar reads public models only (it uses no token)
           </li>
@@ -69,6 +75,15 @@ function BadgeMark() {
   );
 }
 
+/* Copy/duplicate glyph: a community re-upload is a public copy of the model. */
+function MirrorIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15 H4 a1 1 0 0 1 -1 -1 V4 a1 1 0 0 1 1 -1 h10 a1 1 0 0 1 1 1 v1" />
+    </svg>
+  );
+}
 function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

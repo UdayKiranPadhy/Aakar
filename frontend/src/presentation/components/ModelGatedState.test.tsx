@@ -20,4 +20,10 @@ describe("ModelGatedState", () => {
     expect(screen.getByText("meta-llama/Llama-3-8B")).toBeInTheDocument();
     expect(container.querySelector("img")).toBeInTheDocument();
   });
+
+  it("suggests a public community mirror (e.g. an unsloth/ re-upload)", () => {
+    render(<ModelGatedState error={error} />);
+    expect(screen.getByText(/community mirror/i)).toBeInTheDocument();
+    expect(screen.getByText("unsloth/")).toBeInTheDocument();
+  });
 });

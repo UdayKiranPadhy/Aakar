@@ -10,8 +10,8 @@
     {
       "name": "frontend",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--dir", "frontend", "dev"],
-      "port": 5173
+      "runtimeArgs": ["--dir", "frontend", "dev", "--port", "5174"],
+      "port": 5174
     },
     {
       "name": "backend",
