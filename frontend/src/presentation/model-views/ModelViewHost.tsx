@@ -4,6 +4,7 @@
  * Centralizes the "no model loaded yet" empty state for every view.
  */
 
+import type { Spec } from "../../domain/spec";
 import { useArchStore } from "../../store/archStore";
 import { ErrorState } from "../components/ErrorState";
 import { ModelGatedState } from "../components/ModelGatedState";
@@ -13,6 +14,12 @@ import { ModelServerErrorState } from "../components/ModelServerErrorState";
 import { ModelUnsupportedState } from "../components/ModelUnsupportedState";
 import { PlaceholderScreen } from "../components/PlaceholderScreen";
 import { modelViewRegistry } from "./ModelViewRegistry";
+
+// Minimal spec used when we know the model_id but introspection failed.
+// Only Overview and Research use this — both access spec.model_id exclusively.
+function stubSpec(modelId: string): Spec {
+  return { model_id: modelId, model_type: "", config_summary: {}, graph: [] };
+}
 
 export function ModelViewHost({
   onRetryWithToken,
@@ -26,6 +33,16 @@ export function ModelViewHost({
 
   if (!spec) {
     if (error?.kind === "not_found") return <ModelNotFoundState error={error} />;
+
+    // For unsupported/gated errors we still know the model_id, so Overview and
+    // Research can fetch from the HF Hub independently of introspection.
+    if ((error?.kind === "unsupported" || error?.kind === "gated") && error.modelId) {
+      if (modelView === "overview" || modelView === "research") {
+        const View = modelViewRegistry.resolve(modelView);
+        if (View) return <View spec={stubSpec(error.modelId)} />;
+      }
+    }
+
     if (error?.kind === "unsupported") return <ModelUnsupportedState error={error} />;
     if (error?.kind === "gated")
       return <ModelGatedState error={error} onRetryWithToken={onRetryWithToken} />;

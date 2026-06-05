@@ -1,14 +1,29 @@
 /**
  * Renders model-card markdown. Uses react-markdown + remark-gfm (tables,
- * autolinks). Crucially, `rehype-raw` is NOT included, so any raw HTML/script
- * embedded in a model card is rendered as inert text — safe by default. Output
- * is scoped under a hashed `.prose` class so styles can't leak.
+ * autolinks). Model cards routinely embed raw HTML (e.g. benchmark tables), so
+ * `rehype-raw` parses it — but `rehype-sanitize` runs immediately after with an
+ * allow-list, dropping scripts, event handlers, inline styles and unsafe URLs.
+ * Surviving elements are styled by our own `.prose` CSS, so the card stays on
+ * brand and can't inject markup. Output is scoped under a hashed `.prose` class.
  */
 
 import ReactMarkdown, { type Components } from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
 import styles from "./Markdown.module.css";
+
+// Extend the GitHub-flavoured allow-list with the table attributes model cards
+// lean on for layout — section-spanning header rows (colSpan) and cell aligns.
+const schema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    td: [...(defaultSchema.attributes?.td ?? []), "colSpan", "rowSpan", "align"],
+    th: [...(defaultSchema.attributes?.th ?? []), "colSpan", "rowSpan", "align"],
+  },
+};
 
 const components: Components = {
   a: ({ href, children }) => (
@@ -28,7 +43,11 @@ function stripFrontmatter(markdown: string): string {
 export function Markdown({ source }: { source: string }) {
   return (
     <div className={styles.prose}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, schema]]}
+        components={components}
+      >
         {stripFrontmatter(source)}
       </ReactMarkdown>
     </div>

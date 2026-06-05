@@ -40,10 +40,13 @@ export function App() {
   );
   const { loadModel } = useArchitecture(repo);
   const appMode = useArchStore((s) => s.appMode);
-  // The module rail only makes sense once a model actually loaded (a 200 with a
-  // Spec). While loading or after an error there's no tree to navigate, so the
-  // content area (placeholder / error page) takes the full width.
   const hasSpec = useArchStore((s) => s.spec !== null);
+  const error = useArchStore((s) => s.error);
+  // Show the sidebar for partial failures where the model id is known and at
+  // least the Overview + Research tabs can still fetch from the HF Hub.
+  const showSidebar =
+    hasSpec ||
+    ((error?.kind === "unsupported" || error?.kind === "gated") && !!error.modelId);
 
   // Capture the landing page's scroll container. Kept in a ref (handed to
   // framer-motion's whileInView / useScroll via context) AND in state, so the
@@ -82,7 +85,7 @@ export function App() {
 
         {appMode === "model" && (
           <div className={styles.dashboard}>
-            {hasSpec && <ModelSidebar />}
+            {showSidebar && <ModelSidebar />}
             <section className={styles.content}>
               <ModelViewHost onRetryWithToken={loadModel} />
             </section>

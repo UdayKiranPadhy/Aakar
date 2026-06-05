@@ -14,7 +14,6 @@ import { clsx } from "clsx";
 
 import { useArchStore } from "../../store/archStore";
 import { ModelInputBar } from "./ModelInputBar";
-import { QuickModels } from "./QuickModels";
 import { SectionTabs } from "./SectionTabs";
 import styles from "./NavBar.module.css";
 
@@ -57,8 +56,6 @@ export function NavBar({ onSubmit, hidden = false }: Props) {
         {showTabs && (
           <div className={styles.row2}>
             <SectionTabs />
-            <span aria-hidden="true" className={styles.divider} />
-            <QuickModels onSubmit={onSubmit} />
           </div>
         )}
       </header>

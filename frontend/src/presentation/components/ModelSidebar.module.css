@@ -20,36 +20,17 @@
   transition: none;
 }
 
-.collapseBtn {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-muted);
-  font-size: 16px;
-  line-height: 1;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-.collapseBtn:hover {
-  color: var(--color-ink);
-}
-
 .nav {
   display: flex;
   flex-direction: column;
-  padding: var(--space-8) var(--space-2) var(--space-2);
+  padding: var(--space-2);
   gap: 2px;
 }
 
 .navItem {
   display: flex;
   align-items: center;
+  gap: var(--space-3);
   height: 36px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
@@ -76,8 +57,56 @@
   color: var(--color-accent);
 }
 
+/* Section glyph in front of each label. Fixed-size so labels align and so the
+ * icon stays put when the label is hidden in the collapsed rail. */
+.navIcon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
 .collapsed .navLabel {
   display: none;
+}
+
+/* Collapsed rail: drop the row padding/gap so the lone icon centres in 40px. */
+.collapsed .navItem,
+.collapsed .collapseBtn {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+/* Collapse/expand toggle — pinned to the bottom of the rail. `margin-top: auto`
+ * pushes it down in views without the module tree; with the tree (flex: 1) it
+ * already sits at the bottom. */
+.collapseBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: auto;
+  height: 40px;
+  padding: 0 var(--space-3);
+  border-top: 1px solid var(--color-hairline);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.collapseBtn:hover {
+  color: var(--color-ink);
+}
+
+.toggleIcon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.collapsed .toggleIcon {
+  transform: rotate(180deg);
 }
 
 /* Module tree ------------------------------------------------------------ */

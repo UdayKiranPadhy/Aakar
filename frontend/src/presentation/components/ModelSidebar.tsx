@@ -23,6 +23,7 @@ import {
 import type { Node } from "../../domain/spec";
 import { useArchStore } from "../../store/archStore";
 import { modelViewRegistry } from "../model-views/ModelViewRegistry";
+import { PanelToggleIcon, ViewIcon } from "./NavIcons";
 import { ResizeHandle } from "./ResizeHandle";
 import styles from "./ModelSidebar.module.css";
 
@@ -48,16 +49,6 @@ export function ModelSidebar() {
       )}
       style={collapsed ? undefined : { width }}
     >
-      <button
-        type="button"
-        className={styles.collapseBtn}
-        onClick={() => toggleSidebar()}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        aria-expanded={!collapsed}
-      >
-        {collapsed ? "›" : "‹"}
-      </button>
-
       <nav className={styles.nav} aria-label="Model views">
         {views.map(({ key, label }) => (
           <button
@@ -68,12 +59,25 @@ export function ModelSidebar() {
             className={clsx(styles.navItem, modelView === key && styles.navItemActive)}
             title={label}
           >
+            <ViewIcon viewKey={key} className={styles.navIcon} />
             <span className={styles.navLabel}>{label}</span>
           </button>
         ))}
       </nav>
 
       {!collapsed && modelView === "architecture" && <ModuleTree />}
+
+      <button
+        type="button"
+        className={styles.collapseBtn}
+        onClick={() => toggleSidebar()}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-expanded={!collapsed}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        <PanelToggleIcon className={styles.toggleIcon} />
+        <span className={styles.navLabel}>Collapse</span>
+      </button>
 
       {!collapsed && (
         <ResizeHandle
