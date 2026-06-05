@@ -49,6 +49,15 @@ const ArchitectureIcon = (p: IconProps) => (
   </Svg>
 );
 
+const JourneyIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="5" cy="19" r="2" />
+    <circle cx="19" cy="5" r="2" />
+    <path d="M6.4 17.6c2-2.2 3.4-4.2 5.6-5.6 2.2-1.4 3.6-3.4 5.6-5.6" />
+    <path d="M12 12h.01" />
+  </Svg>
+);
+
 const ConfigIcon = (p: IconProps) => (
   <Svg {...p}>
     <line x1="21" y1="4" x2="14" y2="4" />
@@ -104,6 +113,7 @@ const FallbackIcon = (p: IconProps) => (
 const VIEW_ICONS: Partial<Record<ModelView, ComponentType<IconProps>>> = {
   overview: OverviewIcon,
   architecture: ArchitectureIcon,
+  journey: JourneyIcon,
   config: ConfigIcon,
   parameters: ParametersIcon,
   compute: ComputeIcon,

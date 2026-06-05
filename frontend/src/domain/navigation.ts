@@ -28,6 +28,7 @@ export type AppMode = "home" | "model" | "compare" | "learn";
 export type ModelView =
   | "overview"
   | "architecture"
+  | "journey"
   | "config"
   | "parameters"
   | "compute"

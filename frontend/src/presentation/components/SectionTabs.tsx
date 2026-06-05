@@ -1,13 +1,10 @@
 /**
- * Section tabs — the left half of the nav's second row.
+ * Section tabs — the nav's second row.
  *
  * App-level tabs (cross-model): the loaded **Model** dashboard, **Compare**,
  * and **Learn**. Each is an `AppMode`; selecting one switches the main area
  * (see App.tsx). Per-model view switching (Overview / Config / …) lives in the
  * left ModelSidebar, not here.
- *
- * Mirrors the visual treatment of `QuickModels` (same height, same active
- * underline) so the two strips read as a single tab row.
  */
 
 import { clsx } from "clsx";

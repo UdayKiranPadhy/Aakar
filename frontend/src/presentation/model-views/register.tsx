@@ -9,6 +9,7 @@
 import { ArchitectureView } from "./ArchitectureView";
 import { ComputeView } from "./compute/ComputeView";
 import { ConfigView } from "./config/ConfigView";
+import { JourneyView } from "./journey/JourneyView";
 import { modelViewRegistry } from "./ModelViewRegistry";
 import { OverviewView } from "./overview/OverviewView";
 import { ParametersView } from "./parameters/ParametersView";
@@ -16,6 +17,7 @@ import { ResearchView } from "./research/ResearchView";
 
 modelViewRegistry.register({ key: "overview", label: "Overview", order: 1 }, OverviewView);
 modelViewRegistry.register({ key: "architecture", label: "Architecture", order: 2 }, ArchitectureView);
+modelViewRegistry.register({ key: "journey", label: "Token Journey", order: 2.5 }, JourneyView);
 modelViewRegistry.register({ key: "config", label: "Config", order: 3 }, ConfigView);
 modelViewRegistry.register({ key: "parameters", label: "Parameters", order: 4 }, ParametersView);
 modelViewRegistry.register({ key: "compute", label: "Compute", order: 5 }, ComputeView);

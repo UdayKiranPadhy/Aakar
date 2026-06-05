@@ -1,0 +1,598 @@
+/* Token Journey view. Reuses tokens.css; the rail is bespoke DOM (not React Flow). */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.subtitle {
+  margin: 0;
+  max-width: 80ch;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.subtitle code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  color: var(--color-ink-subtle);
+}
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* ── rail ───────────────────────────────────────────────────────────────── */
+.railWrap {
+  position: relative;
+  /* Don't let this shrink inside the `.view` flex column: an overflow container
+   * gets `min-height: 0` in a flex item and would otherwise collapse, clipping
+   * the (taller) rail. */
+  flex: 0 0 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--space-5) var(--space-3) var(--space-3);
+  border: 1px dashed var(--color-hairline-strong);
+  border-radius: var(--radius-block);
+  background: var(--color-canvas);
+}
+.rail {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-height: 240px;
+  padding: var(--space-6) var(--space-2);
+}
+
+/* wrapper around a reused block card */
+.railCard {
+  flex: 0 0 auto;
+  position: relative;
+  border-radius: var(--radius-block);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.railCardActive {
+  transform: translateY(-4px);
+  outline: 2px solid var(--tone, var(--color-accent));
+  outline-offset: 2px;
+}
+.cardBadges {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* synthetic glyph (input ids / logits / positional / tied head) */
+.glyph {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 132px;
+  max-width: 200px;
+  padding: var(--space-3);
+  border: var(--border-hairline) solid var(--color-hairline);
+  border-left: 3px solid var(--tone, var(--color-ink-subtle));
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  cursor: pointer;
+  text-align: left;
+  transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out);
+}
+.glyph:hover {
+  box-shadow: var(--shadow-panel);
+}
+.glyphActive {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-panel);
+  border-color: var(--tone, var(--color-accent));
+}
+.glyphKind {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tone, var(--color-ink-subtle));
+}
+.glyphLabel {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.glyphShape {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+.glyphBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.badge {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-pill);
+  padding: 1px 7px;
+  border: 1px solid var(--tone, var(--color-hairline-strong));
+  color: var(--tone, var(--color-ink-muted));
+  background: color-mix(in srgb, var(--tone, #888) 10%, transparent);
+  white-space: nowrap;
+}
+
+/* tone → accent colour for glyphs and active rail-card outlines */
+.glyph[data-tone="io"], .railCard[data-tone="io"] { --tone: #0891b2; }
+.glyph[data-tone="embedding"], .railCard[data-tone="embedding"] { --tone: #7c3aed; }
+.glyph[data-tone="attention"], .railCard[data-tone="attention"] { --tone: #1a73e8; }
+.glyph[data-tone="norm"], .railCard[data-tone="norm"] { --tone: #64748b; }
+.glyph[data-tone="mlp"], .railCard[data-tone="mlp"] { --tone: #16a34a; }
+.glyph[data-tone="residual"], .railCard[data-tone="residual"] { --tone: #f59e0b; }
+.glyph[data-tone="matrix"], .railCard[data-tone="matrix"] { --tone: #4f46e5; }
+
+/* ── connectors ─────────────────────────────────────────────────────────── */
+.connector {
+  position: relative;
+  flex: 0 0 auto;
+  align-self: center;
+  width: 60px;
+  height: 2px;
+  margin: 0 2px;
+  background: var(--color-hairline-strong);
+}
+.connector::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 6px solid var(--color-hairline-strong);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+.connectorShape {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  background: var(--color-canvas);
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.connectorChanged {
+  height: 3px;
+  background: linear-gradient(90deg, #4f46e5, var(--color-accent));
+}
+.connectorChanged::after {
+  border-left-color: var(--color-accent);
+}
+.connectorChanged .connectorShape {
+  color: #4f46e5;
+  font-weight: var(--weight-bold);
+}
+
+/* ── decoder layer band ─────────────────────────────────────────────────── */
+.layerBand {
+  position: relative;
+  flex: 0 0 auto;
+  padding: var(--space-6) var(--space-3) var(--space-3);
+  margin: 0 var(--space-1);
+  border: 2px dashed color-mix(in srgb, var(--color-accent) 40%, var(--color-hairline));
+  border-radius: var(--radius-block);
+  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
+}
+.bandLabel {
+  position: absolute;
+  top: -12px;
+  left: var(--space-4);
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-block);
+}
+.bandInner {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* ── residual block (two parallel paths) ────────────────────────────────── */
+.resblock {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 54px var(--space-4) var(--space-4);
+  margin: 0 var(--space-1);
+}
+.skipLane {
+  position: absolute;
+  top: 22px;
+  left: 38px;
+  right: 38px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed #f59e0b;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, #f59e0b 8%, transparent);
+  overflow: hidden;
+}
+.skipTag {
+  position: relative;
+  z-index: 1;
+  padding: 0 6px;
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: var(--weight-bold);
+  color: #b45309;
+  white-space: nowrap;
+}
+.skipDot {
+  position: absolute;
+  top: 50%;
+  left: 2%;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%, #fff, #f59e0b);
+  box-shadow: 0 0 8px 2px color-mix(in srgb, #f59e0b 55%, transparent);
+  animation: skipflow 2.6s linear infinite;
+}
+@keyframes skipflow {
+  from { left: 2%; }
+  to { left: 98%; }
+}
+.forkL,
+.forkR {
+  position: absolute;
+  top: 46px;
+  width: 2px;
+  height: 12px;
+  background: #f59e0b;
+  opacity: 0.55;
+}
+.forkL { left: 38px; }
+.forkR { right: 38px; }
+.xformRow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* split ● / merge ⊕ round nodes */
+.round {
+  flex: 0 0 auto;
+  position: relative;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--color-ink-subtle);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.roundSplit { border-color: #0891b2; color: #0891b2; }
+.roundAdd { border-color: #f59e0b; color: #b45309; }
+.roundActive { transform: translateY(-3px); box-shadow: var(--shadow-panel); }
+.roundLabel {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+}
+
+/* ── the travelling token ───────────────────────────────────────────────── */
+.pulse {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  z-index: 6;
+  /* Animate `transform` (GPU-composited) rather than left/top (layout/paint)
+   * so the glide between stops is smooth. JourneyView sets the translate. */
+  will-change: transform;
+  transition: transform 0.6s var(--ease-out);
+}
+.pulseCore {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--tone, var(--color-accent)));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--tone, var(--color-accent)) 26%, transparent),
+    0 0 20px 6px color-mix(in srgb, var(--tone, var(--color-accent)) 50%, transparent);
+  animation: breathe 1.7s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone, var(--color-accent)) 22%, transparent), 0 0 16px 5px color-mix(in srgb, var(--tone, var(--color-accent)) 42%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--tone, var(--color-accent)) 12%, transparent), 0 0 28px 9px color-mix(in srgb, var(--tone, var(--color-accent)) 58%, transparent); }
+}
+.pulseChip {
+  position: absolute;
+  top: -19px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 7px;
+  border-radius: var(--radius-md);
+  background: var(--tone, var(--color-accent));
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+  box-shadow: var(--shadow-block);
+}
+
+/* ── shape + cost strips ────────────────────────────────────────────────── */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--color-hairline);
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+}
+.stripLabel {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-subtle);
+}
+.dims {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dimWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dimSep {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+.dim {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 11px;
+  border: var(--border-hairline) solid var(--color-hairline-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  transition: all var(--duration-base) var(--ease-out);
+}
+.dimValue {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+.dimName {
+  font-family: var(--font-sans);
+  font-size: 8.5px;
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-subtle);
+}
+.dimFlash {
+  border-color: #4f46e5;
+  background: color-mix(in srgb, #4f46e5 12%, transparent);
+  animation: dimpop 0.5s var(--ease-out);
+}
+.dimFlash .dimValue { color: #4f46e5; }
+@keyframes dimpop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+.dimMuted {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+.featWrap {
+  flex: 1;
+  min-width: 160px;
+}
+.featCap {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  color: var(--color-ink-muted);
+  margin-bottom: 4px;
+}
+.featBar {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-canvas);
+  border: var(--border-hairline) solid var(--color-hairline);
+  overflow: hidden;
+}
+.featBar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7c3aed, #4f46e5);
+  transition: width 0.5s var(--ease-out);
+}
+.costMain {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.costMain strong {
+  font-family: var(--font-mono);
+  color: var(--color-ink);
+}
+.costAttn {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+.costAttn strong {
+  font-family: var(--font-mono);
+  color: var(--color-ink);
+}
+
+/* ── controls ───────────────────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+.play {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-block);
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: var(--shadow-block);
+}
+.play:hover { background: var(--color-accent-hover); }
+.scrub {
+  flex: 1;
+  min-width: 200px;
+  accent-color: var(--color-accent);
+}
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--color-ink-muted);
+}
+.field input[type="range"] {
+  width: 92px;
+  accent-color: var(--color-accent);
+}
+.field input[type="text"] {
+  width: 120px;
+  padding: 6px 9px;
+  border: var(--border-hairline) solid var(--color-hairline-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.select {
+  padding: 5px 8px;
+  border: var(--border-hairline) solid var(--color-hairline-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.field b {
+  min-width: 38px;
+  font-family: var(--font-mono);
+  color: var(--color-ink);
+}
+
+.caption {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+
+/* ── reused stage detail ────────────────────────────────────────────────── */
+.detail {
+  max-width: 520px;
+  border: var(--border-hairline) solid var(--color-hairline);
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  overflow: hidden;
+}
+.detailSynthetic {
+  padding: var(--space-4);
+  border: var(--border-hairline) dashed var(--color-hairline-strong);
+  border-radius: var(--radius-block);
+  background: var(--color-canvas);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.detailSynthetic code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { transition: none; }
+  .pulseCore { animation: none; }
+  .skipDot { animation: none; }
+  .dimFlash { animation: none; }
+}

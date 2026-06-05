@@ -19,6 +19,26 @@ function makeScroller() {
   };
 }
 
+// Capture topology: the hook listens on a stable ancestor, but the real
+// scroller is a descendant (mirrors the model dashboard's `.content` / `.view`).
+function makeNestedScroller() {
+  const content = document.createElement("div"); // ancestor passed to the hook
+  const view = document.createElement("div"); // the real (descendant) scroller
+  content.appendChild(view);
+  let top = 0;
+  Object.defineProperty(view, "scrollTop", { get: () => top, configurable: true });
+  return {
+    content,
+    scrollTo(y: number) {
+      top = y;
+      act(() => {
+        // Scroll events don't bubble, but they reach the ancestor in capture.
+        view.dispatchEvent(new Event("scroll"));
+      });
+    },
+  };
+}
+
 describe("useHideOnScroll", () => {
   it("starts visible", () => {
     const { result } = renderHook(() => useHideOnScroll(makeScroller().el));
@@ -49,6 +69,25 @@ describe("useHideOnScroll", () => {
     const { el, scrollTo } = makeScroller();
     const { result } = renderHook(() => useHideOnScroll(el));
     scrollTo(40);
+    expect(result.current).toBe(false);
+  });
+
+  it("in capture mode, reacts to a descendant scroller's position", () => {
+    const { content, scrollTo } = makeNestedScroller();
+    const { result } = renderHook(() => useHideOnScroll(content, { capture: true }));
+    scrollTo(200);
+    expect(result.current).toBe(true);
+  });
+
+  it("re-arms (back to visible) when resetKey changes", () => {
+    const { el, scrollTo } = makeScroller();
+    const { result, rerender } = renderHook(
+      ({ key }) => useHideOnScroll(el, { resetKey: key }),
+      { initialProps: { key: "a" } },
+    );
+    scrollTo(200);
+    expect(result.current).toBe(true);
+    rerender({ key: "b" }); // e.g. switching model views
     expect(result.current).toBe(false);
   });
 });

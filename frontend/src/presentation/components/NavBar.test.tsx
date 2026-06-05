@@ -12,13 +12,12 @@ describe("NavBar", () => {
     expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("renders the section tabs and quick-model chips once a model is loaded", () => {
+  it("renders the section tabs once a model is loaded", () => {
     useArchStore.setState({ appMode: "model" });
     render(<NavBar onSubmit={() => {}} />);
     expect(screen.getByRole("button", { name: "Model" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Compare" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Qwen3.6-27B" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "gpt-oss-20b" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Learn" })).toBeInTheDocument();
   });
 
   it("hides the tab row on the home view (only the top search bar shows)", () => {
@@ -26,7 +25,6 @@ describe("NavBar", () => {
     render(<NavBar onSubmit={() => {}} />);
     expect(screen.getByRole("textbox")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Model" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Qwen3.6-27B" })).not.toBeInTheDocument();
   });
 
   it("overlays the page on the home view and is visible by default", () => {

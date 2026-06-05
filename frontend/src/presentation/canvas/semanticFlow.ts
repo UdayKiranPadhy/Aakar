@@ -1,5 +1,14 @@
 import type { Edge } from "@xyflow/react";
 
+import {
+  containsLayerStack,
+  findByName,
+  isAttention,
+  isDecoderLayer,
+  isLayerStack,
+  isMlp,
+  isNorm,
+} from "../../domain/moduleRoles";
 import type { Node as SpecNode } from "../../domain/spec";
 import type {
   BlockVisualTone,
@@ -57,16 +66,18 @@ function buildDecoderLayerFlow(
   parent: SpecNode,
   children: ReadonlyArray<SpecNode>,
 ): SemanticFlow | null {
-  const attn = children.find(isAttention);
-  const mlp = children.find(isMlp);
+  // Exclude any child that contains a layer stack (the backbone), so the recursive
+  // predicates pick the actual attention/MLP sub-layers, not the layer container.
+  const attn = children.find((c) => isAttention(c) && !containsLayerStack(c));
+  const mlp = children.find((c) => isMlp(c) && !containsLayerStack(c));
   if (!attn || !mlp) return null;
 
+  // Pre- vs post-norm by position: `named_children()` preserves definition order,
+  // so the first norm is the pre-norm and the next distinct one is the post-norm.
+  // (No reliance on `input_layernorm`/`ln_1` naming.)
   const norms = children.filter(isNorm);
-  const preNorm =
-    children.find((node) => /(^|\.)(ln_1|input_layernorm)$/.test(node.id)) ?? norms[0];
-  const postNorm =
-    children.find((node) => /(^|\.)(ln_2|post_attention_layernorm)$/.test(node.id)) ??
-    norms.find((node) => node.id !== preNorm?.id);
+  const preNorm = norms[0];
+  const postNorm = norms.find((node) => node.id !== preNorm?.id);
 
   const input = syntheticNode(parent, "input", "flow_input", "Input", parent.input_shape);
   const attnAdd = syntheticNode(
@@ -207,7 +218,7 @@ function buildMlpFlow(
   const gate = findByName(children, "gate_proj");
   const up = findByName(children, "up_proj") ?? findByName(children, "c_fc");
   const down = findByName(children, "down_proj") ?? findByName(children, "c_proj");
-  const act = children.find((node) => /act|gelu|silu/i.test(`${node.id} ${node.type}`));
+  const act = children.find((node) => node.category === "activation");
   if (!up || !down) return null;
 
   if (gate) {
@@ -241,7 +252,7 @@ function buildMlpFlow(
     };
   }
 
-  const tail = children.find((node) => /dropout/i.test(node.type));
+  const tail = children.find((node) => node.category === "dropout");
   const nodes = compact([up, act, down, tail]);
   return {
     nodes,
@@ -255,37 +266,6 @@ function buildMlpFlow(
     tones: toneMlp(nodes),
     fitViewOptions: { padding: 0.24, maxZoom: 1 },
   };
-}
-
-function isLayerStack(parent: SpecNode, children: ReadonlyArray<SpecNode>): boolean {
-  return (
-    parent.type === "module_list" &&
-    children.length >= 4 &&
-    children.every((node) => /^Layer \d+$/.test(node.label) || isDecoderLayer(node, node.children ?? []))
-  );
-}
-
-function isDecoderLayer(parent: SpecNode, children: ReadonlyArray<SpecNode>): boolean {
-  const type = `${parent.type} ${parent.module_class ?? ""}`.toLowerCase();
-  const nameLooksRight = type.includes("decoder_layer") || /\b\w+_block\b/.test(type);
-  return nameLooksRight && children.some(isAttention) && children.some(isMlp);
-}
-
-function isAttention(node: SpecNode): boolean {
-  return `${node.type} ${node.module_class ?? ""} ${node.id}`.toLowerCase().includes("attention") ||
-    /(^|\.)(attn|self_attn)$/.test(node.id);
-}
-
-function isMlp(node: SpecNode): boolean {
-  return /mlp|feed_forward|ffn/.test(`${node.type} ${node.module_class ?? ""} ${node.id}`.toLowerCase());
-}
-
-function isNorm(node: SpecNode): boolean {
-  return /norm/.test(`${node.type} ${node.module_class ?? ""} ${node.id}`.toLowerCase());
-}
-
-function findByName(children: ReadonlyArray<SpecNode>, name: string): SpecNode | undefined {
-  return children.find((node) => node.id.endsWith(`.${name}`) || node.id === name);
 }
 
 function syntheticNode(

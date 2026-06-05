@@ -40,6 +40,7 @@ export function App() {
   );
   const { loadModel } = useArchitecture(repo);
   const appMode = useArchStore((s) => s.appMode);
+  const modelView = useArchStore((s) => s.modelView);
   const hasSpec = useArchStore((s) => s.spec !== null);
   const error = useArchStore((s) => s.error);
   // Show the sidebar for partial failures where the model id is known and at
@@ -64,9 +65,17 @@ export function App() {
   // view scrolls (scrollEl is null otherwise), so this is a no-op elsewhere.
   const navHidden = useHideOnScroll(scrollEl);
 
+  // Model dashboard: collapse just the nav's top row (brand + search) on
+  // scroll-down, keeping the section tabs pinned. The real scroller is each
+  // view's own `.view` element (which remounts per view), so we listen on the
+  // stable `.content` wrapper in the capture phase and re-arm on view change.
+  const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
+  const setContentRef = useCallback((el: HTMLElement | null) => setContentEl(el), []);
+  const navCompact = useHideOnScroll(contentEl, { capture: true, resetKey: modelView });
+
   return (
     <div className={styles.root}>
-      <NavBar onSubmit={loadModel} hidden={navHidden} />
+      <NavBar onSubmit={loadModel} hidden={navHidden} compact={navCompact} />
 
       <main className={styles.main}>
         {appMode === "home" && (
@@ -86,7 +95,7 @@ export function App() {
         {appMode === "model" && (
           <div className={styles.dashboard}>
             {showSidebar && <ModelSidebar />}
-            <section className={styles.content}>
+            <section ref={setContentRef} className={styles.content}>
               <ModelViewHost onRetryWithToken={loadModel} />
             </section>
           </div>

@@ -11,12 +11,28 @@ const node = (id: string, type: string, label = id): Node => ({
   params: {},
 });
 
+// A realistic decoder layer as the backend emits it: the container carries
+// `category: "container"`, norms a 1-D `weight_shape`, and attention/MLP the
+// `intermediates` fingerprint — the structural signals classification keys off
+// (never the class name).
+const decoderLayer = (i: number): Node => ({
+  id: `model.layers.${i}`,
+  type: "qwen3_decoder_layer",
+  label: `Layer ${i}`,
+  module_class: "Qwen3DecoderLayer",
+  params: {},
+  children: [
+    { ...node(`model.layers.${i}.input_layernorm`, "qwen3_rms_norm", "Qwen3RMSNorm"), weight_shape: [2048] },
+    { ...node(`model.layers.${i}.self_attn`, "qwen3_attention", "Qwen3Attention"), intermediates: { attn_scores: "[B, 16, S, S]" } },
+    { ...node(`model.layers.${i}.post_attention_layernorm`, "qwen3_rms_norm", "Qwen3RMSNorm"), weight_shape: [2048] },
+    { ...node(`model.layers.${i}.mlp`, "qwen3_mlp", "Qwen3MLP"), intermediates: { up: "[B, S, 3072]" } },
+  ],
+});
+
 describe("buildSemanticFlow — layer stacks", () => {
   it("renders ModuleList decoder children as compact layer cells in a grid", () => {
-    const parent = node("model.layers", "module_list", "ModuleList");
-    const children = Array.from({ length: 28 }, (_, index) =>
-      node(`model.layers.${index}`, "qwen3_decoder_layer", `Layer ${index}`),
-    );
+    const parent: Node = { ...node("model.layers", "module_list", "ModuleList"), category: "container" };
+    const children = Array.from({ length: 28 }, (_, index) => decoderLayer(index));
 
     const flow = buildSemanticFlow(parent, children);
 
@@ -32,10 +48,10 @@ describe("buildSemanticFlow — decoder layers", () => {
   it("reorders Qwen decoder children into forward-pass order with residual glyphs", () => {
     const parent = node("model.layers.0", "qwen3_decoder_layer", "Qwen3DecoderLayer");
     const children = [
-      node("model.layers.0.self_attn", "qwen3_attention", "Qwen3Attention"),
-      node("model.layers.0.mlp", "qwen3_mlp", "Qwen3MLP"),
-      node("model.layers.0.input_layernorm", "qwen3_rms_norm", "Qwen3RMSNorm"),
-      node("model.layers.0.post_attention_layernorm", "qwen3_rms_norm", "Qwen3RMSNorm"),
+      { ...node("model.layers.0.self_attn", "qwen3_attention", "Qwen3Attention"), intermediates: { attn_scores: "[B, 16, S, S]" } },
+      { ...node("model.layers.0.mlp", "qwen3_mlp", "Qwen3MLP"), intermediates: { up: "[B, S, 3072]" } },
+      { ...node("model.layers.0.input_layernorm", "qwen3_rms_norm", "Qwen3RMSNorm"), weight_shape: [2048] },
+      { ...node("model.layers.0.post_attention_layernorm", "qwen3_rms_norm", "Qwen3RMSNorm"), weight_shape: [2048] },
     ];
 
     const flow = buildSemanticFlow(parent, children);

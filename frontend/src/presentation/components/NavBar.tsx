@@ -3,7 +3,7 @@
  *
  * Row 1 — brand (left) + pill search (centered). Empty side spacers keep the
  * search centred on the page regardless of the brand's width.
- * Row 2 — SectionTabs + QuickModels (visualizer view only).
+ * Row 2 — SectionTabs (visualizer view only).
  *
  * The whole nav is a single visual unit (one hairline border below). The inner
  * `Brand` sub-component is private to this file; if it grows a second caller,
@@ -19,11 +19,14 @@ import styles from "./NavBar.module.css";
 
 type Props = {
   onSubmit: (modelId: string) => void;
-  /** Headroom pattern: when true the nav slides up out of view (on scroll-down). */
+  /** Headroom pattern: when true the whole nav slides up out of view (home). */
   hidden?: boolean;
+  /** Partial headroom (model dashboard): collapse the top row (brand + search)
+   *  on scroll-down, leaving the section tabs pinned. */
+  compact?: boolean;
 };
 
-export function NavBar({ onSubmit, hidden = false }: Props) {
+export function NavBar({ onSubmit, hidden = false, compact = false }: Props) {
   const setAppMode = useArchStore((s) => s.setAppMode);
   const appMode = useArchStore((s) => s.appMode);
 
@@ -33,6 +36,9 @@ export function NavBar({ onSubmit, hidden = false }: Props) {
   // snap geometry.
   const showTabs = appMode !== "home";
   const overlay = appMode === "home";
+  // Only collapse the top row when the tab row remains to pin — otherwise there
+  // would be nothing left of the nav.
+  const collapsed = compact && showTabs;
 
   return (
     <div
@@ -41,10 +47,11 @@ export function NavBar({ onSubmit, hidden = false }: Props) {
         !showTabs && styles.wrapperSingle,
         overlay && styles.wrapperOverlay,
         hidden && styles.wrapperHidden,
+        collapsed && styles.wrapperCompact,
       )}
     >
       <header className={styles.header}>
-        <div className={styles.row1}>
+        <div className={clsx(styles.row1, collapsed && styles.row1Collapsed)}>
           <div className={styles.side}>
             <Brand onClick={() => setAppMode("home")} />
           </div>

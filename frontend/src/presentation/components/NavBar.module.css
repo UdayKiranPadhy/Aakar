@@ -1,16 +1,20 @@
 /* ── Outer wrapper that controls the headroom-collapse animation ─────── */
 
 .wrapper {
+  --nav-row1-h: 64px;
+  --nav-row2-h: 44px;
   position: relative;
   flex-shrink: 0;
   overflow: visible;
-  height: 108px;
-  transition: transform var(--duration-base) var(--ease-out);
+  height: calc(var(--nav-row1-h) + var(--nav-row2-h));
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    height var(--duration-base) var(--ease-out);
   will-change: transform;
 }
 /* Home view: only the top bar (no tab row), so reserve one row's height. */
 .wrapperSingle {
-  height: 64px;
+  height: var(--nav-row1-h);
 }
 /* Home view: float over the scrolling landing page instead of reserving layout
  * height, so hiding/showing the nav never resizes the scroll-snap container. */
@@ -25,6 +29,11 @@
 .wrapperHidden {
   transform: translateY(-100%);
 }
+/* Model dashboard headroom: collapse the top row (brand + search) on
+ * scroll-down, leaving just the section tabs pinned. */
+.wrapperCompact {
+  height: var(--nav-row2-h);
+}
 
 .header {
   position: absolute;
@@ -35,7 +44,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wrapper {
+  .wrapper,
+  .row1,
+  .row1Collapsed {
     transition: none;
   }
 }
@@ -44,10 +55,27 @@
 
 .row1 {
   display: flex;
-  height: 64px;
+  height: var(--nav-row1-h);
   align-items: center;
   gap: 24px;
   padding: 0 20px;
+  overflow: hidden;
+  transition:
+    height var(--duration-base) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out),
+    visibility 0s;
+}
+/* Collapsed: height + opacity animate out, then `visibility` flips — so the
+ * search input drops out of the tab order only once it's actually hidden. */
+.row1Collapsed {
+  height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    height var(--duration-base) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out),
+    visibility 0s linear var(--duration-base);
 }
 
 .brand {
@@ -91,10 +119,4 @@
   justify-content: center;
   gap: 8px;
   padding: 0 20px;
-}
-
-.divider {
-  height: 24px;
-  width: 1px;
-  background: var(--color-hairline);
 }
