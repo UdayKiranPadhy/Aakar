@@ -9,7 +9,7 @@ import { useState } from "react";
 import { clsx } from "clsx";
 
 import { useModelInfo } from "../../../application/useModelInfo";
-import type { ModelInfo, HubSibling } from "../../../domain/modelInfo";
+import type { ModelInfo, HubSibling, HubToken } from "../../../domain/modelInfo";
 import type { Spec } from "../../../domain/spec";
 import { formatBytes, formatParamCount } from "../../components/ui/format";
 import { Pill } from "../../components/ui/Pill";
@@ -56,6 +56,18 @@ function quantMethodLabel(config: ModelInfo["config"]): string | null {
   if (!qc) return null;
   const method = qc.quant_method;
   return typeof method === "string" ? method.toUpperCase() : "quantized";
+}
+
+// A tokenizer special token is either a plain string or an `AddedToken` object
+// (`{ content, lstrip, … }`, e.g. DeepSeek / Qwen). Pull out the displayable
+// string; return null for anything else so it's skipped (never rendered raw —
+// rendering an object as a React child crashes the whole view).
+function tokenText(token: HubToken | undefined): string | null {
+  if (typeof token === "string") return token;
+  if (token && typeof token === "object" && typeof token.content === "string") {
+    return token.content;
+  }
+  return null;
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -319,9 +331,12 @@ function TokenizerInfo({ info }: { info: ModelInfo }) {
   if (!tok) return null;
 
   const tokens: Array<{ key: string; label: string; value: string }> = [];
-  if (tok.bos_token) tokens.push({ key: "bos", label: "BOS", value: tok.bos_token });
-  if (tok.eos_token) tokens.push({ key: "eos", label: "EOS", value: tok.eos_token });
-  if (tok.pad_token) tokens.push({ key: "pad", label: "PAD", value: tok.pad_token });
+  const bos = tokenText(tok.bos_token);
+  const eos = tokenText(tok.eos_token);
+  const pad = tokenText(tok.pad_token);
+  if (bos) tokens.push({ key: "bos", label: "BOS", value: bos });
+  if (eos) tokens.push({ key: "eos", label: "EOS", value: eos });
+  if (pad) tokens.push({ key: "pad", label: "PAD", value: pad });
 
   if (tokens.length === 0) return null;
 

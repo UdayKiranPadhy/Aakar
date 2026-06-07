@@ -16,6 +16,7 @@ from aakar_api.infrastructure.introspection.node_metadata import (
     parameter_shape,
     source_url,
 )
+from aakar_api.infrastructure.introspection.role import is_decoder_layer, role
 from aakar_api.infrastructure.introspection.walk_context import WalkContext
 
 
@@ -38,7 +39,10 @@ def walk_module_tree(
 
     class_name = type(module).__name__
     param_count = sum(param.numel() for param in module.parameters(recurse=True))
-    input_shape, output_shape = io_shapes(module, ctx)
+    node_role = role(module, ctx)
+    input_shape, output_shape = io_shapes(
+        module, ctx, role=node_role, decoder_layer=is_decoder_layer(module, ctx)
+    )
     buffers = buffer_shapes(module)
 
     return Node(
@@ -59,7 +63,8 @@ def walk_module_tree(
         memory_bytes=param_count * ctx.dtype_bytes if param_count else None,
         buffers=buffers or None,
         category=category(module),
+        role=node_role,
         source_url=source_url(module),
-        flops=flops(module, ctx),
-        intermediates=intermediates(module, ctx),
+        flops=flops(module, ctx, role=node_role),
+        intermediates=intermediates(module, ctx, role=node_role),
     )

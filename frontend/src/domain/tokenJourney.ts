@@ -14,7 +14,7 @@
  * STRUCTURE narrative: tensor shapes and operations, never real values.
  */
 
-import { isAttention, isLayerStack, isMlp, isNorm } from "./moduleRoles";
+import { isAttention, isLayerStack, isMlp, isMoe, isNorm } from "./moduleRoles";
 import { findNodeByPath, type ExpansionPath } from "./navigation";
 import type { Node, Spec } from "./spec";
 
@@ -179,7 +179,7 @@ export function deriveTokenJourney(spec: Spec): JourneyResult {
   }
 
   // 3 — decoder layer stack → one representative layer, repeated.
-  const stack = findFirst(spec.graph, (n) => isLayerStack(n, n.children ?? []));
+  const stack = findFirst(spec.graph, (n) => isLayerStack(n));
   let layer: JourneyLayer | null = null;
   if (stack) {
     const representative = stack.node.children?.[0];
@@ -311,7 +311,9 @@ function makeResidualBlock(
   ctx: BlockCtx,
 ): ResidualBlock {
   const attn = isAttention(sub);
-  const isMoe = !!(ctx.experts && ctx.experts > 1);
+  // Whether *this* sub-layer is MoE is the backend's per-module fact — accurate even when a
+  // model mixes dense and MoE layers (only some carry experts), unlike a config-wide flag.
+  const moe = isMoe(sub);
 
   const split: JourneyStage = {
     id: `${sub.id}__split`,
@@ -343,14 +345,14 @@ function makeResidualBlock(
     label: sub.label,
     caption: attn
       ? "Transform path: tokens attend to each other — Q/K/V are split into heads, scores = QKᵀ/√d → softmax → weighted V."
-      : isMoe
+      : moe
         ? "Transform path: a router sends each token to its top-k experts (Mixture-of-Experts), then combines their outputs."
         : "Transform path: per-token feature mixing — project up, apply the activation, project back down.",
     inputShape: sub.input_shape ?? ctx.hiddenShape,
     outputShape: sub.output_shape ?? ctx.hiddenShape,
     nodePath: [...layerPath, sub.id],
     ...(sub.intermediates ? { intermediates: sub.intermediates } : {}),
-    ...(attn ? { badges: attnBadges(ctx) } : isMoe ? { badges: moeBadges(ctx), isMoe: true } : {}),
+    ...(attn ? { badges: attnBadges(ctx) } : moe ? { badges: moeBadges(ctx), isMoe: true } : {}),
   });
 
   const add: JourneyStage = {

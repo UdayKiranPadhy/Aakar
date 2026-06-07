@@ -10,14 +10,6 @@ import torch
 import transformers
 from torch import nn
 
-from aakar_api.infrastructure.introspection._naming import (
-    ATTENTION_HEAD_ATTRS,
-    ATTENTION_HEAD_DIM_ATTRS,
-    ATTENTION_KV_HEAD_ATTRS,
-    ATTENTION_PROJECTION_NAMES,
-    MLP_PROJECTION_NAMES,
-    MLP_SIZE_ATTRS,
-)
 from aakar_api.infrastructure.introspection.walk_context import WalkContext
 
 _MODULE_PARAM_KEYS = (
@@ -61,27 +53,49 @@ def extract_params(module: nn.Module) -> dict[str, Any]:
     return params
 
 
-def io_shapes(module: nn.Module, ctx: WalkContext) -> tuple[str | None, str | None]:
+def io_shapes(
+    module: nn.Module,
+    ctx: WalkContext,
+    *,
+    role: str | None,
+    decoder_layer: bool,
+) -> tuple[str | None, str | None]:
+    """I/O tensor shapes, decided from facts (real dims, role, structure) — never class names.
+
+    `role` strings are the contract from `role.py`; compared as literals here to keep the
+    dependency one-directional (role.py imports this module's `category`)."""
     if isinstance(module, nn.Linear):
         return f"[B, S, {module.in_features}]", f"[B, S, {module.out_features}]"
     if isinstance(module, nn.Embedding):
         return "[B, S]", f"[B, S, {module.embedding_dim}]"
 
-    class_name = type(module).__name__
-    if _is_norm(module, class_name):
-        shape = f"[B, S, {ctx.hidden_size}]"
-        return shape, shape
-    if isinstance(module, nn.Dropout):
-        shape = f"[B, S, {ctx.hidden_size}]"
-        return shape, shape
-    if _is_hidden_to_hidden_module(class_name):
-        shape = f"[B, S, {ctx.hidden_size}]"
-        return shape, shape
-    if class_name.endswith("ForCausalLM") or class_name.endswith("LMHeadModel"):
-        return "[B, S]", f"[B, S, {ctx.vocab_size}]"
-    if class_name.endswith("Model") and not class_name.endswith("ForSequenceClassification"):
-        return "[B, S]", f"[B, S, {ctx.hidden_size}]"
+    hidden = f"[B, S, {ctx.hidden_size}]"
+    # Shape-preserving blocks: norms, attention, MLP/MoE, a full decoder layer, dropout.
+    shape_preserving = role in ("norm", "attention", "mlp", "moe")
+    if shape_preserving or decoder_layer or isinstance(module, nn.Dropout):
+        return hidden, hidden
+    # Root vs backbone, by structure: a module whose subtree holds the token-embedding table
+    # is the language stack. If it also holds a vocab-width projection (its LM head, tied or
+    # not) it emits logits; otherwise it's the backbone, emitting hidden states.
+    if _subtree_has_embedding(module, ctx.vocab_size):
+        if _subtree_has_linear_out(module, ctx.vocab_size):
+            return "[B, S]", f"[B, S, {ctx.vocab_size}]"
+        return "[B, S]", hidden
     return None, None
+
+
+def _subtree_has_embedding(module: nn.Module, num_embeddings: int) -> bool:
+    return any(
+        isinstance(sub, nn.Embedding) and sub.num_embeddings == num_embeddings
+        for sub in module.modules()
+    )
+
+
+def _subtree_has_linear_out(module: nn.Module, out_features: int) -> bool:
+    return any(
+        isinstance(sub, nn.Linear) and sub.out_features == out_features
+        for sub in module.modules()
+    )
 
 
 def buffer_shapes(module: nn.Module) -> dict[str, list[int]]:
@@ -122,86 +136,42 @@ def category(module: nn.Module) -> str | None:
     return None
 
 
-def flops(module: nn.Module, ctx: WalkContext) -> int | None:
+def flops(module: nn.Module, ctx: WalkContext, *, role: str | None) -> int | None:
     tokens = ctx.seq_ref * ctx.batch_ref
     if isinstance(module, nn.Linear):
         return 2 * tokens * module.in_features * module.out_features
     if isinstance(module, nn.Embedding):
         return 0
-
-    class_name = type(module).__name__
-    if _is_norm(module, class_name):
+    if role == "norm":
         return 5 * tokens * ctx.hidden_size
     return None
 
 
-def intermediates(module: nn.Module, ctx: WalkContext) -> dict[str, str] | None:
-    """Per-class intermediate tensor shapes not visible from in/out alone.
-    We fingerprint by either (a) the presence
-    of module-config attributes like `num_heads` / `intermediate_size`, or
-    (b) the names of projection submodules (`q_proj`, `gate_proj`, …) — both
-    constrained by HF's state-dict naming convention. See `_naming.py`.
-    """
-    if _looks_like_attention(module):
-        return _attention_intermediates(module, ctx)
-    if _looks_like_mlp(module):
-        return _mlp_intermediates(module, ctx)
+def intermediates(
+    module: nn.Module, ctx: WalkContext, *, role: str | None
+) -> dict[str, str] | None:
+    """Symbolic intermediate tensor shapes, derived from the module's `role` and the config
+    facts (head counts, head dim, FFN width) — never from attribute or child names. Attention
+    exposes its q/k/v/score shapes; an MLP/MoE its up-projection width."""
+    if role == "attention":
+        if not ctx.num_heads or not ctx.head_dim:
+            return None
+        return {
+            "q": f"[B, {ctx.num_heads}, S, {ctx.head_dim}]",
+            "k": f"[B, {ctx.num_kv_heads}, S, {ctx.head_dim}]",
+            "v": f"[B, {ctx.num_kv_heads}, S, {ctx.head_dim}]",
+            "attn_scores": f"[B, {ctx.num_heads}, S, S]",
+        }
+    if role in ("mlp", "moe") and ctx.intermediate_size:
+        return {"up": f"[B, S, {ctx.intermediate_size}]"}
     return None
-
-
-def _looks_like_attention(module: nn.Module) -> bool:
-    if _first_attr(module, ATTENTION_HEAD_ATTRS):
-        return True
-    return _has_any_child(module, ATTENTION_PROJECTION_NAMES)
-
-
-def _looks_like_mlp(module: nn.Module) -> bool:
-    if _first_attr(module, MLP_SIZE_ATTRS):
-        return True
-    return _has_any_child(module, MLP_PROJECTION_NAMES)
-
-
-def _attention_intermediates(module: nn.Module, ctx: WalkContext) -> dict[str, str] | None:
-    num_heads = _first_attr(module, ATTENTION_HEAD_ATTRS) or ctx.num_heads
-    num_kv_heads = (
-        _first_attr(module, ATTENTION_KV_HEAD_ATTRS) or ctx.num_kv_heads or num_heads
-    )
-    head_dim = _first_attr(module, ATTENTION_HEAD_DIM_ATTRS) or ctx.head_dim
-    if not num_heads or not head_dim:
-        return None
-    return {
-        "q": f"[B, {num_heads}, S, {head_dim}]",
-        "k": f"[B, {num_kv_heads}, S, {head_dim}]",
-        "v": f"[B, {num_kv_heads}, S, {head_dim}]",
-        "attn_scores": f"[B, {num_heads}, S, S]",
-    }
-
-
-def _mlp_intermediates(module: nn.Module, ctx: WalkContext) -> dict[str, str] | None:
-    intermediate_size = _first_attr(module, MLP_SIZE_ATTRS) or ctx.intermediate_size
-    if not intermediate_size:
-        return None
-    return {"up": f"[B, S, {intermediate_size}]"}
-
-
-def _first_attr(module: nn.Module, names: tuple[str, ...]) -> Any:
-    """Return the first truthy attribute matching one of `names`."""
-    for name in names:
-        value = getattr(module, name, None)
-        if value:
-            return value
-    return None
-
-
-def _has_any_child(module: nn.Module, names: frozenset[str]) -> bool:
-    return any(name in names for name, _ in module.named_children())
 
 
 # ─── Source-link construction ───────────────────────────────────────────────
 # Why this exists: there is no library-provided schema describing what an
-# attention module looks like (see _naming.py). The honest escape valve is
-# to let students jump straight to the actual source on GitHub. We support
-# stock `transformers.*` and `torch.*` modules; custom code is skipped.
+# attention module looks like, so the honest escape valve is to let students
+# jump straight to the actual source on GitHub. We support stock
+# `transformers.*` and `torch.*` modules; custom code is skipped.
 
 _SOURCE_REPOS: tuple[tuple[str, str, str, str], ...] = (
     # (package prefix, GitHub owner/repo, in-repo source root, version string)
@@ -240,18 +210,4 @@ def _line_anchor(cls: type) -> str:
     return f"#L{line}"
 
 
-def _is_norm(module: nn.Module, class_name: str) -> bool:
-    return isinstance(module, nn.LayerNorm) or "RMSNorm" in class_name or "LayerNorm" in class_name
-
-
-def _is_hidden_to_hidden_module(class_name: str) -> bool:
-    hidden_to_hidden_names = (
-        "Attention",
-        "MLP",
-        "FeedForward",
-        "FFN",
-        "DecoderLayer",
-        "EncoderLayer",
-    )
-    return any(name in class_name for name in hidden_to_hidden_names)
 

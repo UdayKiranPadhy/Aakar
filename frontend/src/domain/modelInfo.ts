@@ -12,6 +12,13 @@ export type HubSibling = Readonly<{
   size?: number;
 }>;
 
+/**
+ * A special token in `tokenizer_config`. The Hub returns these as either a
+ * plain string (`"<s>"`) or an `AddedToken` object (`{ content, lstrip, … }`,
+ * e.g. DeepSeek, Qwen). `null` when the slot is unset (`"unk_token": null`).
+ */
+export type HubToken = string | Readonly<{ content?: string }> | null;
+
 export type ModelInfo = Readonly<{
   model_id: string;
   author?: string;
@@ -44,9 +51,9 @@ export type ModelInfo = Readonly<{
     model_type?: string;
     quantization_config?: Readonly<Record<string, unknown>>;
     tokenizer_config?: Readonly<{
-      bos_token?: string;
-      eos_token?: string;
-      pad_token?: string;
+      bos_token?: HubToken;
+      eos_token?: HubToken;
+      pad_token?: HubToken;
     }>;
   }>;
 }>;

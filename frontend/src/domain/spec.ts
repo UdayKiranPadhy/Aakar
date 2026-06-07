@@ -38,6 +38,21 @@ export type Node = Readonly<{
    */
   category?: string;
   /**
+   * Semantic role, decided by the backend from facts only (config dims + real
+   * tensor shapes + namespace `category` + structure) — never from class /
+   * attribute / child names. See `infrastructure/introspection/role.py`.
+   *   - `"layer_stack"`        — the ModuleList of decoder layers
+   *   - `"container"`          — any other ModuleList/Sequential
+   *   - `"norm"`               — LayerNorm/RMSNorm
+   *   - `"token_embedding"` | `"position_embedding"` | `"embedding"`
+   *   - `"attention"`          — block with head-width projections
+   *   - `"mlp"` | `"moe"`      — FFN block; `moe` when experts are present
+   *   - `"lm_head"`            — a Linear projecting to vocab_size
+   *   - `"linear"`             — any other Linear leaf
+   * Absent (`undefined`) when no rule proves a role — the UI renders a generic card.
+   */
+  role?: string;
+  /**
    * GitHub link to the module's class definition. Populated for stock
    * `transformers.*` and `torch.*` classes (pinned to the installed package
    * version when it's a clean semver, otherwise `main`). Absent for custom

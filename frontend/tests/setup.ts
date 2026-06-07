@@ -59,7 +59,6 @@ beforeEach(() => {
     loading: false,
     error: null,
     modelInput: "",
-    view: "home",
   });
 });
 

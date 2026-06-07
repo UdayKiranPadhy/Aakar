@@ -21,6 +21,7 @@ import { useArchitecture } from "./application/useArchitecture";
 import { HttpArchitectureRepository } from "./infrastructure/api/HttpArchitectureRepository";
 import { useArchStore } from "./store/archStore";
 import { CompareHost } from "./presentation/compare/CompareHost";
+import { ErrorBoundary } from "./presentation/components/ErrorBoundary";
 import { ModelSidebar } from "./presentation/components/ModelSidebar";
 import { NavBar } from "./presentation/components/NavBar";
 import { PlaceholderScreen } from "./presentation/components/PlaceholderScreen";
@@ -43,6 +44,9 @@ export function App() {
   const modelView = useArchStore((s) => s.modelView);
   const hasSpec = useArchStore((s) => s.spec !== null);
   const error = useArchStore((s) => s.error);
+  // Identity of whatever is loaded — used to key the model-view error boundary
+  // so loading a different model clears any caught render crash.
+  const modelId = useArchStore((s) => s.spec?.model_id ?? s.error?.modelId ?? null);
   // Show the sidebar for partial failures where the model id is known and at
   // least the Overview + Research tabs can still fetch from the HF Hub.
   const showSidebar =
@@ -78,37 +82,45 @@ export function App() {
       <NavBar onSubmit={loadModel} hidden={navHidden} compact={navCompact} />
 
       <main className={styles.main}>
-        {appMode === "home" && (
-          // The inner div is the scroll viewport (main stays overflow:hidden so
-          // the nav doesn't move). It is also the scroll-snap container.
-          <div ref={setScrollRef} className={styles.homeScroll}>
-            {scrollEl && (
-              <MotionConfig reducedMotion="user">
-                <ScrollRootContext.Provider value={scrollRootRef}>
-                  <LandingPage onSubmit={loadModel} />
-                </ScrollRootContext.Provider>
-              </MotionConfig>
-            )}
-          </div>
-        )}
+        {/* Catch-all: a crash in any mode degrades to a friendly page while the
+            nav stays alive. Keyed on appMode so switching tabs clears it. */}
+        <ErrorBoundary key={appMode}>
+          {appMode === "home" && (
+            // The inner div is the scroll viewport (main stays overflow:hidden so
+            // the nav doesn't move). It is also the scroll-snap container.
+            <div ref={setScrollRef} className={styles.homeScroll}>
+              {scrollEl && (
+                <MotionConfig reducedMotion="user">
+                  <ScrollRootContext.Provider value={scrollRootRef}>
+                    <LandingPage onSubmit={loadModel} />
+                  </ScrollRootContext.Provider>
+                </MotionConfig>
+              )}
+            </div>
+          )}
 
-        {appMode === "model" && (
-          <div className={styles.dashboard}>
-            {showSidebar && <ModelSidebar />}
-            <section ref={setContentRef} className={styles.content}>
-              <ModelViewHost onRetryWithToken={loadModel} />
-            </section>
-          </div>
-        )}
+          {appMode === "model" && (
+            <div className={styles.dashboard}>
+              {showSidebar && <ModelSidebar />}
+              <section ref={setContentRef} className={styles.content}>
+                {/* Inner boundary: a malformed field in one model view can't blank
+                    the dashboard. Remounts per model+view so navigating recovers. */}
+                <ErrorBoundary key={`${modelId ?? "none"}:${modelView}`}>
+                  <ModelViewHost onRetryWithToken={loadModel} />
+                </ErrorBoundary>
+              </section>
+            </div>
+          )}
 
-        {appMode === "compare" && <CompareHost />}
+          {appMode === "compare" && <CompareHost />}
 
-        {appMode === "learn" && (
-          <PlaceholderScreen
-            title="Learn"
-            message="Guided LLM-architecture concepts are coming soon."
-          />
-        )}
+          {appMode === "learn" && (
+            <PlaceholderScreen
+              title="Learn"
+              message="Guided LLM-architecture concepts are coming soon."
+            />
+          )}
+        </ErrorBoundary>
       </main>
     </div>
   );

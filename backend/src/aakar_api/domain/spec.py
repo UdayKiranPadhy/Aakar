@@ -50,6 +50,19 @@ class Node(BaseModel):
     #   "embedding"  — torch.nn.modules.sparse
     #   "container"  — torch.nn.modules.container (ModuleList, Sequential, …)
     category: str | None = None
+    # Semantic role, decided from facts only (config dims + real tensor shapes +
+    # namespace category + structure) — never from class/attribute/child names.
+    # See infrastructure/introspection/role.py. One of:
+    #   "layer_stack" — the ModuleList of decoder layers (len == num_hidden_layers)
+    #   "container"   — any other ModuleList/Sequential
+    #   "norm"        — LayerNorm/RMSNorm (namespace, or a leaf with one 1-D weight)
+    #   "token_embedding" / "position_embedding" / "embedding"
+    #   "attention"   — block with head-width projections (nH·hd / nKV·hd / fused QKV)
+    #   "mlp" / "moe" — FFN block (intermediate-width projection); moe when experts present
+    #   "lm_head"     — a Linear projecting to vocab_size
+    #   "linear"      — any other Linear leaf
+    # None when no rule proves a role (the UI then renders a generic card).
+    role: str | None = None
     # GitHub link to the module's class definition. Populated for stock
     # `transformers.*` and `torch.*` classes (pinned to the installed
     # package version when it's a clean semver, else `main`). None for

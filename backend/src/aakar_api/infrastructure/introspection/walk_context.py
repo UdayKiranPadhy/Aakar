@@ -27,6 +27,9 @@ class WalkContext:
     num_kv_heads: int
     head_dim: int
     intermediate_size: int
+    num_layers: int = 0
+    num_experts: int = 0
+    max_position: int = 0
     seq_ref: int = FLOPS_REFERENCE_SEQUENCE
     batch_ref: int = FLOPS_REFERENCE_BATCH
 
@@ -45,16 +48,17 @@ def dtype_bytes(dtype: str | None) -> int:
 
 
 def walk_context_from_config(config: Any, param_dtype: str | None) -> WalkContext:
-    hidden_size = _int_or_default(getattr(config, "hidden_size", None), 0)
-    vocab_size = _int_or_default(getattr(config, "vocab_size", None), 0)
-    num_heads = _int_or_default(getattr(config, "num_attention_heads", None), 0)
-    num_kv_heads = _int_or_default(
-        getattr(config, "num_key_value_heads", None),
-        num_heads,
-    )
+    # Multimodal configs (VLMs) nest the decoder dims in a text sub-config; transformers'
+    # own `get_text_config()` returns it (or the config itself for text-only models), so the
+    # facts come from the right place without naming a `text_config`/`llm_config` key by hand.
+    text = _text_config(config)
+    hidden_size = _int_or_default(getattr(text, "hidden_size", None), 0)
+    vocab_size = _int_or_default(getattr(text, "vocab_size", None), 0)
+    num_heads = _int_or_default(getattr(text, "num_attention_heads", None), 0)
+    num_kv_heads = _int_or_default(getattr(text, "num_key_value_heads", None), num_heads)
 
-    head_dim = _head_dim(config, hidden_size, num_heads)
-    intermediate_size = _intermediate_size(config, hidden_size)
+    head_dim = _head_dim(text, hidden_size, num_heads)
+    intermediate_size = _intermediate_size(text, hidden_size)
 
     return WalkContext(
         dtype_bytes=dtype_bytes(param_dtype),
@@ -64,7 +68,26 @@ def walk_context_from_config(config: Any, param_dtype: str | None) -> WalkContex
         num_kv_heads=num_kv_heads,
         head_dim=head_dim,
         intermediate_size=intermediate_size,
+        num_layers=_int_or_default(
+            getattr(text, "num_hidden_layers", None) or getattr(text, "n_layer", None), 0
+        ),
+        num_experts=_int_or_default(
+            getattr(text, "num_local_experts", None) or getattr(text, "n_routed_experts", None),
+            0,
+        ),
+        max_position=_int_or_default(getattr(text, "max_position_embeddings", None), 0),
     )
+
+
+def _text_config(config: Any) -> Any:
+    """The decoder/text sub-config for multimodal models, else the config itself."""
+    getter = getattr(config, "get_text_config", None)
+    if callable(getter):
+        try:
+            return getter()
+        except Exception:  # noqa: BLE001 — defensive; fall back to the top-level config
+            return config
+    return config
 
 
 def _head_dim(config: Any, hidden_size: int, num_heads: int) -> int:

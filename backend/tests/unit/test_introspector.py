@@ -204,12 +204,8 @@ async def test_intermediates_on_attention_and_mlp(
 
 
 def test_intermediates_use_config_kv_heads_for_gqa() -> None:
-    """Grouped-query attention has fewer K/V heads than Q heads."""
-
-    class FakeAttention(nn.Module):
-        head_dim = 128
-        num_heads = 16
-
+    """Grouped-query attention has fewer K/V heads than Q heads. The q/k/v/score shapes are
+    derived from the config facts (carried on the WalkContext), gated by the module's role."""
     ctx = _WalkCtx(
         dtype_bytes=2,
         hidden_size=1024,
@@ -222,7 +218,7 @@ def test_intermediates_use_config_kv_heads_for_gqa() -> None:
         batch_ref=1,
     )
 
-    out = TransformersIntrospector._intermediates(FakeAttention(), ctx)
+    out = TransformersIntrospector._intermediates(nn.Module(), ctx, role="attention")
     assert out is not None
     assert out["q"] == "[B, 16, S, 128]"
     assert out["k"] == "[B, 8, S, 128]"

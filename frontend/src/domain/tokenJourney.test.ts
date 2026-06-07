@@ -18,17 +18,18 @@ function llamaLayer(i: number): Node {
     module_class: "LlamaDecoderLayer",
     has_internals: true,
     children: [
-      n({ id: `model.layers.${i}.input_layernorm`, type: "llama_rms_norm", label: "input_layernorm", weight_shape: [2048] }),
+      n({ id: `model.layers.${i}.input_layernorm`, type: "llama_rms_norm", label: "input_layernorm", role: "norm", weight_shape: [2048] }),
       n({
         id: `model.layers.${i}.self_attn`,
         type: "llama_attention",
         label: "self_attn",
         module_class: "LlamaAttention",
+        role: "attention",
         has_internals: true,
         intermediates: { q: "[B, 32, S, 64]", k: "[B, 8, S, 64]", v: "[B, 8, S, 64]", attn_scores: "[B, 32, S, S]" },
       }),
-      n({ id: `model.layers.${i}.post_attention_layernorm`, type: "llama_rms_norm", label: "post_attention_layernorm", weight_shape: [2048] }),
-      n({ id: `model.layers.${i}.mlp`, type: "llama_mlp", label: "mlp", module_class: "LlamaMLP", has_internals: true, intermediates: { up: "[B, S, 8192]" } }),
+      n({ id: `model.layers.${i}.post_attention_layernorm`, type: "llama_rms_norm", label: "post_attention_layernorm", role: "norm", weight_shape: [2048] }),
+      n({ id: `model.layers.${i}.mlp`, type: "llama_mlp", label: "mlp", module_class: "LlamaMLP", role: "mlp", has_internals: true, intermediates: { up: "[B, S, 8192]" } }),
     ],
   });
 }
@@ -60,13 +61,13 @@ const llamaSpec: Spec = {
           label: "model",
           has_internals: true,
           children: [
-            n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", params: { num_embeddings: 128256, embedding_dim: 2048 }, weight_shape: [128256, 2048], output_shape: "[B, S, 2048]" }),
-            n({ id: "model.layers", type: "module_list", label: "layers", category: "container", has_internals: true, children: [llamaLayer(0), llamaLayer(1)] }),
-            n({ id: "model.norm", type: "llama_rms_norm", label: "norm", weight_shape: [2048] }),
+            n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", role: "token_embedding", params: { num_embeddings: 128256, embedding_dim: 2048 }, weight_shape: [128256, 2048], output_shape: "[B, S, 2048]" }),
+            n({ id: "model.layers", type: "module_list", label: "layers", category: "container", role: "layer_stack", has_internals: true, children: [llamaLayer(0), llamaLayer(1)] }),
+            n({ id: "model.norm", type: "llama_rms_norm", label: "norm", role: "norm", weight_shape: [2048] }),
           ],
         }),
         // The lm_head module exists even when tied (its weight is shared with embed_tokens).
-        n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", weight_shape: [128256, 2048], output_shape: "[B, S, 128256]" }),
+        n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", role: "lm_head", weight_shape: [128256, 2048], output_shape: "[B, S, 128256]" }),
       ],
     }),
   ],
@@ -145,10 +146,10 @@ function gpt2Block(i: number): Node {
     module_class: "GPT2Block",
     has_internals: true,
     children: [
-      n({ id: `transformer.h.${i}.ln_1`, type: "layer_norm", label: "ln_1", category: "norm", weight_shape: [768] }),
-      n({ id: `transformer.h.${i}.attn`, type: "gpt2_attention", label: "attn", module_class: "GPT2Attention", has_internals: true, intermediates: { q: "[B, 12, S, 64]", attn_scores: "[B, 12, S, S]" } }),
-      n({ id: `transformer.h.${i}.ln_2`, type: "layer_norm", label: "ln_2", category: "norm", weight_shape: [768] }),
-      n({ id: `transformer.h.${i}.mlp`, type: "gpt2_mlp", label: "mlp", module_class: "GPT2MLP", has_internals: true, intermediates: { up: "[B, S, 3072]" } }),
+      n({ id: `transformer.h.${i}.ln_1`, type: "layer_norm", label: "ln_1", category: "norm", role: "norm", weight_shape: [768] }),
+      n({ id: `transformer.h.${i}.attn`, type: "gpt2_attention", label: "attn", module_class: "GPT2Attention", role: "attention", has_internals: true, intermediates: { q: "[B, 12, S, 64]", attn_scores: "[B, 12, S, S]" } }),
+      n({ id: `transformer.h.${i}.ln_2`, type: "layer_norm", label: "ln_2", category: "norm", role: "norm", weight_shape: [768] }),
+      n({ id: `transformer.h.${i}.mlp`, type: "gpt2_mlp", label: "mlp", module_class: "GPT2MLP", role: "mlp", has_internals: true, intermediates: { up: "[B, S, 3072]" } }),
     ],
   });
 }
@@ -179,13 +180,13 @@ const gpt2Spec: Spec = {
           label: "transformer",
           has_internals: true,
           children: [
-            n({ id: "transformer.wte", type: "embedding", label: "wte", category: "embedding", params: { num_embeddings: 50257, embedding_dim: 768 }, weight_shape: [50257, 768], output_shape: "[B, S, 768]" }),
-            n({ id: "transformer.wpe", type: "embedding", label: "wpe", category: "embedding", params: { num_embeddings: 1024, embedding_dim: 768 }, weight_shape: [1024, 768] }),
-            n({ id: "transformer.h", type: "module_list", label: "h", category: "container", has_internals: true, children: [gpt2Block(0), gpt2Block(1)] }),
-            n({ id: "transformer.ln_f", type: "layer_norm", label: "ln_f", category: "norm", weight_shape: [768] }),
+            n({ id: "transformer.wte", type: "embedding", label: "wte", category: "embedding", role: "token_embedding", params: { num_embeddings: 50257, embedding_dim: 768 }, weight_shape: [50257, 768], output_shape: "[B, S, 768]" }),
+            n({ id: "transformer.wpe", type: "embedding", label: "wpe", category: "embedding", role: "position_embedding", params: { num_embeddings: 1024, embedding_dim: 768 }, weight_shape: [1024, 768] }),
+            n({ id: "transformer.h", type: "module_list", label: "h", category: "container", role: "layer_stack", has_internals: true, children: [gpt2Block(0), gpt2Block(1)] }),
+            n({ id: "transformer.ln_f", type: "layer_norm", label: "ln_f", category: "norm", role: "norm", weight_shape: [768] }),
           ],
         }),
-        n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", weight_shape: [50257, 768], output_shape: "[B, S, 50257]" }),
+        n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", role: "lm_head", weight_shape: [50257, 768], output_shape: "[B, S, 50257]" }),
       ],
     }),
   ],
@@ -247,12 +248,13 @@ describe("deriveTokenJourney — MoE (Mixtral-like)", () => {
             label: "model",
             has_internals: true,
             children: [
-              n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", params: { num_embeddings: 32000 }, weight_shape: [32000, 4096], output_shape: "[B, S, 4096]" }),
+              n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", role: "token_embedding", params: { num_embeddings: 32000 }, weight_shape: [32000, 4096], output_shape: "[B, S, 4096]" }),
               n({
                 id: "model.layers",
                 type: "module_list",
                 label: "layers",
                 category: "container",
+                role: "layer_stack",
                 has_internals: true,
                 children: [0, 1].map((i) =>
                   n({
@@ -261,18 +263,18 @@ describe("deriveTokenJourney — MoE (Mixtral-like)", () => {
                     label: `Layer ${i}`,
                     has_internals: true,
                     children: [
-                      n({ id: `model.layers.${i}.input_layernorm`, type: "mixtral_rms_norm", label: "input_layernorm", weight_shape: [4096] }),
-                      n({ id: `model.layers.${i}.self_attn`, type: "mixtral_attention", label: "self_attn", has_internals: true, intermediates: { attn_scores: "[B, 32, S, S]" } }),
-                      n({ id: `model.layers.${i}.post_attention_layernorm`, type: "mixtral_rms_norm", label: "post_attention_layernorm", weight_shape: [4096] }),
-                      n({ id: `model.layers.${i}.block_sparse_moe`, type: "mixtral_sparse_moe_block", label: "block_sparse_moe", has_internals: true, intermediates: { up: "[B, S, 14336]" } }),
+                      n({ id: `model.layers.${i}.input_layernorm`, type: "mixtral_rms_norm", label: "input_layernorm", role: "norm", weight_shape: [4096] }),
+                      n({ id: `model.layers.${i}.self_attn`, type: "mixtral_attention", label: "self_attn", role: "attention", has_internals: true, intermediates: { attn_scores: "[B, 32, S, S]" } }),
+                      n({ id: `model.layers.${i}.post_attention_layernorm`, type: "mixtral_rms_norm", label: "post_attention_layernorm", role: "norm", weight_shape: [4096] }),
+                      n({ id: `model.layers.${i}.block_sparse_moe`, type: "mixtral_sparse_moe_block", label: "block_sparse_moe", role: "moe", has_internals: true, intermediates: { up: "[B, S, 14336]" } }),
                     ],
                   }),
                 ),
               }),
-              n({ id: "model.norm", type: "mixtral_rms_norm", label: "norm", weight_shape: [4096] }),
+              n({ id: "model.norm", type: "mixtral_rms_norm", label: "norm", role: "norm", weight_shape: [4096] }),
             ],
           }),
-          n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", weight_shape: [32000, 4096], output_shape: "[B, S, 32000]" }),
+          n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", role: "lm_head", weight_shape: [32000, 4096], output_shape: "[B, S, 32000]" }),
         ],
       }),
     ],
@@ -318,12 +320,13 @@ describe("deriveTokenJourney — nested MoE (gpt-oss-like)", () => {
             label: "model",
             has_internals: true,
             children: [
-              n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", params: { num_embeddings: 201088 }, weight_shape: [201088, 2880], output_shape: "[B, S, 2880]" }),
+              n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", role: "token_embedding", params: { num_embeddings: 201088 }, weight_shape: [201088, 2880], output_shape: "[B, S, 2880]" }),
               n({
                 id: "model.layers",
                 type: "module_list",
                 label: "layers",
                 category: "container",
+                role: "layer_stack",
                 has_internals: true,
                 children: [0, 1].map((i) =>
                   n({
@@ -333,28 +336,31 @@ describe("deriveTokenJourney — nested MoE (gpt-oss-like)", () => {
                     has_internals: true,
                     // gpt-oss lists self_attn, mlp BEFORE the norms.
                     children: [
-                      n({ id: `model.layers.${i}.self_attn`, type: "gpt_oss_attention", label: "self_attn", has_internals: true, intermediates: { q: "[B, 64, S, 64]", attn_scores: "[B, 64, S, S]" } }),
+                      n({ id: `model.layers.${i}.self_attn`, type: "gpt_oss_attention", label: "self_attn", role: "attention", has_internals: true, intermediates: { q: "[B, 64, S, 64]", attn_scores: "[B, 64, S, S]" } }),
                       n({
                         id: `model.layers.${i}.mlp`,
                         type: "gpt_oss_mlp",
                         label: "mlp",
+                        // The backend tags the MoE block by fact (fused experts hold the
+                        // intermediate-width tensor) and ships role "moe" on the block itself.
+                        role: "moe",
                         has_internals: true,
-                        // The `up` fingerprint is on the experts child, NOT the mlp node.
+                        intermediates: { up: "[B, S, 2880]" },
                         children: [
                           n({ id: `model.layers.${i}.mlp.router`, type: "gpt_oss_top_k_router", label: "router", weight_shape: [32, 2880] }),
-                          n({ id: `model.layers.${i}.mlp.experts`, type: "gpt_oss_experts", label: "experts", intermediates: { up: "[B, S, 2880]" } }),
+                          n({ id: `model.layers.${i}.mlp.experts`, type: "gpt_oss_experts", label: "experts" }),
                         ],
                       }),
-                      n({ id: `model.layers.${i}.input_layernorm`, type: "gpt_oss_rms_norm", label: "input_layernorm", weight_shape: [2880] }),
-                      n({ id: `model.layers.${i}.post_attention_layernorm`, type: "gpt_oss_rms_norm", label: "post_attention_layernorm", weight_shape: [2880] }),
+                      n({ id: `model.layers.${i}.input_layernorm`, type: "gpt_oss_rms_norm", label: "input_layernorm", role: "norm", weight_shape: [2880] }),
+                      n({ id: `model.layers.${i}.post_attention_layernorm`, type: "gpt_oss_rms_norm", label: "post_attention_layernorm", role: "norm", weight_shape: [2880] }),
                     ],
                   }),
                 ),
               }),
-              n({ id: "model.norm", type: "gpt_oss_rms_norm", label: "norm", weight_shape: [2880] }),
+              n({ id: "model.norm", type: "gpt_oss_rms_norm", label: "norm", role: "norm", weight_shape: [2880] }),
             ],
           }),
-          n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", weight_shape: [201088, 2880], output_shape: "[B, S, 201088]" }),
+          n({ id: "lm_head", type: "linear", label: "lm_head", category: "linear", role: "lm_head", weight_shape: [201088, 2880], output_shape: "[B, S, 201088]" }),
         ],
       }),
     ],
@@ -409,12 +415,13 @@ describe("deriveTokenJourney — null shapes fall back to config dims", () => {
             has_internals: true,
             children: [
               // No output_shape on the embedding — must fall back to [B, S, hidden].
-              n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", params: { num_embeddings: 1000 } }),
+              n({ id: "model.embed_tokens", type: "embedding", label: "embed_tokens", category: "embedding", role: "token_embedding", params: { num_embeddings: 1000 } }),
               n({
                 id: "model.layers",
                 type: "module_list",
                 label: "layers",
                 category: "container",
+                role: "layer_stack",
                 has_internals: true,
                 children: [0, 1].map((i) =>
                   n({
@@ -423,9 +430,9 @@ describe("deriveTokenJourney — null shapes fall back to config dims", () => {
                     label: `Layer ${i}`,
                     has_internals: true,
                     children: [
-                      n({ id: `model.layers.${i}.norm`, type: "tiny_rms_norm", label: "norm", weight_shape: [512] }),
-                      n({ id: `model.layers.${i}.self_attn`, type: "tiny_attention", label: "self_attn", has_internals: true, intermediates: { attn_scores: "[B, 4, S, S]" } }),
-                      n({ id: `model.layers.${i}.mlp`, type: "tiny_mlp", label: "mlp", has_internals: true, intermediates: { up: "[B, S, 2048]" } }),
+                      n({ id: `model.layers.${i}.norm`, type: "tiny_rms_norm", label: "norm", role: "norm", weight_shape: [512] }),
+                      n({ id: `model.layers.${i}.self_attn`, type: "tiny_attention", label: "self_attn", role: "attention", has_internals: true, intermediates: { attn_scores: "[B, 4, S, S]" } }),
+                      n({ id: `model.layers.${i}.mlp`, type: "tiny_mlp", label: "mlp", role: "mlp", has_internals: true, intermediates: { up: "[B, S, 2048]" } }),
                     ],
                   }),
                 ),

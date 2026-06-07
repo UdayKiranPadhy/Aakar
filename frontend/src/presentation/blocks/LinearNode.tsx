@@ -13,33 +13,11 @@ export function LinearNode({
 }: BlockNodeProps) {
   const width = level === 1 ? 280 : 260;
 
-  const getLinearTitle = (path: string, defaultLabel: string): string => {
-    const p = path.toLowerCase();
-    if (p.endsWith("lm_head")) return "Language Model Head";
-    
-    const inAttn = p.includes("attn") || p.includes("attention");
-    const inMlp = p.includes("mlp") || p.includes("feedforward") || p.includes("ffn");
-    
-    if (inAttn) {
-      if (p.endsWith("q_proj") || p.endsWith("query")) return "Query Projection";
-      if (p.endsWith("k_proj") || p.endsWith("key")) return "Key Projection";
-      if (p.endsWith("v_proj") || p.endsWith("value")) return "Value Projection";
-      if (p.endsWith("o_proj") || p.endsWith("out_proj") || p.endsWith("dense")) return "Attention Output Projection";
-      if (p.endsWith("c_attn") || p.includes("qkv")) return "Query-Key-Value Projection";
-      if (p.endsWith("c_proj")) return "Attention Output Projection";
-    }
-    
-    if (inMlp) {
-      if (p.endsWith("gate_proj") || p.endsWith("w1")) return "MLP Gate Projection";
-      if (p.endsWith("up_proj") || p.endsWith("w3") || p.endsWith("c_fc")) return "MLP Gate/Up Projection";
-      if (p.endsWith("down_proj") || p.endsWith("w2") || p.endsWith("c_proj")) return "MLP Down Projection";
-    }
-    
-    return defaultLabel;
-  };
+  // The only semantic title we can state as fact is the LM head (a Linear whose output width
+  // is the vocabulary — the backend's `lm_head` role). Every other Linear shows its real
+  // module name; we don't guess "Query"/"Gate"/… from the state-dict name.
+  const title = node.role === "lm_head" ? "Language Model Head" : node.label;
 
-  const title = getLinearTitle(node.module_path || "", node.label);
-  
   const inFeatures = node.params.in_features || (node.weight_shape ? node.weight_shape[1] : null);
   const outFeatures = node.params.out_features || (node.weight_shape ? node.weight_shape[0] : null);
 

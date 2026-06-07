@@ -13,16 +13,17 @@ import styles from "./GenericDetailPanel.module.css";
 export function EmbeddingDetail({ node, onExpand, onClose }: DetailPanelProps) {
   const spec = useArchStore((s) => s.spec);
   
-  const pathLower = (node.module_path || "").toLowerCase();
+  // Token vs positional is decided by the backend from facts (table size == vocab vs ==
+  // context length) and shipped as `node.role` — not inferred from a wte/wpe name.
   let title = "Embedding Layer";
   let description = "Maps discrete token indices to continuous vectors.";
   let howItWorks = "It behaves as a fast lookup table. Instead of doing a matrix multiplication with a one-hot vector, the model directly retrieves the vector at the index of the token.";
   let usefulness = "Converts text token IDs into numerical vectors that the transformer layers can mathematically manipulate. Standard attention is position-invariant, so position embeddings are added to inject token order.";
 
-  if (pathLower.endsWith("wte") || pathLower.includes("embed_tokens")) {
+  if (node.role === "token_embedding") {
     title = "Word Token Embeddings";
     description = "Converts input token IDs into their semantic vector representations.";
-  } else if (pathLower.endsWith("wpe") || pathLower.includes("embed_positions") || pathLower.includes("position_embeddings")) {
+  } else if (node.role === "position_embedding") {
     title = "Word Position Embeddings";
     description = "Associates each absolute token position in the sequence with a unique vector.";
     howItWorks = "Maps each position index (0 to sequence length - 1) to a learned dense vector of the same dimension as the token embeddings.";

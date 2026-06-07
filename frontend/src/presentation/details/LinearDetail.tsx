@@ -14,69 +14,26 @@ import styles from "./GenericDetailPanel.module.css";
 export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
   const spec = useArchStore((s) => s.spec);
 
-  const getLinearInfo = (path: string, defaultLabel: string) => {
-    const p = path.toLowerCase();
-    
-    let title = defaultLabel;
-    let description = "Applies a linear transformation to the incoming features.";
-    let usefulness = "Performs projections between feature spaces, allowing the model to change hidden state dimensions or prepare vectors for specialized operations.";
-    
-    if (p.endsWith("lm_head")) {
-      title = "Language Model Head";
-      description = "Projects the final hidden states of the transformer back to vocabulary space.";
-      usefulness = "Calculates logits for every token in the vocabulary. Applying Softmax on these logits yields the probability distribution for selecting the next token in the sequence.";
-    } else {
-      const inAttn = p.includes("attn") || p.includes("attention");
-      const inMlp = p.includes("mlp") || p.includes("feedforward") || p.includes("ffn");
-      
-      if (inAttn) {
-        if (p.endsWith("q_proj") || p.endsWith("query")) {
-          title = "Query Projection";
-          description = "Projects the token's hidden state into the 'Query' subspace.";
-          usefulness = "Represents what the current token is looking for in other tokens. Paired with Key vectors, it determines the attention weights (alignment scores).";
-        } else if (p.endsWith("k_proj") || p.endsWith("key")) {
-          title = "Key Projection";
-          description = "Projects the token's hidden state into the 'Key' subspace.";
-          usefulness = "Represents the attributes this token offers for matching. Paired with Query vectors, it determines which tokens should attend to this one.";
-        } else if (p.endsWith("v_proj") || p.endsWith("value")) {
-          title = "Value Projection";
-          description = "Projects the token's hidden state into the 'Value' subspace.";
-          usefulness = "Represents the actual content/information that will be gathered and weighted based on the attention scores, then passed downstream.";
-        } else if (p.endsWith("o_proj") || p.endsWith("out_proj") || p.endsWith("dense")) {
-          title = "Attention Output Projection";
-          description = "Projects the concatenated attention head outputs back to the model's hidden dimension.";
-          usefulness = "Combines the information retrieved by all independent attention heads and maps it back to the main backbone representation, ready for residual addition.";
-        } else if (p.endsWith("c_attn") || p.includes("qkv")) {
-          title = "Query-Key-Value Projection";
-          description = "A combined linear projection that computes the Query, Key, and Value vectors at once for speed.";
-          usefulness = "Splits its output along the feature dimension to yield the Q, K, and V matrices, avoiding multiple separate kernel launches.";
-        } else if (p.endsWith("c_proj")) {
-          title = "Attention Output Projection";
-          description = "Projects the concatenated attention outputs back to the model's hidden dimension.";
-          usefulness = "Integrates the attention computation back into the main residual stream.";
+  // The one Linear we can name from facts is the LM head (output width == vocabulary →
+  // the backend's `lm_head` role). Every other Linear keeps its real module name and a
+  // generic description — we don't guess "Query"/"Gate"/… from the state-dict name, and a
+  // bare leaf has no parent context to infer its role from anyway.
+  const { title, description, usefulness } =
+    node.role === "lm_head"
+      ? {
+          title: "Language Model Head",
+          description:
+            "Projects the final hidden states of the transformer back to vocabulary space.",
+          usefulness:
+            "Calculates logits for every token in the vocabulary. Applying Softmax on these logits yields the probability distribution for selecting the next token in the sequence.",
         }
-      } else if (inMlp) {
-        if (p.endsWith("gate_proj") || p.endsWith("w1")) {
-          title = "MLP Gate Projection";
-          description = "Computes the gating activations (often before a SiLU or GELU activation).";
-          usefulness = "Determines the routing/activation filter that modulates how much information flows through the parallel Up projection.";
-        } else if (p.endsWith("up_proj") || p.endsWith("w3") || p.endsWith("c_fc")) {
-          title = "MLP Gate/Up Projection";
-          description = "Projects the hidden states to a higher intermediate dimension (often 2.67x or 4x size).";
-          usefulness = "Enlarges the state representation so the model has high-capacity storage for semantic and factual key-value associations.";
-        } else if (p.endsWith("down_proj") || p.endsWith("w2") || p.endsWith("c_proj")) {
-          title = "MLP Down Projection";
-          description = "Projects the expanded MLP intermediate representation back to the main hidden dimension.";
-          usefulness = "Compresses the factual/associative memory output back down to the backbone size to merge back into the main residual stream.";
-        }
-      }
-    }
-    
-    return { title, description, usefulness };
-  };
+      : {
+          title: node.label,
+          description: "Applies a linear transformation to the incoming features.",
+          usefulness:
+            "Performs projections between feature spaces, allowing the model to change hidden state dimensions or prepare vectors for specialized operations.",
+        };
 
-  const { title, description, usefulness } = getLinearInfo(node.module_path || "", node.label);
-  
   const inFeatures = node.params.in_features || (node.weight_shape ? node.weight_shape[1] : null);
   const outFeatures = node.params.out_features || (node.weight_shape ? node.weight_shape[0] : null);
   const hasBias = node.params.has_bias !== undefined ? node.params.has_bias : node.bias_shape != null;

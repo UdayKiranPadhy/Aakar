@@ -44,36 +44,29 @@ def config_summary(config: Any, total_params: int) -> dict[str, Any]:
     return summary
 
 
-def attention_implementation(model: nn.Module, config: Any) -> str | None:
+def attention_implementation(config: Any) -> str | None:
+    """The attention kernel, straight from the config — the fact transformers itself
+    dispatches on. Defaults to eager when unset (no class-name sniffing)."""
     implementation = getattr(config, "_attn_implementation", None)
     if isinstance(implementation, str) and implementation:
         return implementation
-
-    for module in model.modules():
-        class_name = type(module).__name__
-        if class_name.endswith("FlashAttention2"):
-            return "flash_attention_2"
-        if "Sdpa" in class_name and "Attention" in class_name:
-            return "sdpa"
     return "eager"
 
 
 def position_encoding(model: nn.Module, config: Any) -> str | None:
+    """Positional scheme from facts: RoPE is declared in the config; a learned scheme is a
+    second embedding table sized to the context length. No rotary/ALiBi class-name matching —
+    where neither fact holds, return None and let the UI stay silent rather than guess."""
     if getattr(config, "rope_theta", None) is not None:
         return "rope"
     if getattr(config, "rope_scaling", None) is not None:
         return "rope"
 
-    for module in model.modules():
-        class_name = type(module).__name__
-        if "Rotary" in class_name:
-            return "rope"
-        if "ALiBi" in class_name or "Alibi" in class_name:
-            return "alibi"
-
-    for name, _ in model.named_modules():
-        if name.endswith(".wpe") or name == "wpe":
-            return "learned"
+    max_position = getattr(config, "max_position_embeddings", None)
+    if isinstance(max_position, int) and max_position > 0:
+        for module in model.modules():
+            if isinstance(module, nn.Embedding) and module.num_embeddings == max_position:
+                return "learned"
     return None
 
 

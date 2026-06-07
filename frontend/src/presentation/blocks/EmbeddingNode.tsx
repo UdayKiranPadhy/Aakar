@@ -13,13 +13,14 @@ export function EmbeddingNode({
 }: BlockNodeProps) {
   const width = level === 1 ? 280 : 260;
   
-  const pathLower = (node.module_path || "").toLowerCase();
-  let title = "Embedding Layer";
-  if (pathLower.endsWith("wte") || pathLower.includes("embed_tokens")) {
-    title = "Word Token Embeddings";
-  } else if (pathLower.endsWith("wpe") || pathLower.includes("embed_positions") || pathLower.includes("position_embeddings")) {
-    title = "Word Position Embeddings";
-  }
+  // Token vs positional is the backend's fact (table size == vocab vs == context length),
+  // shipped as `node.role` — not a wte/wpe name guess.
+  const title =
+    node.role === "token_embedding"
+      ? "Word Token Embeddings"
+      : node.role === "position_embedding"
+        ? "Word Position Embeddings"
+        : "Embedding Layer";
 
   const numEmbeds = node.params.num_embeddings || (node.weight_shape ? node.weight_shape[0] : null);
   const embedDim = node.params.embedding_dim || (node.weight_shape ? node.weight_shape[1] : null);

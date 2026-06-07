@@ -49,7 +49,7 @@ def build_spec(
         config_summary=config_summary(config, root.param_count or 0),
         graph=[root],
         param_dtype=param_dtype,
-        attn_impl=attention_implementation(model, config),
+        attn_impl=attention_implementation(config),
         position_encoding=position_encoding(model, config),
         tied_word_embeddings=tied_word_embeddings(model, config),
         flops_reference={

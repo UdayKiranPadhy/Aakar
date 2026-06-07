@@ -1,8 +1,6 @@
 import type { Edge } from "@xyflow/react";
 
 import {
-  containsLayerStack,
-  findByName,
   isAttention,
   isDecoderLayer,
   isLayerStack,
@@ -37,8 +35,8 @@ export function buildSemanticFlow(
   children: ReadonlyArray<SpecNode>,
 ): SemanticFlow | null {
   if (!parent || children.length === 0) return null;
-  if (isLayerStack(parent, children)) return buildLayerStackFlow(children);
-  if (isDecoderLayer(parent, children)) return buildDecoderLayerFlow(parent, children);
+  if (isLayerStack(parent)) return buildLayerStackFlow(children);
+  if (isDecoderLayer(children)) return buildDecoderLayerFlow(parent, children);
   if (isAttention(parent)) return buildAttentionFlow(parent, children);
   if (isMlp(parent)) return buildMlpFlow(parent, children);
   return null;
@@ -66,10 +64,12 @@ function buildDecoderLayerFlow(
   parent: SpecNode,
   children: ReadonlyArray<SpecNode>,
 ): SemanticFlow | null {
-  // Exclude any child that contains a layer stack (the backbone), so the recursive
-  // predicates pick the actual attention/MLP sub-layers, not the layer container.
-  const attn = children.find((c) => isAttention(c) && !containsLayerStack(c));
-  const mlp = children.find((c) => isMlp(c) && !containsLayerStack(c));
+  // Roles are mutually exclusive facts from the backend: the attention sub-layer is the
+  // child tagged `attention`, the FFN is the child tagged `mlp`/`moe`. A module is never
+  // both, so a child can't fill both slots (the old bug where an attention block nesting a
+  // gated projection got picked as the MLP).
+  const attn = children.find(isAttention);
+  const mlp = children.find(isMlp);
   if (!attn || !mlp) return null;
 
   // Pre- vs post-norm by position: `named_children()` preserves definition order,
@@ -130,19 +130,86 @@ function buildDecoderLayerFlow(
   };
 }
 
+/** Trailing numeric dimension of a symbolic shape: "[B, S, 4096]" → 4096, "[B, 4, S, 8]" → 8. */
+function lastNumericDim(shape?: string): number | null {
+  const nums = shape?.match(/\d+/g);
+  return nums && nums.length > 0 ? Number(nums[nums.length - 1]) : null;
+}
+
+/** A projection's output / input feature width, from its symbolic I/O shape (a backend fact). */
+function outWidth(node: SpecNode): number | null {
+  return lastNumericDim(node.output_shape);
+}
+function inWidth(node: SpecNode): number | null {
+  return lastNumericDim(node.input_shape);
+}
+
+/**
+ * Query and key/value head widths, read off the attention node's `intermediates` (q is
+ * "[B, nH, S, hd]", k is "[B, nKV, S, hd]") — the backend's config-derived facts. These let
+ * us identify the q / kv / output projections among the children by *shape*, never by name.
+ */
+function headWidths(attn: SpecNode): { qd: number; kvd: number } | null {
+  const q = attn.intermediates?.q?.match(/\d+/g);
+  if (!q || q.length < 2) return null;
+  const qd = Number(q[0]) * Number(q[1]);
+  const k = attn.intermediates?.k?.match(/\d+/g);
+  const kvd = k && k.length >= 2 ? Number(k[0]) * Number(k[1]) : qd;
+  return { qd, kvd };
+}
+
+/** FFN intermediate width, from the MLP node's `intermediates.up` ("[B, S, I]"). */
+function ffnWidth(mlp: SpecNode): number | null {
+  return lastNumericDim(mlp.intermediates?.up);
+}
+
+/**
+ * Identify the q / kv / output / fused projections among an attention block's children by
+ * matching their feature widths against the head widths — no `q_proj`/`k_proj` name lookup.
+ * Key and value share a width, so they're taken in definition order (a structural fact); for
+ * MHA, where query and kv widths coincide, the first three matching projections are q/k/v.
+ */
+function attnProjections(
+  parent: SpecNode,
+  children: ReadonlyArray<SpecNode>,
+): { q?: SpecNode; k?: SpecNode; v?: SpecNode; out?: SpecNode; fused?: SpecNode } | null {
+  const hw = headWidths(parent);
+  if (!hw) return null;
+  const { qd, kvd } = hw;
+  const fused = children.find((c) => outWidth(c) === qd + 2 * kvd);
+  if (fused) {
+    const out = children.find((c) => c !== fused && inWidth(c) === qd);
+    return { fused, out };
+  }
+  const qWidth = children.filter((c) => outWidth(c) === qd);
+  if (qWidth.length === 0) return null;
+  // The query projection maps hidden → qd, so its input width is the model hidden size.
+  const hidden = inWidth(qWidth[0]);
+  // The output projection consumes the head space (in == qd) and restores hidden. When
+  // qd == hidden it's shape-identical to the query, so it's the *other* qd-width projection.
+  const out = children.find(
+    (c) => c !== qWidth[0] && inWidth(c) === qd && (hidden == null || outWidth(c) === hidden),
+  );
+  if (qd === kvd) {
+    // MHA: q/k/v (and o) all share the width — only definition order separates them.
+    const ordered = out ? qWidth.filter((c) => c !== out) : qWidth.slice(0, 3);
+    const tail = !out && qWidth.length >= 4 ? qWidth[qWidth.length - 1] : out;
+    const qkv = ordered.slice(0, 3);
+    return qkv.length === 3 ? { q: qkv[0], k: qkv[1], v: qkv[2], out: tail } : null;
+  }
+  const q = qWidth.find((c) => c !== out);
+  const kv = children.filter((c) => outWidth(c) === kvd);
+  if (!q || kv.length === 0) return null;
+  return { q, k: kv[0], v: kv[1] ?? kv[0], out };
+}
+
 function buildAttentionFlow(
   parent: SpecNode,
   children: ReadonlyArray<SpecNode>,
 ): SemanticFlow | null {
-  const q = findByName(children, "q_proj");
-  const k = findByName(children, "k_proj");
-  const v = findByName(children, "v_proj");
-  const fused = findByName(children, "c_attn") ?? findByName(children, "in_proj");
-  const out =
-    findByName(children, "o_proj") ??
-    findByName(children, "c_proj") ??
-    findByName(children, "out_proj");
-  if ((!q || !k || !v) && !fused) return null;
+  const proj = attnProjections(parent, children);
+  if (!proj) return null;
+  const { q, k, v, fused, out } = proj;
 
   const qNode = q ?? syntheticNode(parent, "q", "attention_heads", "Q heads", metaFor(parent, "q"));
   const kNode = k ?? syntheticNode(parent, "k", "attention_heads", "K heads", metaFor(parent, "k"));
@@ -156,8 +223,10 @@ function buildAttentionFlow(
   const vHeads = v
     ? syntheticNode(parent, "v_heads", "attention_heads", "V heads", metaFor(parent, "v"))
     : vNode;
-  const qNorm = findByName(children, "q_norm");
-  const kNorm = findByName(children, "k_norm");
+  // Per-head norms (e.g. QK-norm): the norm-role children, in definition order.
+  const headNorms = children.filter(isNorm);
+  const qNorm = q ? headNorms[0] : undefined;
+  const kNorm = q ? headNorms[1] : undefined;
   const scores = syntheticNode(
     parent,
     "scores",
@@ -215,11 +284,19 @@ function buildMlpFlow(
   parent: SpecNode,
   children: ReadonlyArray<SpecNode>,
 ): SemanticFlow | null {
-  const gate = findByName(children, "gate_proj");
-  const up = findByName(children, "up_proj") ?? findByName(children, "c_fc");
-  const down = findByName(children, "down_proj") ?? findByName(children, "c_proj");
+  // Identify the FFN projections by width: gate/up expand H → I (out == intermediate),
+  // down contracts I → H (in == intermediate). No gate_proj/up_proj name lookup. Gate and up
+  // share a width, so a gated MLP simply has two intermediate-width projections.
+  const ffn = ffnWidth(parent);
+  if (!ffn) return null;
+  const expand = children.filter((node) => outWidth(node) === ffn);
+  const down = children.find((node) => inWidth(node) === ffn);
   const act = children.find((node) => node.category === "activation");
-  if (!up || !down) return null;
+  if (expand.length === 0 || !down) return null;
+  // Gate and up share the intermediate width, so they're taken in definition order: the
+  // gated SwiGLU convention is gate (→ activation) first, then up (→ the elementwise product).
+  const gate = expand.length >= 2 ? expand[0] : undefined;
+  const up = expand.length >= 2 ? expand[1] : expand[0];
 
   if (gate) {
     const multiply = syntheticNode(

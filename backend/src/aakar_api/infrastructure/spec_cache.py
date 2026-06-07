@@ -6,8 +6,8 @@ instant page render and a noticeable delay. The cache is keyed by the model
 id plus a hash of the raw `config.json` — fine-tuned forks or config edits
 invalidate naturally without manual eviction.
 
-File layout: `<root>/<model_id_safe>.<config_hash[:12]>.json` containing one
-`Spec.model_dump_json()` payload. All I/O runs in `asyncio.to_thread`.
+File layout: `<root>/<model_id_safe>.v<schema>.<config_hash[:12]>.json` containing
+one `Spec.model_dump_json()` payload. All I/O runs in `asyncio.to_thread`.
 """
 
 from __future__ import annotations
@@ -21,6 +21,12 @@ from typing import Any
 from aakar_api.domain.spec import Spec
 
 _DEFAULT_ROOT = Path("backend/.cache/specs")
+
+# Bump whenever the Spec *shape* changes (a new field, a changed meaning). The config hash
+# invalidates on model/config edits, but not on code changes that alter what we emit — so the
+# schema version is part of the key, ensuring old payloads are never served against new code.
+#   v2: added the fact-based `Node.role`.
+_SPEC_SCHEMA_VERSION = 2
 
 
 def _safe_model_id(model_id: str) -> str:
@@ -46,7 +52,10 @@ class DiskSpecCache:
         await asyncio.to_thread(self._set_sync, model_id, config_hash, spec)
 
     def _path(self, model_id: str, config_hash: str) -> Path:
-        return self._root / f"{_safe_model_id(model_id)}.{config_hash[:12]}.json"
+        return (
+            self._root
+            / f"{_safe_model_id(model_id)}.v{_SPEC_SCHEMA_VERSION}.{config_hash[:12]}.json"
+        )
 
     def _get_sync(self, model_id: str, config_hash: str) -> Spec | None:
         path = self._path(model_id, config_hash)

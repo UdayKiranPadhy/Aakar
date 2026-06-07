@@ -43,7 +43,8 @@ type Node = {
   bias_shape?: number[];
   memory_bytes?: number;   // param_count × bytes_per_element at Spec.param_dtype
   buffers?: Record<string, number[]>; // non-parameter tensors (RoPE inv_freq, masks)
-  category?: string;       // free-form semantic tag (e.g. "activation"); frontend uses it as a fallback registry key
+  category?: string;       // namespace-derived tag (e.g. "activation"); frontend uses it as a fallback registry key
+  role?: string;           // fact-based semantic role ("attention" | "mlp" | "moe" | "norm" | "layer_stack" | …)
   source_url?: string;     // GitHub link to the class definition (HF transformers / PyTorch)
   flops?: number;          // theoretical forward FLOPs at Spec.flops_reference (Linear / norms only)
   intermediates?: Record<string, string>; // per-class intermediate shapes (attention q/k/v/scores, MLP up)
@@ -70,8 +71,9 @@ type Node = {
 | `buffers`      | no       | Map of this module's *own* (non-recursive) `register_buffer` tensors → shape. Captures RoPE `inv_freq`, causal masks, running stats. |
 | `source_url`   | no       | GitHub permalink to the module's class definition. Populated for `transformers.*` and `torch.*` classes — pinned to the installed package's semver tag (`v5.9.0`) when one matches, else `main`. Includes a `#L<line>` anchor pointing to the `class X(nn.Module):` line. Custom user code is left without a link. Renders as a clickable class name in the detail panel's Source section. |
 | `category`     | no       | Free-form semantic tag derived purely from the module's Python namespace — no class-name matching, so every class within a namespace is tagged automatically. Current values: `"activation"` (`torch.nn.modules.activation`, `transformers.activations`), `"norm"` (`torch.nn.modules.normalization`, `torch.nn.modules.batchnorm`), `"dropout"`, `"linear"`, `"embedding"` (`torch.nn.modules.sparse`), `"container"` (`ModuleList`, `Sequential`, `ModuleDict`, …). The frontend's `BlockRegistry` looks this up *after* `type`, so one renderer can serve every class in a category without enumerating them. |
+| `role`         | no       | The module's **semantic role**, decided from facts only — config dims (head counts, FFN width, expert/layer counts, vocab) + real tensor shapes + namespace `category` + structure — and **never** from class/attribute/child names (see `infrastructure/introspection/role.py`). Values: `"layer_stack"` (the decoder ModuleList, length == num_hidden_layers), `"container"`, `"norm"`, `"token_embedding"` / `"position_embedding"` / `"embedding"`, `"attention"` (block carrying head-width projections), `"mlp"` / `"moe"` (FFN block by intermediate width; `moe` when experts are present), `"lm_head"` (Linear to vocab), `"linear"`. Absent when no rule proves a role — the UI renders a generic card. Both the canvas semantic flow and the Token Journey segment a model purely off this field, so they always agree. |
 | `flops`        | no       | Theoretical forward-pass FLOPs at `Spec.flops_reference`. Populated only for modules with closed-form formulas: `Linear` (2·S·in·out), norms (~5·S·H), `Embedding` (0). |
-| `intermediates` | no      | Symbolic shapes of tensors that live *inside* opaque blocks. Attention modules report `q`, `k`, `v` (with GQA grouping on K/V), and `attn_scores` (the `[B, num_heads, S, S]` quadratic intermediate). MLP modules report `up` (the `[B, S, intermediate_size]` expansion). Derived from generic config attrs — no per-family branching. |
+| `intermediates` | no      | Symbolic shapes of tensors that live *inside* opaque blocks, emitted per the module's `role` from config facts (never attribute/child names). `role: "attention"` reports `q`, `k`, `v` (with GQA grouping on K/V) and `attn_scores` (the `[B, num_heads, S, S]` quadratic intermediate); `role: "mlp"`/`"moe"` report `up` (the `[B, S, intermediate_size]` expansion). |
 | `notes`        | no       | Optional UI banner. Currently unused after the adapter system was removed. |
 
 ### Spec-level fields
@@ -79,8 +81,8 @@ type Node = {
 | Field | Notes |
 | ----- | ----- |
 | `param_dtype` | Cleaned form of `config.torch_dtype` (`torch.float16` → `"float16"`). Drives `Node.memory_bytes`. |
-| `attn_impl` | From `config._attn_implementation`, fallback to inferring from the self-attention submodule class name (`*SdpaAttention` → `"sdpa"`, `*FlashAttention2` → `"flash_attention_2"`, otherwise `"eager"`). |
-| `position_encoding` | `"rope"` if `config.rope_theta`/`rope_scaling` is set or any submodule class contains `"Rotary"`. `"alibi"` for `*ALiBi*` submodules. `"learned"` if a `wpe` module is present (GPT-2 style). |
+| `attn_impl` | From `config._attn_implementation` (the kernel transformers itself dispatches on), defaulting to `"eager"` when unset. No class-name sniffing. |
+| `position_encoding` | `"rope"` if `config.rope_theta`/`rope_scaling` is set; `"learned"` if a second embedding table sized to `max_position_embeddings` is present (a shape fact). No `"Rotary"`/`"ALiBi"`/`wpe` class-or-name matching — absent when neither fact holds. |
 | `tied_word_embeddings` | `model.get_input_embeddings().weight is model.get_output_embeddings().weight` after meta-instantiation. Config flag isn't always honored at runtime. |
 | `flops_reference` | `{batch_size, seq_len}` assumed when computing each `Node.flops`. Defaults to `{1, 2048}`. |
 | `config_full` | The complete `config.to_dict()` — every key, unfiltered (unlike the curated `config_summary`). Backs a generic Config Explorer that must not drop fields as `transformers` evolves. May contain nested sub-configs. Adds ~KB to the cached Spec JSON. |
