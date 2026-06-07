@@ -99,8 +99,7 @@ const initialState: State = {
   level: 1,
   detailOpen: false,
   appMode: "home",
-  // Loading a model lands on the diagram, preserving the pre-dashboard behavior.
-  modelView: "architecture",
+  modelView: "overview",
   sidebarCollapsed: false,
   sidebarWidth: 248,
   detailWidth: 320,
@@ -187,15 +186,11 @@ export const useArchStore = create<State & Actions>()((set) => ({
     set({ hfToken: token });
   },
 
-  // Used before fetching a new model; wipes navigation + the compare slot but
-  // keeps modelInput, the current app-mode / model-view, and the user's chosen
-  // rail widths (layout preferences shouldn't snap back on every model load).
   reset: () =>
     set((s) => ({
       ...initialState,
       modelInput: s.modelInput,
       appMode: s.appMode,
-      modelView: s.modelView,
       sidebarWidth: s.sidebarWidth,
       detailWidth: s.detailWidth,
       hfToken: s.hfToken,

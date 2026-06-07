@@ -231,7 +231,7 @@ describe("archStore", () => {
   });
 
   describe("reset", () => {
-    it("clears spec / paths but preserves modelInput, appMode, modelView", () => {
+    it("clears spec / paths, preserves modelInput + appMode, resets modelView to Overview", () => {
       useArchStore.setState({
         modelInput: "gpt2",
         spec: fakeSpec,
@@ -249,7 +249,7 @@ describe("archStore", () => {
       const s = useArchStore.getState();
       expect(s.modelInput).toBe("gpt2"); // preserved
       expect(s.appMode).toBe("model"); // preserved
-      expect(s.modelView).toBe("config"); // preserved
+      expect(s.modelView).toBe("overview"); // every search lands on Overview
       expect(s.spec).toBeNull();
       expect(s.compareSpec).toBeNull();
       expect(s.expansionPath).toEqual([]);

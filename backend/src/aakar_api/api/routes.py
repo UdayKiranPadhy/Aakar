@@ -14,7 +14,7 @@ from aakar_api.application import (
     SourceService,
 )
 from aakar_api.di import deps
-from aakar_api.domain.hub import HubModelInfo, HubTrendingItem
+from aakar_api.domain.hub import HubTrendingItem
 from aakar_api.domain.research import Paper, RepoInfo, SourceSnippet
 from aakar_api.domain.spec import Spec
 
@@ -83,22 +83,6 @@ async def get_architecture(
     hf_token: HfTokenHeader = None,
 ) -> Spec:
     return await service.get_architecture(model_id, token=hf_token)
-
-
-@router.get("/model-info", response_model=HubModelInfo, tags=["hub"])
-async def get_model_info(
-    model_id: ModelIdQuery,
-    service: HubServiceDep,
-) -> HubModelInfo:
-    return await service.get_model_info(model_id)
-
-
-@router.get("/model-readme", tags=["hub"])
-async def get_model_readme(
-    model_id: ModelIdQuery,
-    service: HubServiceDep,
-) -> dict[str, str | None]:
-    return {"model_id": model_id, "readme": await service.get_readme(model_id)}
 
 
 @router.get("/models", response_model=list[HubTrendingItem], tags=["hub"])
