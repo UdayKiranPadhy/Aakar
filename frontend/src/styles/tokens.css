@@ -19,11 +19,15 @@
   --g-yellow: #fbbc05;
   --g-yellow-ink: #f9ab00;
   --g-green: #34a853;
+  /* Purple isn't part of Google's core four, but it rounds out the stat-card
+   * accents (and matches the purple used in the dtype data-viz palette). */
+  --g-purple: #9334e6;
 
   --g-blue-subtle: #e8f0fe;
   --g-red-subtle: #fce8e6;
   --g-yellow-subtle: #fef7e0;
   --g-green-subtle: #e6f4ea;
+  --g-purple-subtle: #f3e8fd;
 
   /* ── Ink (text colours — strong → subtle) ──────────────────────────── */
   /* Bumped one notch darker across the board from the original Google AI

@@ -10,6 +10,10 @@ vi.mock("../../../application/useModelInfo", () => ({
   useModelInfo: vi.fn(),
 }));
 
+vi.mock("../../../store/archStore", () => ({
+  useArchStore: (selector: (s: unknown) => unknown) => selector({ setModelView: vi.fn(), setAppMode: vi.fn() }),
+}));
+
 const stubSpec: Spec = {
   model_id: "deepseek-ai/DeepSeek-V4-Flash",
   model_type: "deepseek_v4",
@@ -19,10 +23,13 @@ const stubSpec: Spec = {
 
 // The HF Hub `?blobs=true` response returns special tokens as `AddedToken`
 // OBJECTS (not strings) — exactly what deepseek-ai/DeepSeek-V4-Flash ships.
+// The dashboard must render around them without ever passing an object to a
+// React child (which throws "Objects are not valid as a React child").
 const addedTokenInfo = {
   model_id: "deepseek-ai/DeepSeek-V4-Flash",
-  tags: [],
-  siblings: [],
+  library_name: "transformers",
+  tags: ["license:mit"],
+  siblings: [{ rfilename: "config.json", size: 1234 }],
   config: {
     architectures: ["DeepseekV4ForCausalLM"],
     model_type: "deepseek_v4",
@@ -36,19 +43,38 @@ const addedTokenInfo = {
 
 afterEach(() => vi.clearAllMocks());
 
-describe("OverviewView — tokenizer tokens as AddedToken objects", () => {
-  it("renders the token content without crashing", () => {
-    vi.mocked(useModelInfo).mockReturnValue({
-      info: addedTokenInfo,
-      readme: null,
-      loading: false,
-      error: null,
-    });
+describe("OverviewView", () => {
+  function mockInfo(info: ModelInfo | null, readme: string | null = null) {
+    vi.mocked(useModelInfo).mockReturnValue({ info, readme, loading: false, error: null });
+  }
+
+  it("renders the model dashboard for a realistic payload with object-valued tokens", () => {
+    mockInfo(addedTokenInfo);
 
     render(<OverviewView spec={stubSpec} />);
 
-    // The BOS token's text content must appear; rendering the raw object would
-    // throw "Objects are not valid as a React child".
-    expect(screen.getByText("<｜begin▁of▁sentence｜>")).toBeInTheDocument();
+    // Title + key Model Details fields come straight from the Hub config.
+    expect(
+      screen.getByRole("heading", { level: 1, name: "deepseek-ai/DeepSeek-V4-Flash" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("DeepseekV4ForCausalLM")).toBeInTheDocument();
+    expect(screen.getByText("deepseek_v4")).toBeInTheDocument();
+  });
+
+  it("derives the license from a `license:` tag when no top-level license is set", () => {
+    mockInfo(addedTokenInfo);
+    render(<OverviewView spec={stubSpec} />);
+    // Surfaces in both the header badge row and the Model Details list.
+    expect(screen.getAllByText("MIT").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("shows the loading and empty states", () => {
+    vi.mocked(useModelInfo).mockReturnValue({ info: null, readme: null, loading: true, error: null });
+    const { rerender } = render(<OverviewView spec={stubSpec} />);
+    expect(screen.getByText("Loading model card…")).toBeInTheDocument();
+
+    vi.mocked(useModelInfo).mockReturnValue({ info: null, readme: null, loading: false, error: null });
+    rerender(<OverviewView spec={stubSpec} />);
+    expect(screen.getByText("No model information available.")).toBeInTheDocument();
   });
 });

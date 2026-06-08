@@ -1,79 +1,58 @@
 /**
- * Overview — the model's HuggingFace Hub card: stats (downloads / likes /
- * updated / created), status badges (inference / gated / quantization),
- * architecture at a glance, safetensors dtype breakdown, lineage, tags,
- * tokenizer info, model files, linked spaces, and the README as markdown.
+ * Overview — the model's "home" dashboard, modelled on a HuggingFace model
+ * card: a breadcrumb + title block with badges and actions, a row of headline
+ * stat cards, an About summary lifted from the README, and a grid of cards
+ * (Architecture · Model Details · Parameters · Linked Spaces · Research · Files
+ * · the full model card).
+ *
+ * Everything is *data-driven*: each card and each field renders only when the
+ * Hub / introspection actually returned that datum. A multimodal model that
+ * exposes only a total param count shows a lean Parameters card; a plain text
+ * model shows layers / heads / context. No field is ever fabricated, so the
+ * page degrades gracefully for any model the user searches.
  */
 
-import { useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { useModelInfo } from "../../../application/useModelInfo";
-import type { ModelInfo, HubSibling, HubToken } from "../../../domain/modelInfo";
+import type { ModelView } from "../../../domain/navigation";
+import type { HubSibling, ModelInfo } from "../../../domain/modelInfo";
 import type { Spec } from "../../../domain/spec";
+import { useArchStore } from "../../../store/archStore";
 import { formatBytes, formatParamCount } from "../../components/ui/format";
-import { Pill } from "../../components/ui/Pill";
 import type { ModelViewProps } from "../ModelViewRegistry";
-import { ViewEmpty, ViewError, ViewLoading, ViewSection } from "../shared/primitives";
+import { ViewEmpty, ViewError, ViewLoading } from "../shared/primitives";
 import shared from "../shared/primitives.module.css";
 import { Markdown } from "./Markdown";
 import styles from "./OverviewView.module.css";
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string | undefined): string | null {
-  if (!iso) return null;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(date);
-}
-
-function baseModels(cardData: Readonly<Record<string, unknown>> | undefined): string[] {
-  const base = cardData?.base_model;
-  if (typeof base === "string") return [base];
-  if (Array.isArray(base)) return base.filter((x): x is string => typeof x === "string");
-  return [];
-}
-
-// Palette for the dtype bar segments — visually distinct, on-brand.
-const DTYPE_COLORS: Record<string, string> = {
-  BF16: "#4285f4",
-  F16: "#34a853",
-  F32: "#ea4335",
-  F64: "#fbbc05",
-  I8: "#8e24aa",
-  U8: "#e040fb",
-  I16: "#00acc1",
-  I32: "#ff7043",
-  I64: "#6d4c41",
-};
-function dtypeColor(dtype: string): string {
-  return DTYPE_COLORS[dtype] ?? "#9e9e9e";
-}
-
-function quantMethodLabel(config: ModelInfo["config"]): string | null {
-  const qc = config?.quantization_config;
-  if (!qc) return null;
-  const method = qc.quant_method;
-  return typeof method === "string" ? method.toUpperCase() : "quantized";
-}
-
-// A tokenizer special token is either a plain string or an `AddedToken` object
-// (`{ content, lstrip, … }`, e.g. DeepSeek / Qwen). Pull out the displayable
-// string; return null for anything else so it's skipped (never rendered raw —
-// rendering an object as a React child crashes the whole view).
-function tokenText(token: HubToken | undefined): string | null {
-  if (typeof token === "string") return token;
-  if (token && typeof token === "object" && typeof token.content === "string") {
-    return token.content;
-  }
-  return null;
-}
+import {
+  ArrowRightIcon,
+  BookIcon,
+  CalendarIcon,
+  ChevronDownIcon,
+  ChipIcon,
+  CompareIcon,
+  CubeIcon,
+  DatabaseIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+  FileIcon,
+  HeartIcon,
+  LayersIcon,
+  PaperIcon,
+  SpacesIcon,
+  StarIcon,
+} from "./OverviewIcons";
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export function OverviewView({ spec }: ModelViewProps) {
   const { info, readme, loading, error } = useModelInfo(spec.model_id);
+  const setModelView = useArchStore((s) => s.setModelView);
+  const setAppMode = useArchStore((s) => s.setAppMode);
+  const [readmeOpen, setReadmeOpen] = useState(false);
+  const readmeRef = useRef<HTMLDivElement>(null);
 
   if (loading) {
     return (
@@ -97,325 +76,874 @@ export function OverviewView({ spec }: ModelViewProps) {
     );
   }
 
-  const lineage = baseModels(info.card_data);
-  const updated = formatDate(info.last_modified);
-  const created = formatDate(info.created_at);
+  const hfUrl = `https://huggingface.co/${info.model_id}`;
+  const goTo = (view: ModelView) => () => setModelView(view);
+  const revealReadme = () => {
+    setReadmeOpen(true);
+    requestAnimationFrame(() =>
+      readmeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
 
   return (
-    <div className={shared.view}>
-      {/* 1. Header: model id + pipeline/license/library pills */}
-      <header className={styles.header}>
-        <h2 className={styles.modelId}>{info.model_id}</h2>
-        <div className={styles.pills}>
-          {info.pipeline_tag && <Pill tone="accent">{info.pipeline_tag}</Pill>}
-          {info.library_name && <Pill tone="neutral">{info.library_name}</Pill>}
-        </div>
-      </header>
+    <div className={styles.page}>
+      <div className={styles.canvas}>
+        <ModelBreadcrumb modelId={info.model_id} author={info.author} />
 
-      {/* 2. Stats row */}
-      <div className={styles.stats}>
-        {typeof info.downloads === "number" && (
-          <Stat value={formatParamCount(info.downloads)} label="Downloads" />
-        )}
-        {typeof info.likes === "number" && <Stat value={info.likes.toLocaleString()} label="Likes" />}
-        {updated && <Stat value={updated} label="Updated" />}
-        {created && <Stat value={created} label="Created" />}
-        {typeof info.used_storage === "number" && (
-          <Stat value={formatBytes(info.used_storage) ?? "—"} label="Storage" />
-        )}
-      </div>
-
-      {/* 3. Badges row */}
-      <BadgesRow info={info} />
-
-      {/* 4. Architecture at a glance */}
-      <ArchitectureGlance spec={spec} info={info} />
-
-      {/* 5. Safetensors dtype breakdown */}
-      <DtypeBreakdown info={info} />
-
-      {/* 6. Lineage */}
-      {lineage.length > 0 && (
-        <p className={styles.lineage}>
-          Fine-tuned from{" "}
-          {lineage.map((model, i) => (
-            <span key={model}>
-              {i > 0 && ", "}
-              <a href={`https://huggingface.co/${model}`} target="_blank" rel="noreferrer noopener">
-                {model}
-              </a>
-            </span>
-          ))}
-        </p>
-      )}
-
-      {/* 7. Tags */}
-      {info.tags.length > 0 && (
-        <div className={styles.tags}>
-          {info.tags.map((tag) => (
-            <Pill key={tag} tone="neutral">
-              {tag}
-            </Pill>
-          ))}
-        </div>
-      )}
-
-      {/* 8. Tokenizer info */}
-      <TokenizerInfo info={info} />
-
-      {/* 9. Model files */}
-      <ModelFiles siblings={info.siblings} />
-
-      {/* 10. Linked Spaces */}
-      <LinkedSpaces spaces={info.spaces} />
-
-      {/* 11. README */}
-      {readme ? (
-        <Markdown source={readme} modelId={info.model_id} />
-      ) : (
-        <ViewEmpty message="This model has no README / model card." />
-      )}
-    </div>
-  );
-}
-
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className={styles.stat}>
-      <span className={styles.statValue}>{value}</span>
-      <span className={styles.statLabel}>{label}</span>
-    </div>
-  );
-}
-
-function BadgesRow({ info }: { info: ModelInfo }) {
-  const quant = quantMethodLabel(info.config);
-  const hasBadge = info.inference || info.gated !== undefined || info.license || quant;
-  if (!hasBadge) return null;
-
-  const inferDotClass = info.inference === "warm"
-    ? styles.badgeDotWarm
-    : info.inference === "loading"
-      ? styles.badgeDotLoading
-      : styles.badgeDotCold;
-
-  return (
-    <div className={styles.badges}>
-      {info.inference && (
-        <span className={styles.badge}>
-          <span className={clsx(styles.badgeDot, inferDotClass)} />
-          Inference: {info.inference}
-        </span>
-      )}
-      {info.gated !== undefined && (
-        <span className={styles.badge}>
-          {info.gated === false ? "Open access" : `Gated (${String(info.gated)})`}
-        </span>
-      )}
-      {info.license && (
-        <span className={styles.badge}>
-          {info.license}
-        </span>
-      )}
-      {quant && (
-        <span className={styles.badge}>
-          Quantized: {quant}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function ArchitectureGlance({ spec, info }: { spec: Spec; info: ModelInfo }) {
-  const summary = spec.config_summary;
-  const architectures = info.config?.architectures;
-
-  const facts: Array<{ key: string; label: string; value: string }> = [];
-
-  if (info.config?.model_type) {
-    facts.push({ key: "model_type", label: "Model type", value: info.config.model_type });
-  }
-  if (architectures && architectures.length > 0) {
-    facts.push({ key: "arch_class", label: "Architecture class", value: architectures.join(", ") });
-  }
-  if (typeof summary.num_hidden_layers === "number") {
-    facts.push({ key: "layers", label: "Layers", value: String(summary.num_hidden_layers) });
-  }
-  if (typeof summary.hidden_size === "number") {
-    facts.push({ key: "hidden", label: "Hidden size", value: String(summary.hidden_size) });
-  }
-  if (typeof summary.num_attention_heads === "number") {
-    facts.push({ key: "heads", label: "Attention heads", value: String(summary.num_attention_heads) });
-  }
-  if (typeof summary.num_key_value_heads === "number") {
-    facts.push({ key: "kv_heads", label: "KV heads", value: String(summary.num_key_value_heads) });
-  }
-  if (typeof summary.vocab_size === "number") {
-    facts.push({ key: "vocab", label: "Vocab size", value: summary.vocab_size.toLocaleString() });
-  }
-  if (typeof summary.max_position_embeddings === "number") {
-    facts.push({ key: "context", label: "Max context", value: summary.max_position_embeddings.toLocaleString() });
-  }
-  if (spec.param_dtype) {
-    facts.push({ key: "dtype", label: "Param dtype", value: spec.param_dtype });
-  }
-  if (spec.position_encoding) {
-    facts.push({ key: "pos_enc", label: "Position encoding", value: spec.position_encoding });
-  }
-  if (spec.attn_impl) {
-    facts.push({ key: "attn_impl", label: "Attention impl", value: spec.attn_impl });
-  }
-  if (spec.tied_word_embeddings) {
-    facts.push({ key: "tied", label: "Tied embeddings", value: "yes" });
-  }
-
-  if (facts.length === 0) return null;
-
-  return (
-    <ViewSection title="Architecture at a glance">
-      <div className={styles.glanceGrid}>
-        {facts.map((f) => (
-          <div key={f.key} className={styles.glanceItem}>
-            <span className={styles.glanceKey}>{f.label}</span>
-            <span className={styles.glanceValue}>{f.value}</span>
+        {/* Title block: id + badges, with the primary actions on the right. */}
+        <header className={styles.titleBlock}>
+          <div className={styles.titleMain}>
+            <h1 className={styles.title}>{info.model_id}</h1>
+            <BadgeRow info={info} />
           </div>
-        ))}
-      </div>
-    </ViewSection>
-  );
-}
-
-function DtypeBreakdown({ info }: { info: ModelInfo }) {
-  const params = info.safetensors?.parameters;
-  const total = info.safetensors?.total;
-  if (!params || !total || total === 0) return null;
-
-  const entries = Object.entries(params).sort(([, a], [, b]) => b - a);
-  if (entries.length === 0) return null;
-
-  return (
-    <ViewSection title="Parameter distribution">
-      <div className={styles.dtypeSection}>
-        <div className={styles.dtypeBar}>
-          {entries.map(([dtype, count]) => (
-            <span
-              key={dtype}
-              className={styles.dtypeSegment}
-              style={{
-                width: `${(count / total) * 100}%`,
-                background: dtypeColor(dtype),
-              }}
-              title={`${dtype}: ${formatParamCount(count)} (${((count / total) * 100).toFixed(1)}%)`}
-            />
-          ))}
-        </div>
-        <div className={styles.dtypeLegend}>
-          {entries.map(([dtype, count]) => (
-            <span key={dtype} className={styles.dtypeLegendItem}>
-              <span className={styles.dtypeSwatch} style={{ background: dtypeColor(dtype) }} />
-              <span>{dtype}</span>
-              <span className={styles.dtypeCount}>{formatParamCount(count)}</span>
-              <span>({((count / total) * 100).toFixed(1)}%)</span>
-            </span>
-          ))}
-        </div>
-      </div>
-    </ViewSection>
-  );
-}
-
-function TokenizerInfo({ info }: { info: ModelInfo }) {
-  const tok = info.config?.tokenizer_config;
-  if (!tok) return null;
-
-  const tokens: Array<{ key: string; label: string; value: string }> = [];
-  const bos = tokenText(tok.bos_token);
-  const eos = tokenText(tok.eos_token);
-  const pad = tokenText(tok.pad_token);
-  if (bos) tokens.push({ key: "bos", label: "BOS", value: bos });
-  if (eos) tokens.push({ key: "eos", label: "EOS", value: eos });
-  if (pad) tokens.push({ key: "pad", label: "PAD", value: pad });
-
-  if (tokens.length === 0) return null;
-
-  return (
-    <ViewSection title="Tokenizer">
-      <div className={styles.tokenRow}>
-        {tokens.map((t) => (
-          <span key={t.key} className={styles.tokenItem}>
-            <span className={styles.tokenLabel}>{t.label}</span>
-            <code className={styles.tokenValue}>{t.value}</code>
-          </span>
-        ))}
-      </div>
-    </ViewSection>
-  );
-}
-
-const MAX_FILES_COLLAPSED = 6;
-
-function ModelFiles({ siblings }: { siblings: ReadonlyArray<HubSibling> }) {
-  const [expanded, setExpanded] = useState(false);
-
-  if (siblings.length === 0) return null;
-
-  const sorted = [...siblings].sort((a, b) => a.rfilename.localeCompare(b.rfilename));
-  const show = expanded ? sorted : sorted.slice(0, MAX_FILES_COLLAPSED);
-
-  return (
-    <ViewSection title={`Files (${siblings.length})`}>
-      <div className={styles.fileList}>
-        {show.map((s) => (
-          <div key={s.rfilename} className={styles.fileRow}>
-            <span className={styles.fileName}>{s.rfilename}</span>
-            {typeof s.size === "number" && (
-              <span className={styles.fileSize}>{formatBytes(s.size)}</span>
+          <div className={styles.actions}>
+            <a className={clsx(styles.btn, styles.btnPrimary)} href={hfUrl} target="_blank" rel="noreferrer noopener">
+              Open in HuggingFace
+              <ExternalLinkIcon className={styles.btnIcon} />
+            </a>
+            <button type="button" className={clsx(styles.btn, styles.btnSecondary)} onClick={() => setAppMode("compare")}>
+              <CompareIcon className={styles.btnIcon} />
+              Compare
+            </button>
+            {typeof info.likes === "number" && (
+              <a className={clsx(styles.btn, styles.btnSecondary)} href={hfUrl} target="_blank" rel="noreferrer noopener">
+                <StarIcon className={styles.btnIcon} />
+                {formatCompact(info.likes)}
+              </a>
             )}
           </div>
-        ))}
+        </header>
+
+        <StatGrid spec={spec} info={info} />
+
+        <AboutCard info={info} readme={readme} onViewReadme={readme ? revealReadme : undefined} />
+
+        <div className={styles.twoCol}>
+          <ArchitectureCard spec={spec} info={info} onDetails={goTo("architecture")} />
+          <ModelDetailsCard spec={spec} info={info} />
+        </div>
+
+        <ParametersCard spec={spec} info={info} onDetails={goTo("parameters")} />
+
+        <div className={styles.twoCol}>
+          <LinkedSpacesCard spaces={info.spaces} modelId={info.model_id} />
+          <ResearchCard info={info} onOpenResearch={goTo("research")} />
+        </div>
+
+        <FilesCard siblings={info.siblings} count={info.siblings.length} modelId={info.model_id} />
+
+        {readme && (
+          <div ref={readmeRef}>
+            <ModelCardSection
+              readme={readme}
+              modelId={info.model_id}
+              open={readmeOpen}
+              onToggle={() => setReadmeOpen((v) => !v)}
+            />
+          </div>
+        )}
       </div>
-      {siblings.length > MAX_FILES_COLLAPSED && (
-        <button
-          type="button"
-          className={styles.filesToggle}
-          onClick={() => setExpanded(!expanded)}
-        >
-          <span className={clsx(styles.filesArrow, expanded && styles.filesArrowOpen)}>▶</span>
-          {expanded ? "Show fewer" : `Show all ${siblings.length} files`}
-        </button>
-      )}
-    </ViewSection>
+    </div>
   );
 }
 
-const MAX_SPACES_SHOWN = 5;
+// ── Title block ────────────────────────────────────────────────────────────
 
-function LinkedSpaces({ spaces }: { spaces: ReadonlyArray<string> | undefined }) {
-  if (!spaces || spaces.length === 0) return null;
-
-  const shown = spaces.slice(0, MAX_SPACES_SHOWN);
-  const remaining = spaces.length - shown.length;
-
+function ModelBreadcrumb({ modelId, author }: { modelId: string; author?: string }) {
+  const slash = modelId.indexOf("/");
+  const owner = author ?? (slash >= 0 ? modelId.slice(0, slash) : null);
+  const name = slash >= 0 ? modelId.slice(slash + 1) : modelId;
   return (
-    <ViewSection title={`Linked Spaces (${spaces.length})`}>
-      <div className={styles.spacesRow}>
-        {shown.map((id) => (
+    <nav className={styles.crumbs} aria-label="Model location">
+      <a className={styles.crumbLink} href="https://huggingface.co/models" target="_blank" rel="noreferrer noopener">
+        Models
+      </a>
+      {owner && (
+        <>
+          <span className={styles.crumbSep}>/</span>
           <a
-            key={id}
-            className={styles.spaceLink}
-            href={`https://huggingface.co/spaces/${id}`}
+            className={styles.crumbLink}
+            href={`https://huggingface.co/${owner}`}
             target="_blank"
             rel="noreferrer noopener"
           >
-            {id}
+            {owner}
           </a>
-        ))}
-        {remaining > 0 && (
-          <span className={styles.spacesMore}>+{remaining} more</span>
-        )}
-      </div>
-    </ViewSection>
+        </>
+      )}
+      <span className={styles.crumbSep}>/</span>
+      <span className={styles.crumbCurrent}>{name}</span>
+    </nav>
   );
+}
+
+function BadgeRow({ info }: { info: ModelInfo }) {
+  const modality = deriveModality(info.pipeline_tag);
+  const license = deriveLicense(info);
+  return (
+    <div className={styles.badgeRow}>
+      {modality && (
+        <span className={clsx(styles.badge, styles.badgeStrong)}>
+          <LayersIcon className={styles.badgeIcon} />
+          {modality}
+        </span>
+      )}
+      {info.library_name && (
+        <span className={styles.badge}>
+          <CubeIcon className={styles.badgeIcon} />
+          {prettyWords(info.library_name)}
+        </span>
+      )}
+      {info.pipeline_tag && <span className={clsx(styles.badge, styles.badgeAccent)}>{info.pipeline_tag}</span>}
+      {license && (
+        <span className={styles.badge}>
+          <BookIcon className={styles.badgeIcon} />
+          {license}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Stat cards ───────────────────────────────────────────────────────────────
+
+function StatGrid({ spec, info }: { spec: Spec; info: ModelInfo }) {
+  const params = totalParams(spec, info);
+  const updated = formatDate(info.last_modified);
+  const stats: Array<{ key: string; icon: ReactNode; value: string; label: string; tone?: string }> = [];
+
+  if (typeof info.downloads === "number")
+    stats.push({ key: "dl", icon: <DownloadIcon />, value: formatCompact(info.downloads), label: "Downloads", tone: styles.toneBlue });
+  if (typeof info.likes === "number")
+    stats.push({ key: "likes", icon: <HeartIcon />, value: info.likes.toLocaleString(), label: "Likes", tone: styles.toneLike });
+  if (params !== null)
+    stats.push({ key: "params", icon: <ChipIcon />, value: formatParamCount(params), label: "Parameters", tone: styles.tonePurple });
+  if (typeof info.used_storage === "number")
+    stats.push({ key: "store", icon: <DatabaseIcon />, value: formatBytes(info.used_storage) ?? "—", label: "Storage", tone: styles.toneGreen });
+  if (updated) stats.push({ key: "upd", icon: <CalendarIcon />, value: updated, label: "Updated", tone: styles.toneAmber });
+  if (info.spaces && info.spaces.length > 0)
+    stats.push({ key: "spaces", icon: <SpacesIcon />, value: info.spaces.length.toLocaleString(), label: "Linked Spaces", tone: styles.toneBlue });
+
+  if (stats.length === 0) return null;
+
+  return (
+    <div className={styles.statGrid}>
+      {stats.map((s) => (
+        <div key={s.key} className={styles.statCard}>
+          <span className={clsx(styles.statIcon, s.tone)}>{s.icon}</span>
+          <span className={styles.statValue}>{s.value}</span>
+          <span className={styles.statLabel}>{s.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── About ──────────────────────────────────────────────────────────────────
+
+function AboutCard({
+  info,
+  readme,
+  onViewReadme,
+}: {
+  info: ModelInfo;
+  readme: string | null;
+  onViewReadme?: () => void;
+}) {
+  const summary = extractReadmeSummary(readme);
+  const topics = deriveTopicTags(info);
+  if (!summary.lead && !summary.body && topics.length === 0) return null;
+
+  return (
+    <Card
+      title="About"
+      action={onViewReadme && <ActionButton onClick={onViewReadme} label="View full README" />}
+    >
+      {summary.lead && <p className={styles.aboutLead}>{summary.lead}</p>}
+      {summary.body && <p className={styles.aboutBody}>{summary.body}</p>}
+      {topics.length > 0 && (
+        <div className={styles.topicRow}>
+          {topics.map((t) => (
+            <span key={t} className={styles.topic}>
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ── Architecture (flow diagram) ──────────────────────────────────────────────
+
+function ArchitectureCard({
+  spec,
+  info,
+  onDetails,
+}: {
+  spec: Spec;
+  info: ModelInfo;
+  onDetails: () => void;
+}) {
+  const flow = pipelineFlow(info.pipeline_tag);
+  const archClass = info.config?.architectures?.[0];
+  const coreName = shortName(info.model_id);
+  const kind = archKind(archClass, info.pipeline_tag);
+
+  return (
+    <Card title="Architecture" action={<ActionButton onClick={onDetails} label="View architecture details" />}>
+      <div className={styles.flow}>
+        <div className={styles.flowNode}>
+          <span className={styles.flowLabel}>Input</span>
+          <span className={styles.flowValue}>{flow.input}</span>
+        </div>
+        <ArrowRightIcon className={styles.flowArrow} />
+        <button type="button" className={clsx(styles.flowNode, styles.flowCore)} onClick={onDetails}>
+          <span className={styles.flowCoreName}>{coreName}</span>
+          <span className={styles.flowCoreKind}>{kind}</span>
+        </button>
+        <ArrowRightIcon className={styles.flowArrow} />
+        <div className={styles.flowNode}>
+          <span className={styles.flowLabel}>Output</span>
+          <span className={styles.flowValue}>{flow.output}</span>
+        </div>
+      </div>
+      {spec.notes && spec.notes.length > 0 && <p className={styles.flowNote}>{spec.notes[0]}</p>}
+    </Card>
+  );
+}
+
+// ── Model details (key / value) ──────────────────────────────────────────────
+
+function ModelDetailsCard({ spec, info }: { spec: Spec; info: ModelInfo }) {
+  const rows: Array<{ label: string; value: string; mono?: boolean }> = [];
+  const modelType = info.config?.model_type ?? spec.model_type;
+  const archClass = info.config?.architectures?.[0];
+  const license = deriveLicense(info);
+
+  if (modelType) rows.push({ label: "Model Type", value: modelType, mono: true });
+  if (archClass) rows.push({ label: "Architecture", value: archClass, mono: true });
+  if (spec.attn_impl) rows.push({ label: "Attention", value: spec.attn_impl, mono: true });
+  if (spec.position_encoding) rows.push({ label: "Position Encoding", value: spec.position_encoding, mono: true });
+  if (spec.tied_word_embeddings) rows.push({ label: "Tied Embeddings", value: "yes" });
+  if (license) rows.push({ label: "License", value: license });
+  if (info.library_name) rows.push({ label: "Library", value: info.library_name });
+  if (info.author) rows.push({ label: "Author", value: info.author });
+  const created = formatDate(info.created_at);
+  const updated = formatDate(info.last_modified);
+  if (created) rows.push({ label: "Created", value: created });
+  if (updated) rows.push({ label: "Last Updated", value: updated });
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Card title="Model Details">
+      <dl className={styles.detailList}>
+        {rows.map((r) => (
+          <div key={r.label} className={styles.detailRow}>
+            <dt className={styles.detailKey}>{r.label}</dt>
+            <dd className={clsx(styles.detailVal, r.mono && styles.mono)}>{r.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </Card>
+  );
+}
+
+// ── Parameters (distribution + key numbers) ──────────────────────────────────
+
+function ParametersCard({
+  spec,
+  info,
+  onDetails,
+}: {
+  spec: Spec;
+  info: ModelInfo;
+  onDetails: () => void;
+}) {
+  const summary = spec.config_summary;
+  const params = totalParams(spec, info);
+  const dtype = dtypeEntries(info);
+
+  const metrics: Array<{ label: string; value: string }> = [];
+  if (params !== null) metrics.push({ label: "Total Parameters", value: formatParamCount(params) });
+  pushNum(metrics, summary.num_hidden_layers, "Layers");
+  pushNum(metrics, summary.hidden_size, "Hidden Size");
+  pushNum(metrics, summary.num_attention_heads, "Attention Heads");
+  pushNum(metrics, summary.num_key_value_heads, "KV Heads");
+  if (typeof summary.max_position_embeddings === "number")
+    metrics.push({ label: "Context Length", value: formatCompact(summary.max_position_embeddings) });
+  if (typeof summary.vocab_size === "number")
+    metrics.push({ label: "Vocabulary", value: summary.vocab_size.toLocaleString() });
+
+  if (metrics.length === 0 && !dtype) return null;
+
+  return (
+    <Card title="Parameters" action={<ActionButton onClick={onDetails} label="View all details" />}>
+      {dtype && (
+        <div className={styles.dtype}>
+          <span className={styles.dtypeCaption}>Parameter distribution (safetensors)</span>
+          <div className={styles.dtypeBar}>
+            {dtype.entries.map(([name, count]) => (
+              <span
+                key={name}
+                className={styles.dtypeSeg}
+                style={{ width: `${(count / dtype.total) * 100}%`, background: dtypeColor(name) }}
+                title={`${name}: ${formatParamCount(count)} (${pct(count, dtype.total)})`}
+              />
+            ))}
+          </div>
+          <div className={styles.dtypeLegend}>
+            {dtype.entries.map(([name, count]) => (
+              <span key={name} className={styles.dtypeLegendItem}>
+                <span className={styles.dtypeSwatch} style={{ background: dtypeColor(name) }} />
+                <span className={styles.mono}>{name}</span>
+                <span className={styles.dtypeLegendVal}>
+                  {formatParamCount(count)} ({pct(count, dtype.total)})
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {metrics.length > 0 && (
+        <div className={styles.metricGrid}>
+          {metrics.map((m) => (
+            <div key={m.label} className={styles.metric}>
+              <span className={styles.metricValue}>{m.value}</span>
+              <span className={styles.metricLabel}>{m.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ── Linked spaces ────────────────────────────────────────────────────────────
+
+const MAX_SPACES = 5;
+
+function LinkedSpacesCard({
+  spaces,
+  modelId,
+}: {
+  spaces: ReadonlyArray<string> | undefined;
+  modelId: string;
+}) {
+  if (!spaces || spaces.length === 0) return null;
+  const shown = spaces.slice(0, MAX_SPACES);
+  const remaining = spaces.length - shown.length;
+
+  return (
+    <Card
+      title={`Linked Spaces (${spaces.length})`}
+      action={
+        <ActionLink href={`https://huggingface.co/${modelId}`} label="View all" external />
+      }
+    >
+      <ul className={styles.linkList}>
+        {shown.map((id) => (
+          <li key={id}>
+            <a
+              className={styles.linkRow}
+              href={`https://huggingface.co/spaces/${id}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              <SpacesIcon className={styles.linkIcon} />
+              <span className={styles.linkText}>{id}</span>
+              <span className={styles.linkTag}>Space</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      {remaining > 0 && <p className={styles.linkMore}>+{remaining} more spaces</p>}
+    </Card>
+  );
+}
+
+// ── Research & resources ─────────────────────────────────────────────────────
+
+function ResearchCard({ info, onOpenResearch }: { info: ModelInfo; onOpenResearch: () => void }) {
+  const arxiv = info.tags
+    .filter((t) => t.toLowerCase().startsWith("arxiv:"))
+    .map((t) => t.slice("arxiv:".length))
+    .slice(0, 4);
+
+  return (
+    <Card title="Research & Resources" action={<ActionButton onClick={onOpenResearch} label="View all" />}>
+      <ul className={styles.linkList}>
+        {arxiv.map((id) => (
+          <li key={id}>
+            <a className={styles.linkRow} href={`https://arxiv.org/abs/${id}`} target="_blank" rel="noreferrer noopener">
+              <PaperIcon className={styles.linkIcon} />
+              <span className={styles.linkText}>arXiv:{id}</span>
+              <span className={styles.linkTag}>Paper</span>
+            </a>
+          </li>
+        ))}
+        <li>
+          <button type="button" className={styles.linkRow} onClick={onOpenResearch}>
+            <BookIcon className={styles.linkIcon} />
+            <span className={styles.linkText}>Papers, citations &amp; source code</span>
+            <ArrowRightIcon className={styles.linkArrow} />
+          </button>
+        </li>
+        <li>
+          <a
+            className={styles.linkRow}
+            href={`https://huggingface.co/${info.model_id}`}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <ExternalLinkIcon className={styles.linkIcon} />
+            <span className={styles.linkText}>Model page on HuggingFace</span>
+          </a>
+        </li>
+      </ul>
+    </Card>
+  );
+}
+
+// ── Files ──────────────────────────────────────────────────────────────────
+
+const MAX_FILES = 8;
+
+function FilesCard({
+  siblings,
+  count,
+  modelId,
+}: {
+  siblings: ReadonlyArray<HubSibling>;
+  count: number;
+  modelId: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (siblings.length === 0) return null;
+
+  const sorted = [...siblings].sort(
+    (a, b) => fileRank(a.rfilename) - fileRank(b.rfilename) || a.rfilename.localeCompare(b.rfilename),
+  );
+  const show = expanded ? sorted : sorted.slice(0, MAX_FILES);
+  const remaining = sorted.length - show.length;
+
+  return (
+    <Card title={`Files (${count})`}>
+      <div className={styles.fileTable}>
+        <div className={clsx(styles.fileRow, styles.fileHead)}>
+          <span>Name</span>
+          <span>Type</span>
+          <span className={styles.fileSizeCol}>Size</span>
+        </div>
+        {show.map((s) => (
+          <div key={s.rfilename} className={styles.fileRow}>
+            <a
+              className={styles.fileName}
+              href={`https://huggingface.co/${modelId}/blob/main/${encodeURI(s.rfilename)}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              <FileIcon className={styles.fileIcon} />
+              <span className={styles.fileNameText}>{s.rfilename}</span>
+            </a>
+            <span className={styles.fileType}>{fileType(s.rfilename)}</span>
+            <span className={styles.fileSizeCol}>{formatBytes(s.size) ?? "—"}</span>
+          </div>
+        ))}
+      </div>
+      {remaining > 0 && (
+        <button type="button" className={styles.fileToggle} onClick={() => setExpanded(true)}>
+          + {remaining} more files
+        </button>
+      )}
+      {expanded && sorted.length > MAX_FILES && (
+        <button type="button" className={styles.fileToggle} onClick={() => setExpanded(false)}>
+          Show fewer
+        </button>
+      )}
+    </Card>
+  );
+}
+
+// ── Full model card (README) ─────────────────────────────────────────────────
+
+function ModelCardSection({
+  readme,
+  modelId,
+  open,
+  onToggle,
+}: {
+  readme: string;
+  modelId: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Card title="Model Card">
+      <div className={clsx(styles.readme, !open && styles.readmeClamped)}>
+        <Markdown source={readme} modelId={modelId} />
+        {!open && <div className={styles.readmeFade} />}
+      </div>
+      <button type="button" className={styles.readmeToggle} onClick={onToggle}>
+        {open ? "Show less" : "Show full model card"}
+        <ChevronDownIcon className={clsx(styles.readmeChevron, open && styles.readmeChevronOpen)} />
+      </button>
+    </Card>
+  );
+}
+
+// ── Building blocks ──────────────────────────────────────────────────────────
+
+function Card({
+  title,
+  action,
+  className,
+  children,
+}: {
+  title?: string;
+  action?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={clsx(styles.card, className)}>
+      {(title || action) && (
+        <div className={styles.cardHead}>
+          {title && <h2 className={styles.cardTitle}>{title}</h2>}
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function ActionButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button type="button" className={styles.cardAction} onClick={onClick}>
+      {label}
+      <ArrowRightIcon className={styles.cardActionIcon} />
+    </button>
+  );
+}
+
+function ActionLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
+  return (
+    <a
+      className={styles.cardAction}
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer noopener" : undefined}
+    >
+      {label}
+      <ArrowRightIcon className={styles.cardActionIcon} />
+    </a>
+  );
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(date);
+}
+
+/** 5595879 → "5.6M", 1639 → "1,639", 128000 → "128K". */
+function formatCompact(n: number): string {
+  if (n < 1000) return n.toLocaleString();
+  if (n < 1e6) return `${(n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 1)}K`.replace(".0K", "K");
+  if (n < 1e9) return `${(n / 1e6).toFixed(1)}M`.replace(".0M", "M");
+  return `${(n / 1e9).toFixed(1)}B`.replace(".0B", "B");
+}
+
+function pct(value: number, total: number): string {
+  return `${((value / total) * 100).toFixed(1)}%`.replace(".0%", "%");
+}
+
+function pushNum(
+  out: Array<{ label: string; value: string }>,
+  value: Spec["config_summary"][string] | undefined,
+  label: string,
+): void {
+  if (typeof value === "number") out.push({ label, value: value.toLocaleString() });
+}
+
+function totalParams(spec: Spec, info: ModelInfo): number | null {
+  if (typeof info.safetensors?.total === "number") return info.safetensors.total;
+  const cs = spec.config_summary.total_params;
+  return typeof cs === "number" ? cs : null;
+}
+
+/** Param dtype distribution from safetensors, sorted largest-first. */
+function dtypeEntries(info: ModelInfo): { entries: Array<[string, number]>; total: number } | null {
+  const params = info.safetensors?.parameters;
+  const total = info.safetensors?.total;
+  if (!params || !total || total === 0) return null;
+  const entries = Object.entries(params).sort(([, a], [, b]) => b - a);
+  return entries.length > 0 ? { entries, total } : null;
+}
+
+const DTYPE_COLORS: Record<string, string> = {
+  BF16: "#4285f4",
+  F16: "#34a853",
+  F32: "#ea4335",
+  F64: "#fbbc05",
+  I8: "#8e24aa",
+  U8: "#e040fb",
+  I16: "#00acc1",
+  I32: "#ff7043",
+  I64: "#6d4c41",
+};
+function dtypeColor(dtype: string): string {
+  return DTYPE_COLORS[dtype] ?? "#9e9e9e";
+}
+
+/** Top-level "Multimodal / Vision / Audio / Text" descriptor from the pipeline tag. */
+function deriveModality(pipeline?: string): string | null {
+  if (!pipeline) return null;
+  const p = pipeline.toLowerCase();
+  const hasImg = p.includes("image") || p.includes("visual") || p.includes("video");
+  const hasAud = p.includes("audio") || p.includes("speech");
+  const hasTxt = p.includes("text") || p.includes("token");
+  if ((hasImg || hasAud) && hasTxt) return "Multimodal";
+  if (hasImg && hasAud) return "Multimodal";
+  if (hasImg) return "Vision";
+  if (hasAud) return "Audio";
+  return null;
+}
+
+function deriveLicense(info: ModelInfo): string | null {
+  if (typeof info.license === "string" && info.license) return prettyLicense(info.license);
+  const tag = info.tags.find((t) => t.toLowerCase().startsWith("license:"));
+  if (tag) return prettyLicense(tag.slice(tag.indexOf(":") + 1));
+  const cd = info.card_data?.license;
+  if (typeof cd === "string" && cd) return prettyLicense(cd);
+  return null;
+}
+
+const KNOWN_LICENSES: Record<string, string> = {
+  mit: "MIT",
+  "apache-2.0": "Apache-2.0",
+  apache: "Apache",
+  "bsd-3-clause": "BSD-3-Clause",
+  "bsd-2-clause": "BSD-2-Clause",
+  "gpl-3.0": "GPL-3.0",
+  "agpl-3.0": "AGPL-3.0",
+  "lgpl-3.0": "LGPL-3.0",
+  "cc-by-4.0": "CC-BY-4.0",
+  "cc-by-sa-4.0": "CC-BY-SA-4.0",
+  "cc-by-nc-4.0": "CC-BY-NC-4.0",
+  "cc-by-nc-sa-4.0": "CC-BY-NC-SA-4.0",
+  "creativeml-openrail-m": "CreativeML-OpenRAIL-M",
+  "bigscience-openrail-m": "BigScience-OpenRAIL-M",
+  openrail: "OpenRAIL",
+  "openrail++": "OpenRAIL++",
+  unlicense: "Unlicense",
+  other: "Other",
+};
+function prettyLicense(raw: string): string {
+  const key = raw.toLowerCase().trim();
+  if (KNOWN_LICENSES[key]) return KNOWN_LICENSES[key];
+  return raw
+    .split("-")
+    .map((seg) => (/^[a-z]+$/.test(seg) ? seg.charAt(0).toUpperCase() + seg.slice(1) : seg))
+    .join("-");
+}
+
+/** Capitalise each hyphen/underscore-separated word: "long-context" → "Long Context". */
+function prettyWords(raw: string): string {
+  return raw
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Meaningful "topic" tags for the About section — Hub tags minus plumbing. */
+const TAG_NOISE_PREFIX = ["license:", "region:", "arxiv:", "dataset:", "base_model", "doi:", "co2_eq", "deploy:"];
+const TAG_NOISE_EXACT = new Set([
+  "safetensors",
+  "transformers",
+  "pytorch",
+  "tensorflow",
+  "jax",
+  "gguf",
+  "onnx",
+  "endpoints_compatible",
+  "autotrain_compatible",
+  "text-generation-inference",
+  "custom_code",
+  "has_space",
+  "model-index",
+  "eval-results",
+  "mteb",
+]);
+function deriveTopicTags(info: ModelInfo): string[] {
+  const cd = info.card_data?.tags;
+  const cardTags = Array.isArray(cd) ? cd.filter((t): t is string => typeof t === "string") : [];
+  const source = cardTags.length > 0 ? cardTags : info.tags;
+  const modelType = info.config?.model_type?.toLowerCase();
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of source) {
+    const t = raw.toLowerCase();
+    if (TAG_NOISE_PREFIX.some((p) => t.startsWith(p))) continue;
+    if (TAG_NOISE_EXACT.has(t)) continue;
+    if (t === info.pipeline_tag || t === modelType) continue;
+    if (t.length < 2 || seen.has(t)) continue;
+    seen.add(t);
+    out.push(prettyWords(raw));
+    if (out.length >= 8) break;
+  }
+  return out;
+}
+
+/** First two prose paragraphs of the README (frontmatter / badges / tables stripped). */
+function extractReadmeSummary(readme: string | null): { lead: string | null; body: string | null } {
+  if (!readme) return { lead: null, body: null };
+  const md = readme.replace(/^﻿?\s*---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+  const paras: string[] = [];
+  let buf: string[] = [];
+  const flush = () => {
+    if (buf.length) {
+      const text = buf.join(" ");
+      if (/[a-zA-Z]{3,}/.test(text)) paras.push(text);
+      buf = [];
+    }
+  };
+  for (const rawLine of md.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (
+      !line ||
+      line.startsWith("#") ||
+      line.startsWith(">") ||
+      line.startsWith("|") ||
+      line.startsWith("<") ||
+      /^[-*+]\s/.test(line) ||
+      /^\d+\.\s/.test(line) ||
+      /^([-*=_])\1{2,}$/.test(line)
+    ) {
+      flush();
+      if (paras.length >= 2) break;
+      continue;
+    }
+    const cleaned = cleanProse(line);
+    if (cleaned) buf.push(cleaned);
+    else flush();
+  }
+  flush();
+  return {
+    lead: paras[0] ? tidy(truncate(paras[0], 260)) : null,
+    body: paras[1] ? tidy(truncate(paras[1], 360)) : null,
+  };
+}
+
+// A paragraph that ends mid-thought (it ran into a heading or list in the
+// README) gets a trailing ellipsis so it doesn't read as a hard stop.
+function tidy(s: string): string {
+  return /[.!?:…]$/.test(s) ? s : `${s}…`;
+}
+
+function cleanProse(s: string): string {
+  return s
+    .replace(/\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)/g, "") // badge links: [![alt](img)](href)
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "") // images
+    .replace(/\[\]\([^)]*\)/g, "") // empty-text links left after image strip
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // links → text
+    .replace(/`([^`]+)`/g, "$1") // inline code
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1") // bold / italic
+    .replace(/<[^>]+>/g, "") // stray html
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function truncate(s: string, n: number): string {
+  if (s.length <= n) return s;
+  const cut = s.slice(0, n);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > n * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
+function shortName(modelId: string): string {
+  const slash = modelId.lastIndexOf("/");
+  return slash >= 0 ? modelId.slice(slash + 1) : modelId;
+}
+
+/** Friendly "kind" line for the architecture core box. */
+function archKind(archClass: string | undefined, pipeline: string | undefined): string {
+  if (deriveModality(pipeline) === "Multimodal") return "Multimodal Transformer";
+  const a = (archClass ?? "").toLowerCase();
+  if (a.includes("causallm") || a.includes("lmhead")) return "Transformer Decoder";
+  if (a.includes("formaskedlm")) return "Transformer Encoder";
+  if (a.includes("forconditionalgeneration") || a.includes("seq2seq")) return "Encoder · Decoder";
+  if (a.includes("forsequenceclassification") || a.includes("fortokenclassification")) return "Transformer Encoder";
+  if (a.includes("model")) return "Transformer";
+  return "Transformer";
+}
+
+const MODALITY_WORDS: Record<string, string> = {
+  image: "Image",
+  text: "Text",
+  audio: "Audio",
+  video: "Video",
+  visual: "Image",
+  speech: "Audio",
+  token: "Tokens",
+  any: "Any",
+};
+/** Map a pipeline tag to "input → output" modality labels (splits on "-to-"). */
+function pipelineFlow(pipeline?: string): { input: string; output: string } {
+  if (!pipeline) return { input: "Tokens", output: "Tokens" };
+  const p = pipeline.toLowerCase();
+  const label = (s: string) =>
+    s
+      .split("-")
+      .map((w) => MODALITY_WORDS[w] ?? prettyWords(w))
+      .join(" · ");
+  if (p.includes("-to-")) {
+    const idx = p.indexOf("-to-");
+    return { input: label(p.slice(0, idx)), output: label(p.slice(idx + 4)) };
+  }
+  if (p.endsWith("-generation") || p === "fill-mask") return { input: "Text", output: "Text" };
+  if (p.includes("speech-recognition")) return { input: "Audio", output: "Text" };
+  if (p.includes("question-answering")) return { input: "Question · Context", output: "Answer" };
+  if (p.includes("summarization") || p.includes("translation")) return { input: "Text", output: "Text" };
+  const head = p.split("-")[0] ?? p;
+  if (p.includes("classification")) return { input: label(head), output: "Class" };
+  return { input: label(head), output: "Output" };
+}
+
+/** Human label for a file by extension. */
+function fileType(name: string): string {
+  const n = name.toLowerCase();
+  if (n.endsWith(".safetensors.index.json")) return "Index";
+  if (n.endsWith(".safetensors")) return "Safetensors";
+  if (n.endsWith(".jinja")) return "Template";
+  if (n.endsWith(".md")) return "Markdown";
+  if (n.endsWith(".txt")) return "Text";
+  if (n.endsWith(".json")) return "JSON";
+  if (n.endsWith(".model") || n.endsWith(".vocab")) return "Tokenizer";
+  if (n.endsWith(".bin") || n.endsWith(".pt") || n.endsWith(".pth") || n.endsWith(".ckpt")) return "PyTorch";
+  if (n.endsWith(".gguf")) return "GGUF";
+  if (n.endsWith(".onnx")) return "ONNX";
+  if (n.endsWith(".h5")) return "Keras";
+  if (n === ".gitattributes" || n === "license" || n.endsWith("/license")) return "Config";
+  const dot = n.lastIndexOf(".");
+  return dot >= 0 ? n.slice(dot + 1).toUpperCase() : "File";
+}
+
+/** Sort priority so config / tokenizer files surface above weight shards. */
+function fileRank(name: string): number {
+  const n = name.toLowerCase();
+  if (n === "readme.md") return 0;
+  if (n === "config.json") return 1;
+  if (n.includes("config") && n.endsWith(".json")) return 2;
+  if (n.includes("token")) return 3;
+  if (n.endsWith(".safetensors.index.json")) return 4;
+  if (n.endsWith(".json") || n.endsWith(".jinja") || n.endsWith(".txt") || n.endsWith(".md")) return 5;
+  if (n.endsWith(".safetensors") || n.endsWith(".bin")) return 7;
+  return 6;
 }
