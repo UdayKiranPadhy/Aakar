@@ -184,11 +184,11 @@ function attnProjections(
   const qWidth = children.filter((c) => outWidth(c) === qd);
   if (qWidth.length === 0) return null;
   // The query projection maps hidden → qd, so its input width is the model hidden size.
-  const hidden = inWidth(qWidth[0]);
+  const hidden = inWidth(qWidth[0]!);
   // The output projection consumes the head space (in == qd) and restores hidden. When
   // qd == hidden it's shape-identical to the query, so it's the *other* qd-width projection.
   const out = children.find(
-    (c) => c !== qWidth[0] && inWidth(c) === qd && (hidden == null || outWidth(c) === hidden),
+    (c) => c !== qWidth[0]! && inWidth(c) === qd && (hidden == null || outWidth(c) === hidden),
   );
   if (qd === kvd) {
     // MHA: q/k/v (and o) all share the width — only definition order separates them.
@@ -296,7 +296,7 @@ function buildMlpFlow(
   // Gate and up share the intermediate width, so they're taken in definition order: the
   // gated SwiGLU convention is gate (→ activation) first, then up (→ the elementwise product).
   const gate = expand.length >= 2 ? expand[0] : undefined;
-  const up = expand.length >= 2 ? expand[1] : expand[0];
+  const up = expand.length >= 2 ? expand[1]! : expand[0]!;
 
   if (gate) {
     const multiply = syntheticNode(
