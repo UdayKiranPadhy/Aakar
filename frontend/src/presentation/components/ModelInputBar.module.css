@@ -26,12 +26,13 @@
   height: 48px;
   width: 100%;
   border-radius: var(--radius-pill);
-  border: 1px solid transparent;
-  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-bg);
   padding: 0 48px 0 56px;
   font-family: var(--font-sans);
   font-size: 14px;
   color: var(--color-ink);
+  box-shadow: var(--shadow-block);
   transition: background-color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out);
@@ -42,13 +43,13 @@
 .input:hover {
   border-color: var(--color-hairline-strong);
   background: var(--color-bg);
-  box-shadow: var(--shadow-block);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 .input:focus {
   outline: none;
-  border-color: var(--color-hairline-strong);
+  border-color: var(--color-accent);
   background: var(--color-bg);
-  box-shadow: var(--shadow-block);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle), var(--shadow-block);
 }
 .input:disabled {
   opacity: 0.5;

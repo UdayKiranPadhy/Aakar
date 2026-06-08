@@ -1,0 +1,89 @@
+/* Indeterminate top progress bar — a CSS re-creation of Material's
+ * "linear indeterminate" (two accent bars sweeping across a tinted track), with
+ * no MUI dependency. Pinned to the bottom edge of the nav by its positioned
+ * ancestor (NavBar's .header). Only mounted while a model is loading.
+ *
+ * The two keyframe tracks + their easings/offset are the values Material uses,
+ * so the motion reads identically. */
+
+.track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px; /* sit over the nav's bottom hairline */
+  z-index: 20;
+  height: 3px;
+  overflow: hidden;
+  background: var(--g-blue-subtle);
+}
+
+.bar1,
+.bar2 {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  background: var(--color-accent);
+  will-change: left, right;
+}
+
+.bar1 {
+  animation: indeterminate1 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+}
+.bar2 {
+  animation: indeterminate2 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) 1.15s infinite;
+}
+
+@keyframes indeterminate1 {
+  0% {
+    left: -35%;
+    right: 100%;
+  }
+  60% {
+    left: 100%;
+    right: -90%;
+  }
+  100% {
+    left: 100%;
+    right: -90%;
+  }
+}
+
+@keyframes indeterminate2 {
+  0% {
+    left: -200%;
+    right: 100%;
+  }
+  60% {
+    left: 107%;
+    right: -8%;
+  }
+  100% {
+    left: 107%;
+    right: -8%;
+  }
+}
+
+@keyframes barPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Sweeping motion is unhelpful (and can be uncomfortable) under reduced motion;
+ * fall back to a full-width bar that gently pulses to still signal activity. */
+@media (prefers-reduced-motion: reduce) {
+  .bar1 {
+    left: 0;
+    right: 0;
+    animation: barPulse 1.4s ease-in-out infinite;
+  }
+  .bar2 {
+    display: none;
+  }
+}

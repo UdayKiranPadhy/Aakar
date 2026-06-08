@@ -47,6 +47,20 @@ describe("NavBar", () => {
     expect(container.firstElementChild?.className).not.toContain("wrapperOverlay");
   });
 
+  it("shows the loading progress bar while a model is loading", () => {
+    useArchStore.setState({ appMode: "model", loading: true });
+    const { unmount } = render(<NavBar onSubmit={() => {}} />);
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+    unmount(); // reset after unmount so the shared store isn't updated mid-mount
+    useArchStore.setState({ loading: false });
+  });
+
+  it("hides the progress bar when not loading", () => {
+    useArchStore.setState({ appMode: "model", loading: false });
+    render(<NavBar onSubmit={() => {}} />);
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
   it("clicking the brand link routes back to home (preserves loaded spec)", async () => {
     useArchStore.setState({ appMode: "model" });
     render(<NavBar onSubmit={() => {}} />);

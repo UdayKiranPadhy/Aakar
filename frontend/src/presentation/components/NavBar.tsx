@@ -15,6 +15,7 @@ import { clsx } from "clsx";
 import { useArchStore } from "../../store/archStore";
 import { ModelInputBar } from "./ModelInputBar";
 import { SectionTabs } from "./SectionTabs";
+import { TopProgressBar } from "./TopProgressBar";
 import styles from "./NavBar.module.css";
 
 type Props = {
@@ -29,6 +30,7 @@ type Props = {
 export function NavBar({ onSubmit, hidden = false, compact = false }: Props) {
   const setAppMode = useArchStore((s) => s.setAppMode);
   const appMode = useArchStore((s) => s.appMode);
+  const loading = useArchStore((s) => s.loading);
 
   // The tab row (section tabs + quick-model chips) is only useful once you've
   // left the landing page. The home view shows just the top bar, and the nav
@@ -65,6 +67,7 @@ export function NavBar({ onSubmit, hidden = false, compact = false }: Props) {
             <SectionTabs />
           </div>
         )}
+        {loading && <TopProgressBar />}
       </header>
     </div>
   );

@@ -1,0 +1,29 @@
+/* The loading illustration is an exported <img>. It sizes to its container;
+ * a gentle "breathe" keeps the still frame feeling active while we wait. The
+ * motion is purely cosmetic, so it's gated behind `prefers-reduced-motion` —
+ * reduced-motion users get the calm static scene (the bar already sits
+ * mid-progress, so it still reads as in-flight). */
+
+.img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .img {
+    animation: breathe 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scale(0.99);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
