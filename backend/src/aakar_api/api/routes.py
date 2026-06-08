@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Header, Query
+from fastapi import APIRouter, Header, Query, Response
+from fastapi.responses import PlainTextResponse
 
 from aakar_api.application import (
     ArchitectureService,
@@ -14,7 +15,7 @@ from aakar_api.application import (
     SourceService,
 )
 from aakar_api.di import deps
-from aakar_api.domain.hub import HubTrendingItem
+from aakar_api.domain.hub import HubModelInfo, HubTrendingItem
 from aakar_api.domain.research import Paper, RepoInfo, SourceSnippet
 from aakar_api.domain.spec import Spec
 
@@ -92,6 +93,25 @@ async def list_models(
     limit: LimitQuery = 12,
 ) -> list[HubTrendingItem]:
     return await service.list_trending(sort=sort, limit=limit)
+
+
+@router.get("/model-info", response_model=HubModelInfo, tags=["hub"])
+async def get_model_info(
+    model_id: ModelIdQuery,
+    service: HubServiceDep,
+) -> HubModelInfo:
+    return await service.get_model_info(model_id)
+
+
+@router.get("/model-readme", tags=["hub"])
+async def get_model_readme(
+    model_id: ModelIdQuery,
+    service: HubServiceDep,
+) -> Response:
+    readme = await service.get_readme(model_id)
+    if readme is None:
+        return Response(status_code=204)
+    return PlainTextResponse(readme, media_type="text/markdown; charset=utf-8")
 
 
 @router.get("/papers", response_model=list[Paper], tags=["research"])

@@ -1,8 +1,7 @@
 /**
- * HuggingFace Hub metadata — fetched directly from the public HF Hub API.
- *
- * The frontend calls `GET https://huggingface.co/api/models/{id}?blobs=true`
- * and maps camelCase fields to our snake_case type in the repository layer.
+ * HuggingFace Hub metadata — served by our backend's `/api/model-info` route,
+ * which proxies the Hub (`GET /api/models/{id}?blobs=true`) and emits this
+ * snake_case shape directly. (Direct browser calls to the Hub are CORS-blocked.)
  * Open-ended sub-objects (`safetensors`, `card_data`, `config`) stay loosely
  * typed on purpose so new Hub fields never break us.
  */

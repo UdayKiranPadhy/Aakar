@@ -1,113 +1,54 @@
 /**
- * Fetches model metadata and README directly from the public HuggingFace Hub
- * API — no backend proxy needed. The Hub API sets `Access-Control-Allow-Origin: *`
- * so browser fetches work cross-origin.
+ * Fetches model metadata + README from our backend, which proxies the public
+ * HuggingFace Hub.
  *
- * Endpoints:
- *   - metadata: `GET https://huggingface.co/api/models/{id}?blobs=true`
- *   - readme:   `GET https://huggingface.co/{id}/resolve/main/README.md`
+ * We can't call the Hub directly from the browser: its `/api/models/{id}` and
+ * `/{id}/resolve/main/README.md` endpoints send no `Access-Control-Allow-Origin`
+ * header, so cross-origin browser fetches are blocked by CORS. The backend
+ * (allowed via the API's CORS origin list) has no such restriction and returns
+ * metadata already mapped to our snake_case `ModelInfo` shape.
  *
- * CamelCase Hub fields are mapped to our snake_case `ModelInfo` domain type
- * inside this repository — the rest of the app never sees camelCase.
+ * Routes:
+ *   - metadata: `GET {API}/api/model-info?model_id={id}`   → ModelInfo (JSON)
+ *   - readme:   `GET {API}/api/model-readme?model_id={id}` → markdown text
+ *                                                            (204 = repo has no card)
  */
 
 import type { ModelInfoRepository } from "../../application/interfaces";
-import type { HubSibling, ModelInfo } from "../../domain/modelInfo";
-import { ModelGatedError, ModelNotFoundError, NetworkError } from "./errors";
-
-const HF_ENDPOINT = "https://huggingface.co";
-
-function encodeModelPath(modelId: string): string {
-  return modelId.split("/").map(encodeURIComponent).join("/");
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type HfRaw = Record<string, any>;
-
-function mapSiblings(raw: unknown): ReadonlyArray<HubSibling> {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((s: HfRaw) => ({ rfilename: String(s.rfilename ?? ""), size: s.size }));
-}
-
-function mapModelInfo(data: HfRaw): ModelInfo {
-  return {
-    model_id: String(data.id ?? data.modelId ?? ""),
-    author: data.author ?? undefined,
-    downloads: data.downloads ?? undefined,
-    likes: data.likes ?? undefined,
-    license: data.license ?? undefined,
-    pipeline_tag: data.pipeline_tag ?? data.pipelineTag ?? undefined,
-    library_name: data.library_name ?? data.libraryName ?? undefined,
-    last_modified: data.lastModified ?? undefined,
-    created_at: data.createdAt ?? undefined,
-    gated: data.gated ?? undefined,
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    siblings: mapSiblings(data.siblings),
-    safetensors: data.safetensors ?? undefined,
-    card_data: data.cardData ?? undefined,
-    used_storage: data.usedStorage ?? undefined,
-    inference: data.inference ?? undefined,
-    spaces: Array.isArray(data.spaces) ? data.spaces : undefined,
-    config: data.config ?? undefined,
-  };
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
+import type { ModelInfo } from "../../domain/modelInfo";
+import { ApiError, NetworkError } from "./errors";
 
 export class HttpModelInfoRepository implements ModelInfoRepository {
-  private readonly endpoint: string;
-
-  constructor(endpoint: string = HF_ENDPOINT) {
-    this.endpoint = endpoint.replace(/\/$/, "");
-  }
+  constructor(private readonly baseUrl: string) {}
 
   async fetchInfo(modelId: string): Promise<ModelInfo> {
-    const url = `${this.endpoint}/api/models/${encodeModelPath(modelId)}?blobs=true`;
-    const response = await this.get(url, modelId);
-    const data = (await response.json()) as HfRaw;
-    return mapModelInfo(data);
-  }
-
-  async fetchReadme(modelId: string): Promise<string | null> {
-    const url = `${this.endpoint}/${encodeModelPath(modelId)}/resolve/main/README.md`;
-    let response: Response;
-    try {
-      response = await fetch(url, { cache: "no-store" });
-    } catch (e) {
-      throw new NetworkError(e instanceof Error ? e.message : "Network request failed");
-    }
-    if (response.status === 404) return null;
-    this.throwForStatus(response, modelId);
-    return response.text();
-  }
-
-  private async get(url: string, modelId: string): Promise<Response> {
+    const url = `${this.base()}/api/model-info?model_id=${encodeURIComponent(modelId)}`;
     let response: Response;
     try {
       response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
     } catch (e) {
       throw new NetworkError(e instanceof Error ? e.message : "Network request failed");
     }
-    this.throwForStatus(response, modelId);
-    return response;
+    if (!response.ok) throw await ApiError.fromResponse(response);
+    // The backend returns Pydantic-validated snake_case matching `ModelInfo`;
+    // per the app's contract we trust it (no frontend response validation).
+    return (await response.json()) as ModelInfo;
   }
 
-  private throwForStatus(response: Response, modelId: string): void {
-    if (response.ok) return;
-    const status = response.status;
-    // The Hub answers 401 ("Invalid username or password") for a repo that
-    // either doesn't exist or is private — it won't disclose which to an
-    // unauthenticated caller. 404 is rarer here but means the same thing.
-    // Surface both as "not found or unavailable" (most often just a typo'd id).
-    if (status === 404 || status === 401) {
-      throw new ModelNotFoundError(
-        modelId,
-        `Model "${modelId}" not found or unavailable on HuggingFace Hub`,
-      );
+  async fetchReadme(modelId: string): Promise<string | null> {
+    const url = `${this.base()}/api/model-readme?model_id=${encodeURIComponent(modelId)}`;
+    let response: Response;
+    try {
+      response = await fetch(url, { cache: "no-store" });
+    } catch (e) {
+      throw new NetworkError(e instanceof Error ? e.message : "Network request failed");
     }
-    // 403 is an explicit access refusal on a repo that does exist (gated).
-    if (status === 403) {
-      throw new ModelGatedError(modelId, `Model "${modelId}" requires authorization`);
-    }
-    throw new NetworkError(`HuggingFace Hub returned ${status}`);
+    if (response.status === 204) return null; // repo has no model card — normal
+    if (!response.ok) throw await ApiError.fromResponse(response);
+    return response.text();
+  }
+
+  private base(): string {
+    return this.baseUrl.replace(/\/$/, "");
   }
 }

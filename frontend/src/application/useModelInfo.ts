@@ -1,10 +1,10 @@
 /**
  * Use case: load a model's HuggingFace Hub metadata + README.
  *
- * Fetches metadata and README directly from the HuggingFace Hub API (no
- * backend proxy). A README failure is non-fatal (the card is optional), but
- * a metadata failure surfaces an error. The repository is injectable so
- * tests pass a fake.
+ * Metadata and README come from our backend, which proxies the Hub (the Hub
+ * sends no CORS headers, so the browser can't call it directly). A README
+ * failure is non-fatal (the card is optional), but a metadata failure surfaces
+ * an error. The repository is injectable so tests pass a fake.
  */
 
 import { useEffect, useState } from "react";
@@ -14,7 +14,8 @@ import type { ModelInfo } from "../domain/modelInfo";
 import { toUserMessage } from "./errorMessage";
 import type { ModelInfoRepository } from "./interfaces";
 
-const defaultRepo: ModelInfoRepository = new HttpModelInfoRepository();
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const defaultRepo: ModelInfoRepository = new HttpModelInfoRepository(API_URL);
 
 export type ModelInfoState = Readonly<{
   info: ModelInfo | null;
