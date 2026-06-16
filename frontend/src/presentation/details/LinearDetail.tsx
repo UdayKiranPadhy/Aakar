@@ -8,6 +8,7 @@ import {
 } from "../components/ui/format";
 import { useArchStore } from "../../store/archStore";
 import { BackendFieldsSection } from "./BackendFieldsSection";
+import { OperationsSection } from "./OperationsSection";
 import { SourceViewer } from "./SourceViewer";
 import styles from "./GenericDetailPanel.module.css";
 
@@ -93,6 +94,8 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
             {node.bias_shape && <Row k="bias" v={formatShape(node.bias_shape) ?? ""} />}
           </dl>
         </section>
+
+        <OperationsSection operations={node.operations} />
 
         {node.source_url && (
           <section className={styles.section}>

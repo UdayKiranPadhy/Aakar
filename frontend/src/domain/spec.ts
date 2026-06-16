@@ -7,6 +7,26 @@
  * must all update in the same commit.
  */
 
+/**
+ * One tensor operation performed inside a module's `forward()`, captured by a
+ * fake-tensor trace on the backend (see `infrastructure/introspection/
+ * fx_operations.py`). The op vocabulary is ATen (torch's dispatch level):
+ * a `Linear` reports `mm`, an RMSNorm reports `pow/mean/rsqrt/mul`, attention
+ * reports its Q·Kᵀ / softmax / ·V math. Best-effort — absent when the model
+ * couldn't be traced.
+ */
+export type Operation = Readonly<{
+  id: string; // unique within the trace, referenced by other ops' `inputs`
+  op: string; // ATen op name, e.g. "mm", "bmm", "_safe_softmax", "add"
+  label: string; // humanized op name, e.g. "batched matmul", "softmax"
+  /** Color/grouping bucket: matmul | activation | norm | elementwise | shape | embedding | attention | other */
+  category: string;
+  /** `id`s of the ops that produced this op's input tensors (dataflow edges). */
+  inputs: ReadonlyArray<string>;
+  /** Symbolic output shape, e.g. `"[B, 32, S, S]"`. Absent when there's no single tensor output. */
+  out_shape?: string;
+}>;
+
 export type Node = Readonly<{
   id: string;
   type: string;
@@ -66,6 +86,12 @@ export type Node = Readonly<{
    * (up) modules. Values are symbolic strings like `"[B, 32, S, 128]"`.
    */
   intermediates?: Readonly<Record<string, string>>;
+  /**
+   * The tensor operations this module's own `forward()` runs (not recursive —
+   * a submodule's ops live on that submodule's Node), in execution order.
+   * Absent when the model couldn't be traced.
+   */
+  operations?: ReadonlyArray<Operation>;
 }>;
 
 export type Spec = Readonly<{

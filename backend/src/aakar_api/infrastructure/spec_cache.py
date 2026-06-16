@@ -26,7 +26,9 @@ _DEFAULT_ROOT = Path("backend/.cache/specs")
 # invalidates on model/config edits, but not on code changes that alter what we emit — so the
 # schema version is part of the key, ensuring old payloads are never served against new code.
 #   v2: added the fact-based `Node.role`.
-_SPEC_SCHEMA_VERSION = 2
+#   v3: added `Node.operations` (per-module forward ops from the FX/fake-tensor trace).
+#   v4: trace runs device-uniformly (meta), so MoE / buffer-heavy models now emit ops too.
+_SPEC_SCHEMA_VERSION = 4
 
 
 def _safe_model_id(model_id: str) -> str:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from torch import nn
 
-from aakar_api.domain.spec import Node
+from aakar_api.domain.spec import Node, Operation
 from aakar_api.infrastructure.introspection.naming import humanize, snake_case
 from aakar_api.infrastructure.introspection.node_metadata import (
     buffer_shapes,
@@ -26,6 +26,7 @@ def walk_module_tree(
     path: str,
     label_segment: str,
     ctx: WalkContext,
+    ops_by_path: dict[str, list[Operation]] | None = None,
 ) -> Node:
     children = [
         walk_module_tree(
@@ -33,6 +34,7 @@ def walk_module_tree(
             path=f"{path}.{name}" if path else name,
             label_segment=name,
             ctx=ctx,
+            ops_by_path=ops_by_path,
         )
         for name, child in module.named_children()
     ]
@@ -67,4 +69,7 @@ def walk_module_tree(
         source_url=source_url(module),
         flops=flops(module, ctx, role=node_role),
         intermediates=intermediates(module, ctx, role=node_role),
+        # FX trace keys ops by the module's qualified name, which is exactly the
+        # `path` we build here (root scope is keyed by "").
+        operations=(ops_by_path or {}).get(path) or None,
     )

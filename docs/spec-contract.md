@@ -48,6 +48,16 @@ type Node = {
   source_url?: string;     // GitHub link to the class definition (HF transformers / PyTorch)
   flops?: number;          // theoretical forward FLOPs at Spec.flops_reference (Linear / norms only)
   intermediates?: Record<string, string>; // per-class intermediate shapes (attention q/k/v/scores, MLP up)
+  operations?: Operation[]; // ops this module's own forward() runs (fake-tensor trace); best-effort
+};
+
+type Operation = {
+  id: string;          // unique within the whole trace; referenced by other ops' `inputs`
+  op: string;          // ATen op name as dispatched: "mm", "bmm", "_safe_softmax", "add", "silu"
+  label: string;       // humanized op name: "batched matmul", "softmax"
+  category: string;    // matmul | activation | norm | elementwise | shape | embedding | attention | other
+  inputs: string[];    // ids of the ops that produced this op's input tensors (dataflow edges)
+  out_shape?: string;  // symbolic "[B, 32, S, S]" (batch → B, sequence → S, rest literal)
 };
 ```
 
@@ -74,7 +84,19 @@ type Node = {
 | `role`         | no       | The module's **semantic role**, decided from facts only — config dims (head counts, FFN width, expert/layer counts, vocab) + real tensor shapes + namespace `category` + structure — and **never** from class/attribute/child names (see `infrastructure/introspection/role.py`). Values: `"layer_stack"` (the decoder ModuleList, length == num_hidden_layers), `"container"`, `"norm"`, `"token_embedding"` / `"position_embedding"` / `"embedding"`, `"attention"` (block carrying head-width projections), `"mlp"` / `"moe"` (FFN block by intermediate width; `moe` when experts are present), `"lm_head"` (Linear to vocab), `"linear"`. Absent when no rule proves a role — the UI renders a generic card. Both the canvas semantic flow and the Token Journey segment a model purely off this field, so they always agree. |
 | `flops`        | no       | Theoretical forward-pass FLOPs at `Spec.flops_reference`. Populated only for modules with closed-form formulas: `Linear` (2·S·in·out), norms (~5·S·H), `Embedding` (0). |
 | `intermediates` | no      | Symbolic shapes of tensors that live *inside* opaque blocks, emitted per the module's `role` from config facts (never attribute/child names). `role: "attention"` reports `q`, `k`, `v` (with GQA grouping on K/V) and `attn_scores` (the `[B, num_heads, S, S]` quadratic intermediate); `role: "mlp"`/`"moe"` report `up` (the `[B, S, intermediate_size]` expansion). |
+| `operations`   | no       | The ATen ops this module's **own** `forward()` runs, in execution order (a submodule's ops live on that submodule's Node, so a `Linear` reports its `mm`, an RMSNorm `pow/mean/rsqrt/mul`, a decoder layer its two residual `add`s, attention its Q·Kᵀ / softmax / ·V math). Captured by a single fake-tensor trace (see below) — **best-effort**: absent when a model can't be traced, and the module tree renders regardless. See the `Operation` semantics below. |
 | `notes`        | no       | Optional UI banner. Currently unused after the adapter system was removed. |
+
+### `Operation` semantics
+
+| Field | Notes |
+| ----- | ----- |
+| `id`  | Unique within the whole trace (e.g. `"bmm_2"`). Other ops reference it in `inputs`, so a dataflow graph can be rebuilt from a flat list. |
+| `op`  | The raw ATen op name as dispatched (`mm`, `bmm`, `_safe_softmax`, `add`, `silu`, `embedding`, `view`, …). Ground truth at torch's dispatch level — note SDPA decomposes to `bmm → _safe_softmax → bmm`, so the attention math is visible even under `attn_impl: "sdpa"`. |
+| `label` | A friendlier display name for `op` (e.g. `bmm` → "batched matmul", `_safe_softmax` → "softmax"); falls back to the raw name. |
+| `category` | Coarse bucket for colour/grouping: `matmul`, `activation`, `norm`, `elementwise`, `shape`, `embedding`, `attention`, `other`. Keyed off the stable ATen op name — **never** off the model family. |
+| `inputs` | `id`s of the ops (anywhere in the trace) that produced this op's tensor arguments — the edges of the forward dataflow graph. |
+| `out_shape` | Symbolic shape of the op's primary output. The trace runs with `B=1, S=251` (a distinctive prime) and rewrites those dims to `B`/`S`; all other dims stay literal. Absent when the op has no single tensor output. |
 
 ### Spec-level fields
 
@@ -104,6 +126,7 @@ The backend's `TransformersIntrospector` (`backend/src/aakar_api/infrastructure/
 2. Reads `config.architectures[0]` and resolves it to a concrete class on the `transformers` module (e.g. `transformers.LlamaForCausalLM`). If the class is not bundled with stock transformers — i.e. the model would require `trust_remote_code=True` — the request fails with HTTP 422 `unsupported_architecture`.
 3. Instantiates the class inside `accelerate.init_empty_weights()` so all `nn.Parameter`s live on the meta device (zero RAM).
 4. Walks `model.named_children()` recursively, producing one `Node` per `nn.Module`. Tensor shapes are read from `module.weight.shape` etc.; `param_count` is `sum(p.numel() for p in module.parameters(recurse=True))`.
+5. Runs one **fake-tensor trace** of `forward()` (`infrastructure/introspection/fx_operations.py`) to populate `Node.operations`. The model stays on `meta`; the pass runs under a `FakeTensorMode` (so transformers' `is_tracing()` is true and its data-dependent branches are skipped), observing every ATen op via a `TorchDispatchMode` and attributing each to the innermost executing module via `forward` hooks. No weights, no real compute, no I/O. Best-effort — a model that won't trace simply gets no `operations` (the steps above are unaffected). This replaces the FX/`HFTracer` approach, which doesn't work on transformers v5 (the module was removed) or with modern forwards' control flow.
 
 ## Caching
 

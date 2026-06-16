@@ -14,6 +14,7 @@ from typing import Any
 from torch import nn
 
 from aakar_api.domain.spec import Spec
+from aakar_api.infrastructure.introspection.fx_operations import trace_operations
 from aakar_api.infrastructure.introspection.model_metadata import (
     attention_implementation,
     config_summary,
@@ -36,11 +37,15 @@ def build_spec(
     """Walk `model` and pack the result + config metadata into a `Spec`."""
     param_dtype = clean_dtype(getattr(config, "torch_dtype", None))
     walk_context = walk_context_from_config(config, param_dtype)
+    # Best-effort fake-tensor trace of the forward pass; `{}` when the model can't
+    # be traced (the tree below still renders, just without per-module operations).
+    ops_by_path = trace_operations(model, config, walk_context)
     root = walk_module_tree(
         model,
         path="",
         label_segment=architecture_name,
         ctx=walk_context,
+        ops_by_path=ops_by_path,
     )
 
     return Spec(

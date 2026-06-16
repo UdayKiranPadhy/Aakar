@@ -17,6 +17,36 @@ spec-level metadata.
 
 Heavy synchronous work runs in `asyncio.to_thread` so FastAPI's event loop stays responsive.
 
+## Forward operations (per-module ops)
+
+The tree above shows *which* modules exist; `Node.operations` shows *what each module's
+`forward()` actually computes* — the matmuls, softmax, scaling, residual adds, RoPE math,
+and reshapes that the module-tree alone can't reveal. It's produced by
+`infrastructure/introspection/fx_operations.py` as a refinement pass inside `build_spec`.
+
+**How it works — and why it isn't FX.** The obvious tool (`torch.fx.symbolic_trace` /
+transformers' old `HFTracer`) is a dead end here: stock FX chokes on the data-dependent
+control flow in modern `transformers` forwards, and `transformers.utils.fx` was *removed in
+transformers v5*. Instead we run **one forward pass under a `FakeTensorMode`**:
+
+- transformers' `is_tracing()` returns true when the tensors are fake, so the library takes
+  its trace-friendly branches and skips value-dependent ones a `meta` tensor can't run
+  (e.g. `find_packed_sequence_indices`, which calls `.item()`).
+- fake tensors carry shapes but allocate nothing and run no kernels — so the pass keeps the
+  model on `meta`, **downloads nothing, initializes no weights**, and is essentially free.
+
+A `TorchDispatchMode` observes every ATen op the forward dispatches; `forward` hooks maintain
+a stack of the module currently executing, so each op is attributed to the innermost
+`nn.Module`. That attribution is exact and family-agnostic: a `Linear` reports its `mm`, an
+RMSNorm `pow/mean/rsqrt/mul`, a decoder layer its two residual `add`s, attention its
+Q·Kᵀ / softmax / ·V math (SDPA decomposes, so the softmax is visible even under
+`attn_impl: "sdpa"`).
+
+**Best-effort.** The whole pass is wrapped so it can never raise — a model that won't trace
+just gets no `operations`, and the module tree renders exactly as before. So unlike the tree
+walk (which works for *every* stock-transformers model), op tracing degrades gracefully: it
+covers the common decoder-LM forward and skips quietly otherwise.
+
 ## Why introspection, not adapters
 
 Earlier versions of Aakar shipped per-family `ArchitectureAdapter` classes that emitted nodes based on the maintainer's mental model of how `config.json` maps to layers. That approach was a guess: which projections have biases, whether Q/K/V are fused, what activation the FFN uses — all interpreted from config flags. The user could request `meta-llama/Llama-3-8B` and see a card labeled "Q proj" with a parameter count derived from a formula, not from the actual tensor.
@@ -59,6 +89,7 @@ async def get_architecture(self, model_id: str) -> Spec:
 - **`ModuleList` is a node.** A 32-layer model has its 32 `LlamaDecoderLayer`s as siblings under a `ModuleList` parent. The frontend can choose to collapse same-class siblings visually; the wire format keeps the literal tree.
 - **Init warnings.** Models with `pad_token_id = -1` etc. emit harmless `UserWarning`s during config load. They're ignorable.
 - **`init_empty_weights` is not magic.** Some custom classes inside transformers do shape-dependent CPU allocations in their `__init__`. If a model OOMs during introspection, file an upstream bug; we do not work around it.
+- **`operations` adds to the payload.** Per-module ops are attached to every module that ran (so every decoder layer carries its own, even though they're identical). Fine for study-sized models; for very deep models this is the obvious thing to dedupe later (attach to a representative layer only).
 
 ## Adding new architectures
 
@@ -69,5 +100,6 @@ If a new family wants a *custom visualization* (e.g. an MoE router diagram, a sp
 ## Testing
 
 - `backend/tests/unit/test_introspector.py` loads `hf-internal-testing/tiny-random-LlamaForCausalLM` (a ~1 MB test model) end-to-end and asserts on the produced Spec shape.
+- `backend/tests/unit/test_fx_operations.py` traces the same tiny model and asserts the per-module `operations` (attention has a `bmm` + softmax, the decoder layer has its residual `add`s, a leaf `Linear` has its `mm`), plus graceful degradation when a model can't be traced.
 - `backend/tests/unit/test_spec_cache.py` round-trips Specs through the disk cache.
 - `backend/tests/integration/test_architecture_route.py` injects a fake `ArchitectureService` via `app.dependency_overrides` and exercises the full HTTP + error-handler path without touching transformers.

@@ -12,6 +12,39 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class Operation(BaseModel):
+    """One tensor operation performed inside a module's `forward()`.
+
+    Captured by a single fake-tensor trace of the model (see
+    `infrastructure/introspection/fx_operations.py`): every ATen op the forward
+    runs is recorded and attributed to the innermost `nn.Module` executing it.
+    So a `Linear` reports its `mm`, an RMSNorm reports `pow/mean/rsqrt/mul`, a
+    decoder layer reports its two residual `add`s, and attention reports the
+    Q·Kᵀ / softmax / ·V math. The op vocabulary is ATen (torch's dispatch level),
+    keyed off stable op names — never off the model family.
+
+    Best-effort: present only when the model traces cleanly. The list is in
+    execution order; `inputs` references the `id`s of the ops (anywhere in the
+    trace) that produced this op's tensor arguments, so a dataflow graph can be
+    reconstructed from it.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str  # unique within the whole trace, e.g. "bmm_2" — referenced by `inputs`
+    op: str  # ATen op name as dispatched: "mm", "bmm", "_safe_softmax", "add", "silu"
+    label: str  # humanized op name for display, e.g. "batched matmul", "softmax"
+    # Coarse bucket for color/grouping in the UI. One of:
+    #   "matmul" | "activation" | "norm" | "elementwise" | "shape" | "embedding"
+    #   | "attention" | "other"
+    category: str
+    # `id`s of the ops that produced this op's input tensors (dataflow edges).
+    inputs: list[str] = Field(default_factory=list)
+    # Symbolic output shape, e.g. "[B, 32, S, S]" (batch → B, sequence → S, rest
+    # literal). None when the op has no single tensor output.
+    out_shape: str | None = None
+
+
 class Node(BaseModel):
     """A single block in the architecture diagram.
 
@@ -78,6 +111,10 @@ class Node(BaseModel):
     # expansion ratio. Values are free-form symbolic strings like
     # `"[B, 32, S, 128]"`.
     intermediates: dict[str, str] | None = None
+    # The tensor operations this module's own `forward()` runs (not recursive —
+    # a submodule's ops live on that submodule's Node), in execution order.
+    # Captured by a fake-tensor trace; None when the model couldn't be traced.
+    operations: list[Operation] | None = None
 
 
 class Spec(BaseModel):

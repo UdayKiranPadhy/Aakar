@@ -20,6 +20,7 @@ import {
 import { useArchStore } from "../../store/archStore";
 import type { Spec } from "../../domain/spec";
 import { BackendFieldsSection } from "./BackendFieldsSection";
+import { OperationsSection } from "./OperationsSection";
 import styles from "./GenericDetailPanel.module.css";
 
 export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps) {
@@ -52,6 +53,7 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
         <SourceSection node={node} />
         <BackendFieldsSection node={node} />
         <TensorPathSection node={node} />
+        <OperationsSection operations={node.operations} />
         <ParamsSection params={node.params} />
         <ShapesSection
           input={node.input_shape}
