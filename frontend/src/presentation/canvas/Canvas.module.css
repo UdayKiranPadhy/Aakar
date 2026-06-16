@@ -55,3 +55,60 @@
   outline: none;
   box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-block);
 }
+
+/* Operation-flow control bar — top-left Panel shown while the canvas is in
+ * op-flow mode. Carries the "back to structure" exit, the focused module name,
+ * and the shape-op filter toggle. Matches the floating card surface style. */
+.opBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  box-shadow: var(--shadow-block);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-ink);
+}
+.opBack {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.opBack:hover {
+  text-decoration: underline;
+}
+.opBack:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent);
+  border-radius: var(--radius-sm);
+}
+.opTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 12px;
+  border-left: 1px solid var(--color-hairline);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+.opToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 12px;
+  border-left: 1px solid var(--color-hairline);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.opToggle input {
+  cursor: pointer;
+}

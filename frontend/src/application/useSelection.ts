@@ -17,6 +17,10 @@ export function useSelection() {
   const detailOpen = useArchStore((s) => s.detailOpen);
   const selectNode = useArchStore((s) => s.selectNode);
   const closeDetail = useArchStore((s) => s.closeDetail);
+  // Synthetic-node selection (op / semantic glyphs) lives in its own channel:
+  // these nodes aren't in the Spec tree, so they can't be addressed by path.
+  const selectedFlowNode = useArchStore((s) => s.selectedFlowNode);
+  const selectFlowNode = useArchStore((s) => s.selectFlowNode);
 
   const selectedNode: Node | null = useMemo(() => {
     if (!spec || selectionPath.length === 0) return null;
@@ -32,5 +36,7 @@ export function useSelection() {
     detailOpen,
     selectNode,
     closeDetail,
+    selectedFlowNode,
+    selectFlowNode,
   };
 }

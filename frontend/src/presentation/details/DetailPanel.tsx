@@ -25,7 +25,7 @@ const DETAIL_MIN = 280;
 const DETAIL_MAX = 640;
 
 export function DetailPanel() {
-  const { selectedNode, detailOpen, closeDetail } = useSelection();
+  const { selectedNode, detailOpen, closeDetail, selectedFlowNode } = useSelection();
   const { expandNode } = useNavigation();
   const width = useArchStore((s) => s.detailWidth);
   const setWidth = useArchStore((s) => s.setDetailWidth);
@@ -33,7 +33,10 @@ export function DetailPanel() {
   const toggleDetail = useArchStore((s) => s.toggleDetail);
   const [resizing, setResizing] = useState(false);
 
-  if (!selectedNode || !detailOpen) return null;
+  // A clicked op/semantic glyph (not in the Spec tree) takes precedence over the
+  // path-based module selection; its `type` resolves to ExplanationDetail.
+  const panelNode = selectedFlowNode ?? selectedNode;
+  if (!panelNode || !detailOpen) return null;
 
   if (collapsed) {
     return (
@@ -52,7 +55,7 @@ export function DetailPanel() {
     );
   }
 
-  const Panel = detailRegistry.resolve(selectedNode.type);
+  const Panel = detailRegistry.resolve(panelNode.type);
   return (
     <aside
       className={clsx(styles.dock, resizing && styles.resizing)}
@@ -77,7 +80,7 @@ export function DetailPanel() {
       >
         ›
       </button>
-      <Panel node={selectedNode} onExpand={expandNode} onClose={closeDetail} />
+      <Panel node={panelNode} onExpand={expandNode} onClose={closeDetail} />
     </aside>
   );
 }

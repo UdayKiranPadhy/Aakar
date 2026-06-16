@@ -12,6 +12,24 @@
   pointer-events: none;
 }
 
+/* Clickable glyphs (click-to-explain) opt back into pointer events; inert
+ * glyphs (e.g. residual adds with no explanation wired) keep the default none. */
+.clickable {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.clickable:hover {
+  border-color: var(--color-hairline-strong);
+}
+.clickable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-block);
+}
+.selected {
+  border: 2px solid var(--color-accent);
+}
+
 .symbol {
   display: grid;
   width: 30px;

@@ -20,6 +20,7 @@ import {
 import { useArchStore } from "../../store/archStore";
 import type { Spec } from "../../domain/spec";
 import { BackendFieldsSection } from "./BackendFieldsSection";
+import { explainRole } from "./explanations";
 import { OperationsSection } from "./OperationsSection";
 import styles from "./GenericDetailPanel.module.css";
 
@@ -49,6 +50,7 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
       </header>
 
       <div className={styles.body}>
+        <RoleBlurb role={node.role} />
         {isRoot && spec && <ModelInfoSection spec={spec} />}
         <SourceSection node={node} />
         <BackendFieldsSection node={node} />
@@ -85,6 +87,12 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
       )}
     </div>
   );
+}
+
+function RoleBlurb({ role }: { role?: string }) {
+  const ex = explainRole(role);
+  if (!ex) return null;
+  return <p className={styles.roleBlurb}>{ex.what}</p>;
 }
 
 function SourceSection({ node }: { node: DetailPanelProps["node"] }) {

@@ -1,12 +1,31 @@
+import type { KeyboardEvent } from "react";
 import { clsx } from "clsx";
 
 import type { BlockNodeProps } from "./BlockRegistry";
 import styles from "./FlowGlyphNode.module.css";
 
-export function FlowGlyphNode({ node, visualTone }: BlockNodeProps) {
+export function FlowGlyphNode({ node, selected, visualTone, onSelect }: BlockNodeProps) {
+  const clickable = !!onSelect;
+  const activate = () => onSelect?.(node.id);
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      activate();
+    }
+  };
+
   return (
     <div
-      className={clsx(styles.glyph, visualTone && styles[`tone_${visualTone}`])}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={clickable ? activate : undefined}
+      onKeyDown={clickable ? onKeyDown : undefined}
+      className={clsx(
+        styles.glyph,
+        clickable && styles.clickable,
+        selected && styles.selected,
+        visualTone && styles[`tone_${visualTone}`],
+      )}
       aria-label={node.label}
     >
       <div className={styles.symbol}>{symbolFor(node.type)}</div>

@@ -1,0 +1,70 @@
+.op {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 156px;
+  padding: 9px 11px;
+  border-radius: var(--radius-block);
+  border: 1px solid var(--color-hairline);
+  border-left: 3px solid var(--cat);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  /* React Flow v12 disables pointer events on non-draggable/non-selectable
+   * node wrappers; op nodes are draggable so events reach the card. */
+  pointer-events: auto;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.clickable:hover {
+  border-color: var(--color-hairline-strong);
+  border-left-color: var(--cat);
+}
+.clickable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-block);
+}
+
+.selected {
+  border: 2px solid var(--color-accent);
+  border-left: 3px solid var(--cat);
+}
+.input {
+  border: 2px solid #34a853; /* Google Green — predecessor */
+  border-left: 3px solid var(--cat);
+}
+.output {
+  border: 2px solid #fbbc04; /* Google Yellow — successor */
+  border-left: 3px solid var(--cat);
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cat-bg);
+  color: var(--cat);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.shape {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--color-ink-subtle);
+}

@@ -24,7 +24,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { findNodeByPath } from "../../domain/navigation";
+import { findNodeByPath, type Level } from "../../domain/navigation";
+import type { Node as SpecNode } from "../../domain/spec";
 import { useNavigation } from "../../application/useNavigation";
 import { useSelection } from "../../application/useSelection";
 import { useArchStore } from "../../store/archStore";
@@ -35,7 +36,8 @@ import {
   highlightEdgesForSelection,
   inputOutputForSelection,
 } from "./edges";
-import { buildSemanticFlow, isSyntheticNode } from "./semanticFlow";
+import { buildSemanticFlow, isSyntheticNode, type SemanticFlow } from "./semanticFlow";
+import { buildOperationFlow } from "./operationFlow";
 import { ContextBlockFlowNode, type ContextBlockData } from "./ContextBlockNode";
 import { ResidualEdge } from "./ResidualEdge";
 import { layoutRegistry } from "../layout/LayoutRegistry";
@@ -55,12 +57,80 @@ const edgeTypes = { residual: ResidualEdge } as const;
 // view. Big enough to clearly separate it from the live flow.
 const CONTEXT_Y_OFFSET = 180;
 
+/**
+ * Turn a module's operation-flow into React Flow nodes/edges. The op-flow is a
+ * standalone per-module view (no sibling context cards, no selection-driven
+ * structure edges) — just the traced computation DAG.
+ */
+function buildOpFlowGraph(
+  flow: SemanticFlow,
+  level: Level,
+  selectedFlowId: string | null,
+  onSelectFlowNode: (node: SpecNode) => void,
+) {
+  const positionById = new Map(flow.positions.map((p) => [p.id, p] as const));
+  const rfNodes: ReactFlowNode[] = flow.nodes.map((node) => {
+    const pos = positionById.get(node.id) ?? { x: 0, y: 0 };
+    const data: BlockFlowData = {
+      specNode: node,
+      level,
+      isSelected: selectedFlowId === node.id,
+      visualTone: flow.tones.get(node.id),
+      // Ops are clickable for an explanation, but never drillable.
+      onSelect: () => onSelectFlowNode(node),
+    };
+    return {
+      id: node.id,
+      type: "block",
+      position: { x: pos.x, y: pos.y },
+      data: data as unknown as Record<string, unknown>,
+      draggable: true,
+      selectable: false,
+    };
+  });
+
+  const xs = flow.positions.map((p) => p.x);
+  const ys = flow.positions.map((p) => p.y);
+  const PAD = 600;
+  const NODE_W = 220;
+  const NODE_H = 120;
+  const minX = xs.length ? Math.min(...xs) : 0;
+  const minY = ys.length ? Math.min(...ys) : 0;
+  const maxX = (xs.length ? Math.max(...xs) : 0) + NODE_W;
+  const maxY = (ys.length ? Math.max(...ys) : 0) + NODE_H;
+  const translateExtent: CoordinateExtent = [
+    [minX - PAD, minY - PAD],
+    [maxX + PAD, maxY + PAD],
+  ];
+
+  return {
+    rfNodes,
+    rfEdges: [...flow.edges],
+    translateExtent,
+    semanticFitViewOptions: flow.fitViewOptions,
+  };
+}
+
 export function Canvas() {
   const spec = useArchStore((s) => s.spec);
+  const opFlowPath = useArchStore((s) => s.opFlowPath);
+  const opHideShapeOps = useArchStore((s) => s.opHideShapeOps);
   const { level, expansionPath, currentView, expandNode } = useNavigation();
-  const { selectedId, selectNode } = useSelection();
+  const { selectedId, selectNode, selectedFlowNode, selectFlowNode } = useSelection();
+  const selectedFlowId = selectedFlowNode?.id ?? null;
 
   const { rfNodes, rfEdges, translateExtent, semanticFitViewOptions } = useMemo(() => {
+    // Operation-flow mode: render the focused module's forward-pass op DAG. This
+    // is checked before the empty-view guard because it works for leaf modules
+    // (a Linear, an RMSNorm) that have ops but no children to populate currentView.
+    if (spec && opFlowPath && opFlowPath.length > 0) {
+      const module = findNodeByPath(spec.graph, opFlowPath);
+      const flow = module
+        ? buildOperationFlow(module, { hideShapeOps: opHideShapeOps })
+        : null;
+      if (flow) return buildOpFlowGraph(flow, level, selectedFlowId, selectFlowNode);
+    }
+
     if (currentView.length === 0) {
       return {
         rfNodes: [] as ReactFlowNode[],
@@ -163,11 +233,14 @@ export function Canvas() {
       const data: BlockFlowData = {
         specNode: node,
         level,
-        isSelected: !synthetic && selectedId === node.id,
+        isSelected: synthetic ? selectedFlowId === node.id : selectedId === node.id,
         role,
         visualVariant: semantic?.variants.get(node.id),
         visualTone: semantic?.tones.get(node.id),
-        onSelect: synthetic ? undefined : selectNode,
+        // Synthetic glyphs (Q heads / Scores / …) aren't in the Spec tree, so
+        // they go through the flow-node selection channel for click-to-explain;
+        // they're never drillable.
+        onSelect: synthetic ? () => selectFlowNode(node) : selectNode,
         onExpand: synthetic ? undefined : expandNode,
       };
       return {
@@ -222,7 +295,19 @@ export function Canvas() {
       translateExtent,
       semanticFitViewOptions: semantic?.fitViewOptions,
     };
-  }, [currentView, spec, expansionPath, level, selectedId, selectNode, expandNode]);
+  }, [
+    currentView,
+    spec,
+    expansionPath,
+    level,
+    selectedId,
+    selectNode,
+    expandNode,
+    opFlowPath,
+    opHideShapeOps,
+    selectedFlowId,
+    selectFlowNode,
+  ]);
 
   if (!spec) {
     return (
@@ -239,9 +324,14 @@ export function Canvas() {
 
   // Remount on view change so fitView re-runs cleanly AND user drag-positions
   // reset to the layout-strategy positions. The key encodes the current zoom
-  // path; switching levels triggers a fresh fit. CanvasFlow's reset button
-  // covers the within-view case (clear overrides + refit).
-  const flowKey = expansionPath.length === 0 ? "root" : expansionPath.join("/");
+  // path; switching levels triggers a fresh fit. In op-flow mode it also encodes
+  // the focused module + shape-filter so toggling either refits. CanvasFlow's
+  // reset button covers the within-view case (clear overrides + refit).
+  const flowKey = opFlowPath
+    ? `op/${opFlowPath.join("/")}/${opHideShapeOps ? "lean" : "full"}`
+    : expansionPath.length === 0
+      ? "root"
+      : expansionPath.join("/");
 
   // At the root view, focus the viewport on the first node (typically the
   // token-embedding) at near-1x zoom. Showing the entire 32-block chain
@@ -278,6 +368,14 @@ type CanvasFlowProps = {
 function CanvasFlow({ baseNodes, edges, fitViewOptions, translateExtent }: CanvasFlowProps) {
   const [nodes, setNodes] = useState<ReactFlowNode[]>(() => baseNodes);
   const { fitView } = useReactFlow();
+
+  const spec = useArchStore((s) => s.spec);
+  const opFlowPath = useArchStore((s) => s.opFlowPath);
+  const opHideShapeOps = useArchStore((s) => s.opHideShapeOps);
+  const setOpHideShapeOps = useArchStore((s) => s.setOpHideShapeOps);
+  const exitOpFlow = useArchStore((s) => s.exitOpFlow);
+  const opModule =
+    spec && opFlowPath ? findNodeByPath(spec.graph, opFlowPath) : null;
 
   useEffect(() => {
     setNodes((currentNodes) => mergeBaseNodeData(baseNodes, currentNodes));
@@ -316,6 +414,31 @@ function CanvasFlow({ baseNodes, edges, fitViewOptions, translateExtent }: Canva
           (see App.module.css `.canvasArea`) rather than React Flow's
           <Background> — that keeps the dots at a fixed scale even when the
           viewport zooms out to fit a 32-block model. */}
+      {opFlowPath && (
+        <Panel position="top-left">
+          <div className={styles.opBar}>
+            <button
+              type="button"
+              className={styles.opBack}
+              onClick={exitOpFlow}
+              title="Back to the structure view"
+            >
+              ← Structure
+            </button>
+            <span className={styles.opTitle}>
+              <span aria-hidden="true">⚙</span> {opModule?.label ?? "Operations"}
+            </span>
+            <label className={styles.opToggle}>
+              <input
+                type="checkbox"
+                checked={opHideShapeOps}
+                onChange={(event) => setOpHideShapeOps(event.target.checked)}
+              />
+              Hide shape ops
+            </label>
+          </div>
+        </Panel>
+      )}
       <Panel position="top-right">
         <button
           type="button"

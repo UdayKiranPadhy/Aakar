@@ -22,7 +22,7 @@ import {
   type SelectionPath,
   levelFromExpansion,
 } from "../domain/navigation";
-import type { Spec } from "../domain/spec";
+import type { Node, Spec } from "../domain/spec";
 
 // Optional HF read token for gated models. Persisted to localStorage only when
 // the user opts in ("remember"); otherwise it lives in memory for the session.
@@ -66,6 +66,19 @@ type State = {
   detailCollapsed: boolean;
   /** Optional HF read token for gated repos; null when none provided. */
   hfToken: string | null;
+  /**
+   * When set, the canvas shows this module's forward-pass operation DAG instead
+   * of the structure view. Holds the full root-to-module selection path.
+   */
+  opFlowPath: SelectionPath | null;
+  /** Hide pure tensor-reshape ops (view/transpose/…) in the op-flow view. */
+  opHideShapeOps: boolean;
+  /**
+   * A clicked synthetic node (op glyph or semantic glyph) — these aren't in the
+   * Spec tree, so they can't be a `selectionPath`. When set, the detail panel
+   * shows its explanation. Takes precedence over the path-based selection.
+   */
+  selectedFlowNode: Node | null;
 };
 
 type Actions = {
@@ -87,6 +100,13 @@ type Actions = {
   toggleDetail(collapsed?: boolean): void;
   /** Set/clear the HF token; `remember` persists it to localStorage. */
   setHfToken(token: string | null, remember: boolean): void;
+  /** Focus the canvas on a module's forward-op DAG (full path to the module). */
+  enterOpFlow(path: SelectionPath): void;
+  /** Return the canvas to the structure view. */
+  exitOpFlow(): void;
+  setOpHideShapeOps(hide: boolean): void;
+  /** Select a synthetic node (op/semantic glyph) to explain in the detail panel. */
+  selectFlowNode(node: Node): void;
   reset(): void;
 };
 
@@ -108,6 +128,9 @@ const initialState: State = {
   detailWidth: 320,
   detailCollapsed: false,
   hfToken: readStoredToken(),
+  opFlowPath: null,
+  opHideShapeOps: true,
+  selectedFlowNode: null,
 };
 
 export const useArchStore = create<State & Actions>()((set) => ({
@@ -132,6 +155,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
       detailOpen: true,
       // Picking a node always reveals its panel, even if the rail was collapsed.
       detailCollapsed: false,
+      // A real-module selection supersedes any clicked op/semantic glyph.
+      selectedFlowNode: null,
     })),
 
   expandNode: (id) =>
@@ -142,6 +167,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
         selectionPath: [],
         detailOpen: false,
         level: levelFromExpansion(next),
+        opFlowPath: null,
+        selectedFlowNode: null,
       };
     }),
 
@@ -156,6 +183,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
         selectionPath: [],
         detailOpen: false,
         level: levelFromExpansion(next),
+        opFlowPath: null,
+        selectedFlowNode: null,
       };
     }),
 
@@ -167,9 +196,11 @@ export const useArchStore = create<State & Actions>()((set) => ({
       selectionPath: [],
       detailOpen: false,
       level: levelFromExpansion(path),
+      opFlowPath: null,
+      selectedFlowNode: null,
     }),
 
-  closeDetail: () => set({ detailOpen: false }),
+  closeDetail: () => set({ detailOpen: false, selectedFlowNode: null }),
 
   setAppMode: (appMode) => set({ appMode }),
 
@@ -189,6 +220,15 @@ export const useArchStore = create<State & Actions>()((set) => ({
     persistToken(token, remember);
     set({ hfToken: token });
   },
+
+  enterOpFlow: (path) => set({ opFlowPath: [...path], selectedFlowNode: null }),
+
+  exitOpFlow: () => set({ opFlowPath: null, selectedFlowNode: null }),
+
+  setOpHideShapeOps: (opHideShapeOps) => set({ opHideShapeOps }),
+
+  selectFlowNode: (node) =>
+    set({ selectedFlowNode: node, detailOpen: true, detailCollapsed: false }),
 
   reset: () =>
     set((s) => ({
