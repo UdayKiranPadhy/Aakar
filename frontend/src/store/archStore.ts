@@ -46,6 +46,12 @@ function persistToken(token: string | null, remember: boolean): void {
 
 type State = {
   modelInput: string;
+  /**
+   * Bumped to request that the nav's search field take focus — the channel for
+   * the landing page's "Enter Model" CTA, which lives in a different subtree.
+   * A monotonic counter rather than a boolean so repeated requests always fire.
+   */
+  searchFocusNonce: number;
   spec: Spec | null;
   /** The two models compared side by side in the Compare view; null when empty. */
   compareA: Spec | null;
@@ -83,6 +89,8 @@ type State = {
 
 type Actions = {
   setModelInput(value: string): void;
+  /** Request focus on the nav search field (landing "Enter Model" CTA). */
+  requestSearchFocus(): void;
   setSpec(spec: Spec): void;
   setCompareSpec(slot: CompareSlot, spec: Spec | null): void;
   setLoading(loading: boolean): void;
@@ -112,6 +120,7 @@ type Actions = {
 
 const initialState: State = {
   modelInput: "",
+  searchFocusNonce: 0,
   spec: null,
   compareA: null,
   compareB: null,
@@ -137,6 +146,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
   ...initialState,
 
   setModelInput: (value) => set({ modelInput: value }),
+
+  requestSearchFocus: () => set((s) => ({ searchFocusNonce: s.searchFocusNonce + 1 })),
 
   setSpec: (spec) => set({ spec, error: null, loading: false }),
 

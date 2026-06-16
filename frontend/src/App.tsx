@@ -65,10 +65,6 @@ export function App() {
     setScrollEl(el);
   }, []);
 
-  // Hide the nav on scroll-down, reveal on scroll-up (headroom). Only the home
-  // view scrolls (scrollEl is null otherwise), so this is a no-op elsewhere.
-  const navHidden = useHideOnScroll(scrollEl);
-
   // Model dashboard: collapse just the nav's top row (brand + search) on
   // scroll-down, keeping the section tabs pinned. The real scroller is each
   // view's own `.view` element (which remounts per view), so we listen on the
@@ -85,7 +81,7 @@ export function App() {
 
   return (
     <div className={styles.root}>
-      <NavBar onSubmit={loadModel} hidden={navHidden} compact={navCompact} />
+      <NavBar onSubmit={loadModel} compact={navCompact} />
 
       <main className={styles.main}>
         {/* Catch-all: a crash in any mode degrades to a friendly page while the

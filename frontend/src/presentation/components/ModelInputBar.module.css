@@ -36,7 +36,8 @@
   box-shadow: var(--shadow-block);
   transition: background-color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
+    box-shadow var(--duration-fast) var(--ease-out),
+    border-radius var(--duration-fast) var(--ease-out);
 }
 .input::placeholder {
   color: var(--color-ink-subtle);
@@ -54,6 +55,19 @@
 }
 .input:disabled {
   opacity: 0.5;
+}
+/* Open state: the input is the TOP of one continuous capsule (itself + the
+ * portalled suggestion list). Square the bottom corners so it meets the list
+ * flush, and trade the focus glow for the resting shadow — the open panel is
+ * the focus affordance, and the accent ring would otherwise draw a line across
+ * the seam. The input's bottom border becomes the single divider into the list.
+ * Compound + `:focus` selectors so this wins over the `.input:focus` rule. */
+.input.inputOpen,
+.input.inputOpen:focus {
+  border-color: var(--color-hairline);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: var(--shadow-block);
 }
 
 .spinnerSlot {
@@ -109,41 +123,96 @@
 /* Rendered in a portal on document.body with fixed positioning (top/left/width
  * set inline from the input's rect) so it escapes the nav's `overflow: hidden`
  * collapse row and any other clipping/transformed ancestor. High z-index clears
- * page content; the small gap below the input is the margin-top. */
+ * page content. It sits flush against the input's bottom edge (no gap) and drops
+ * its top border + top rounding so the input + list read as one expanding
+ * capsule rather than a detached menu. */
 .listbox {
   position: fixed;
   z-index: 100;
-  margin: var(--space-2) 0 0;
-  padding: var(--space-1);
+  margin: 0;
+  padding: var(--space-2);
   list-style: none;
-  max-height: 320px;
+  max-height: 400px;
   overflow-y: auto;
   background: var(--color-bg);
   border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-block);
+  /* No top border: the input's bottom border is the single divider. */
+  border-top: none;
+  /* Bottom corners match the input's pill curve so the capsule reads as one
+   * rounded shape, not a pill atop a boxy panel. The input is a `--radius-pill`
+   * field of `height: 48px`, so its corners render at ~half that (24px); mirror
+   * that here. Keep these in step if the input height changes. */
+  border-radius: 0 0 24px 24px;
   box-shadow: var(--shadow-panel);
+  transform-origin: top;
+  animation: listboxOpen var(--duration-fast) var(--ease-out);
+}
+
+/* The capsule "expands" open: a short slide-down + fade as the panel emerges
+ * from under the input. Runs once on mount (the list stays mounted across
+ * keystrokes, so it doesn't re-fire per character). */
+@keyframes listboxOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listbox {
+    animation: none;
+  }
 }
 
 .option {
   display: flex;
   align-items: center;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.4;
   color: var(--color-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Fine hairline separators between suggestions — half the capsule's 1px outline
+ * so they read as light inner rules. Not after the last row, and not below the
+ * header (it isn't a suggestion). */
+.option:not(:last-child) {
+  border-bottom: var(--border-hairline) solid var(--color-hairline);
+}
 .optionActive {
-  background: var(--color-accent-subtle);
+  /* Rounding lives on the active row only, so the non-active separators stay
+   * straight full-width lines. */
+  border-radius: var(--radius-md);
+  background: var(--color-canvas-hover);
+}
+/* Hide the separator under the active row so its rounded highlight reads clean;
+ * the 0.5px stays (transparent) so the row height doesn't shift. Compound
+ * selector to match the `:not(:last-child)` rule's specificity. */
+.option.optionActive {
+  border-bottom-color: transparent;
+}
+
+/* Section label above the featured suggestions shown on an empty field. */
+.header {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
 }
 
 .empty {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-ink-subtle);
 }

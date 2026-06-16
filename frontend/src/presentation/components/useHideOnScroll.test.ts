@@ -3,11 +3,19 @@ import { describe, expect, it } from "vitest";
 
 import { useHideOnScroll } from "./useHideOnScroll";
 
-// jsdom doesn't track scrollTop from layout, so back it with a closure variable.
-function makeScroller() {
+// jsdom doesn't track layout, so back scrollTop with a closure variable and
+// stub the metrics the bottom-lock check reads. Defaults model a tall page so
+// the direction tests scroll well clear of the bottom zone.
+function defineScrollMetrics(el: HTMLElement, getTop: () => number, scrollHeight: number, clientHeight: number) {
+  Object.defineProperty(el, "scrollTop", { get: getTop, configurable: true });
+  Object.defineProperty(el, "scrollHeight", { get: () => scrollHeight, configurable: true });
+  Object.defineProperty(el, "clientHeight", { get: () => clientHeight, configurable: true });
+}
+
+function makeScroller({ scrollHeight = 4000, clientHeight = 800 } = {}) {
   const el = document.createElement("div");
   let top = 0;
-  Object.defineProperty(el, "scrollTop", { get: () => top, configurable: true });
+  defineScrollMetrics(el, () => top, scrollHeight, clientHeight);
   return {
     el,
     scrollTo(y: number) {
@@ -26,7 +34,7 @@ function makeNestedScroller() {
   const view = document.createElement("div"); // the real (descendant) scroller
   content.appendChild(view);
   let top = 0;
-  Object.defineProperty(view, "scrollTop", { get: () => top, configurable: true });
+  defineScrollMetrics(view, () => top, 4000, 800);
   return {
     content,
     scrollTo(y: number) {
@@ -76,6 +84,17 @@ describe("useHideOnScroll", () => {
     const { content, scrollTo } = makeNestedScroller();
     const { result } = renderHook(() => useHideOnScroll(content, { capture: true }));
     scrollTo(200);
+    expect(result.current).toBe(true);
+  });
+
+  it("freezes toggling inside the bottom overscroll zone (no flicker)", () => {
+    // maxScroll = 1000 - 800 = 200; the last 96px (y > 104) is the locked zone.
+    const { el, scrollTo } = makeScroller({ scrollHeight: 1000, clientHeight: 800 });
+    const { result } = renderHook(() => useHideOnScroll(el));
+    scrollTo(90); // clear of the bottom zone, past the hide threshold → hides
+    expect(result.current).toBe(true);
+    scrollTo(200); // hard bottom → frozen
+    scrollTo(150); // phantom upward clamp within the zone must NOT reveal the nav
     expect(result.current).toBe(true);
   });
 

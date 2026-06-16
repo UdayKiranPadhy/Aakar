@@ -3,9 +3,12 @@
  *
  * Combobox pattern: as the user types, we suggest matching model ids from a
  * bundled popularity-ranked list (see `useModelSearch` / `StaticModelSearchRepository`)
- * — entirely client-side, no network call. Arrow keys move the active option,
- * Enter selects it (or submits the typed text when none is active), Escape closes
- * the list. Suggestions are assistance only: any typed id can still be submitted.
+ * — entirely client-side, no network call. When the field is empty (below the
+ * search threshold), the list instead offers a curated set of featured ids as a
+ * starting point for users who don't have a model in mind. Arrow keys move the
+ * active option, Enter selects it (or submits the typed text when none is
+ * active), Escape closes the list. Suggestions are assistance only: any typed id
+ * can still be submitted.
  * Load failures are surfaced by the dashboard's full ErrorState (see
  * ModelViewHost), not inline here.
  *
@@ -29,6 +32,7 @@ import { createPortal } from "react-dom";
 import type { ModelSearchRepository } from "../../application/interfaces";
 import { useModelSearch } from "../../application/useModelSearch";
 import { useArchStore } from "../../store/archStore";
+import { FEATURED_MODEL_IDS } from "../featuredModels";
 import { Spinner } from "./ui/Spinner";
 import styles from "./ModelInputBar.module.css";
 
@@ -40,9 +44,22 @@ type Props = {
   onSubmit: (modelId: string) => void;
   /** Injectable for tests; defaults to the bundled popular-models search. */
   searchRepo?: ModelSearchRepository;
+  /** Curated ids offered as a starting point when the field is empty. */
+  featured?: ReadonlyArray<string>;
+  /**
+   * Bumped by an external "focus the search" request (the landing "Enter Model"
+   * CTA). Each change moves focus here; left undefined by callers that don't
+   * respond to those requests (e.g. the CTA section's own copy of this bar).
+   */
+  focusSignal?: number;
 };
 
-export function ModelInputBar({ onSubmit, searchRepo }: Props) {
+export function ModelInputBar({
+  onSubmit,
+  searchRepo,
+  featured = FEATURED_MODEL_IDS,
+  focusSignal,
+}: Props) {
   const modelInput = useArchStore((s) => s.modelInput);
   const setModelInput = useArchStore((s) => s.setModelInput);
   const loading = useArchStore((s) => s.loading);
@@ -55,18 +72,25 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
 
-  // Suggest only while the list is meant to be open and we're not mid model-load.
+  const trimmed = modelInput.trim();
+  // Below the search threshold (typically an empty field) we don't search — the
+  // list instead offers the curated featured ids as a starting point.
+  const isSearching = trimmed.length >= MIN_QUERY_LENGTH;
+
+  // Search only while the list is meant to be open, there's a real query, and
+  // we're not mid model-load.
   const { results, loading: searching } = useModelSearch(modelInput, {
-    enabled: open && !loading,
+    enabled: open && !loading && isSearching,
     repo: searchRepo,
   });
 
-  const active = activeIndex >= 0 && activeIndex < results.length ? activeIndex : -1;
-  const trimmed = modelInput.trim();
-  // Render the listbox once there's something to show — results, or a settled
-  // "no matches" — so it never flashes empty during the first lookup.
-  const hasContent = results.length > 0 || (!searching && trimmed.length >= MIN_QUERY_LENGTH);
-  const showList = open && !loading && trimmed.length >= MIN_QUERY_LENGTH && hasContent;
+  const suggestions = isSearching ? results : featured;
+  const active = activeIndex >= 0 && activeIndex < suggestions.length ? activeIndex : -1;
+  // Show the list when there's something to offer: featured defaults on an empty
+  // field, or — once a search settles — its matches or a definitive "no matches".
+  // Gating search mode on `!searching` keeps it from flashing empty mid-lookup.
+  const hasContent = suggestions.length > 0 || (isSearching && !searching);
+  const showList = open && !loading && hasContent;
 
   const optionId = (i: number) => `${listboxId}-opt-${i}`;
 
@@ -101,6 +125,14 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
+  // Respond to external focus requests (the landing "Enter Model" CTA). Skips
+  // the initial render (nonce 0 / undefined) so the field only grabs focus on a
+  // genuine, post-mount request.
+  useEffect(() => {
+    if (!focusSignal) return;
+    inputRef.current?.focus();
+  }, [focusSignal]);
+
   const choose = (id: string) => {
     setModelInput(id);
     setOpen(false);
@@ -111,7 +143,7 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    const chosen = showList && active >= 0 ? results[active] : undefined;
+    const chosen = showList && active >= 0 ? suggestions[active] : undefined;
     if (chosen) {
       choose(chosen);
       return;
@@ -129,7 +161,7 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
         setOpen(true);
         return;
       }
-      setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex((i) => (i <= 0 ? 0 : i - 1));
@@ -165,12 +197,14 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
             setOpen(true);
             setActiveIndex(-1);
           }}
-          onFocus={() => {
-            if (modelInput.trim().length >= MIN_QUERY_LENGTH) setOpen(true);
-          }}
+          // Open on focus so an empty field still surfaces the featured ids.
+          onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           disabled={loading}
-          className={styles.input}
+          // While the list is open the input is the top of one continuous
+          // capsule (see `.inputOpen`); track that with `showList`, not `open`,
+          // so the merge only applies when a panel is actually attached.
+          className={`${styles.input} ${showList ? styles.inputOpen : ""}`}
         />
         {loading ? (
           <span className={styles.spinnerSlot}>
@@ -204,7 +238,12 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
             aria-label="Model suggestions"
             style={{ top: anchor.top, left: anchor.left, width: anchor.width }}
           >
-            {results.map((id, i) => (
+            {!isSearching && (
+              <li className={styles.header} role="presentation">
+                Try one of these
+              </li>
+            )}
+            {suggestions.map((id, i) => (
               <li
                 key={id}
                 id={optionId(i)}
@@ -219,7 +258,7 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
                 {id}
               </li>
             ))}
-            {results.length === 0 && (
+            {isSearching && suggestions.length === 0 && (
               <li className={styles.empty} role="presentation">
                 No matching models
               </li>

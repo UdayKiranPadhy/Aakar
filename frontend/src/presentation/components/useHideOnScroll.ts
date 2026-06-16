@@ -23,6 +23,13 @@ import { useEffect, useRef, useState } from "react";
 
 const HIDE_THRESHOLD = 80; // stay visible until scrolled past the nav itself
 const DELTA_THRESHOLD = 6; // ignore sub-pixel jitter / trackpad rubber-banding
+// Freeze toggling within this many px of the bottom. Hiding the nav grows the
+// scroll viewport, which shrinks max scrollTop and clamps the position back up
+// — a phantom upward scroll that would flip the state and oscillate (nav +
+// sidebar flicker) while the user keeps scrolling at the very end. The zone
+// must exceed the nav's collapsible height (its row-1, 64px) so a hide can
+// never trigger that clamp in the first place, breaking the feedback loop.
+const BOTTOM_LOCK = 96;
 
 export function useHideOnScroll(
   el: HTMLElement | null,
@@ -42,12 +49,21 @@ export function useHideOnScroll(
       // In capture mode the scroll originates from a descendant scroller, so
       // read its position from the event target; otherwise `el` is the scroller.
       const scroller = capture ? (e.target as HTMLElement | null) : el;
+      if (!scroller) return;
       // Side chrome (e.g. the detail panel dock) scrolls independently of the
       // page; its scroll must not drive nav headroom. Such scrollers opt out
       // via `ignoreSelector`.
-      if (ignoreSelector && scroller?.closest?.(ignoreSelector)) return;
-      const y = scroller?.scrollTop ?? 0;
+      if (ignoreSelector && scroller.closest?.(ignoreSelector)) return;
+      const y = scroller.scrollTop;
       const delta = y - lastY.current;
+      // Track the live position even when frozen below, so the delta stays
+      // correct once the user scrolls back up out of the bottom zone.
+      lastY.current = y;
+
+      // Don't toggle inside the bottom overscroll zone (see BOTTOM_LOCK): the
+      // clamp that follows a hide would otherwise read as a scroll-up and start
+      // an oscillation.
+      if (scroller.scrollHeight - scroller.clientHeight - y <= BOTTOM_LOCK) return;
 
       if (y < HIDE_THRESHOLD) {
         setHidden(false);
@@ -56,8 +72,6 @@ export function useHideOnScroll(
       } else if (delta < -DELTA_THRESHOLD) {
         setHidden(false);
       }
-
-      lastY.current = y;
     };
 
     el.addEventListener("scroll", onScroll, { passive: true, capture });

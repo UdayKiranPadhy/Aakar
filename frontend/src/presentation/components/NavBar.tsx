@@ -31,6 +31,8 @@ export function NavBar({ onSubmit, hidden = false, compact = false }: Props) {
   const setAppMode = useArchStore((s) => s.setAppMode);
   const appMode = useArchStore((s) => s.appMode);
   const loading = useArchStore((s) => s.loading);
+  // The landing "Enter Model" CTA focuses this (the primary) search field.
+  const searchFocusNonce = useArchStore((s) => s.searchFocusNonce);
 
   // The tab row (section tabs + quick-model chips) is only useful once you've
   // left the landing page. The home view shows just the top bar, and the nav
@@ -58,7 +60,7 @@ export function NavBar({ onSubmit, hidden = false, compact = false }: Props) {
             <Brand onClick={() => setAppMode("home")} />
           </div>
           <div className={styles.searchSlot}>
-            <ModelInputBar onSubmit={onSubmit} />
+            <ModelInputBar onSubmit={onSubmit} focusSignal={searchFocusNonce} />
           </div>
           <span aria-hidden="true" className={styles.side} />
         </div>

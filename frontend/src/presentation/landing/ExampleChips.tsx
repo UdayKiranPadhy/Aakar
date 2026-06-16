@@ -6,17 +6,9 @@
 import { motion } from "framer-motion";
 
 import { useArchStore } from "../../store/archStore";
+import { FEATURED_MODEL_IDS } from "../featuredModels";
 import { popIn, staggerContainer } from "./motion";
 import styles from "./ExampleChips.module.css";
-
-export const FEATURED_MODEL_IDS: ReadonlyArray<string> = [
-  "Qwen/Qwen3.6-27B",
-  "openai/gpt-oss-20b",
-  "MiniMaxAI/MiniMax-M2.7",
-  "mistralai/Mistral-Medium-3.5-128B",
-  "deepseek-ai/DeepSeek-V4-Flash",
-  "deepseek-ai/DeepSeek-V4-Pro",
-];
 
 type Props = {
   onSubmit: (modelId: string) => void;

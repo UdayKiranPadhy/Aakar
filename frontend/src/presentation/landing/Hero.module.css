@@ -42,8 +42,41 @@
   max-width: 48ch;
   font-family: var(--font-sans);
   font-size: clamp(15px, 1.7vw, 18px);
-  color: var(--color-ink-muted);
+  /* Hero copy is intentionally full-ink (black) — only the cycling word in the
+   * headline carries colour. */
+  color: var(--color-ink);
   line-height: 1.6;
+}
+
+/* "Enter Model" call-to-action below the lead — focuses the nav search field. */
+.cta {
+  margin: 28px auto 0;
+  display: flex;
+  justify-content: center;
+}
+.enterButton {
+  appearance: none;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 12px 30px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--weight-medium);
+  color: #fff;
+  background: var(--color-accent);
+  box-shadow: var(--shadow-block);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+.enterButton:hover {
+  background: var(--color-accent-hover);
+  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+}
+.enterButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
 }
 
 .search {

@@ -64,6 +64,43 @@ describe("ModelInputBar", () => {
     expect(screen.queryByRole("button", { name: "Clear search" })).not.toBeInTheDocument();
   });
 
+  it("offers featured suggestions when focused while empty and submits the clicked one", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <ModelInputBar
+        onSubmit={onSubmit}
+        searchRepo={silentRepo}
+        featured={["meta-llama/Llama-3-8B", "google/gemma-2-9b"]}
+      />,
+    );
+
+    // No typing — focusing the empty field is enough to reveal the featured ids.
+    await userEvent.click(screen.getByRole("combobox"));
+    const option = await screen.findByRole("option", { name: "meta-llama/Llama-3-8B" });
+    await userEvent.click(option);
+
+    expect(onSubmit).toHaveBeenCalledWith("meta-llama/Llama-3-8B");
+    expect(useArchStore.getState().modelInput).toBe("meta-llama/Llama-3-8B");
+  });
+
+  it("hides featured suggestions once a real query is typed", async () => {
+    render(
+      <ModelInputBar
+        onSubmit={() => {}}
+        searchRepo={repoWith(["openai-community/gpt2"])}
+        featured={["meta-llama/Llama-3-8B"]}
+      />,
+    );
+
+    const input = screen.getByRole("combobox");
+    await userEvent.click(input);
+    await screen.findByRole("option", { name: "meta-llama/Llama-3-8B" });
+
+    await userEvent.type(input, "gpt2");
+    await screen.findByRole("option", { name: "openai-community/gpt2" });
+    expect(screen.queryByRole("option", { name: "meta-llama/Llama-3-8B" })).not.toBeInTheDocument();
+  });
+
   it("shows id suggestions while typing and submits the clicked one", async () => {
     const onSubmit = vi.fn();
     render(<ModelInputBar onSubmit={onSubmit} searchRepo={repoWith(["openai-community/gpt2"])} />);

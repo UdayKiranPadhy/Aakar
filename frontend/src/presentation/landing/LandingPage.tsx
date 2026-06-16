@@ -21,17 +21,16 @@ type Props = {
 export function LandingPage({ onSubmit }: Props) {
   return (
     <>
-      <Hero onSubmit={onSubmit} />
+      <Hero />
 
       <Section
         tone="blue"
-        eyebrow="Introspection"
-        title="From a model id to its real module tree"
+        eyebrow=""
+        title="Find What's inside your model"
         art={<ModuleTree />}
       >
-        Type <code>gpt2</code> and the backend introspects the actual <code>nn.Module</code> tree
-        on the meta device — no weights downloaded, no custom code executed. What you see is the
-        architecture, faithfully.
+        See a model capability that's caught your eye? Or a model you want to use? 
+        Paste its HuggingFace model id and watch the architecture unfold as a clickable diagram.
       </Section>
 
       <Section

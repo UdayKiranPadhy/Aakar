@@ -8,9 +8,8 @@
 import { motion } from "framer-motion";
 import { clsx } from "clsx";
 
-import { ModelInputBar } from "../components/ModelInputBar";
+import { useArchStore } from "../../store/archStore";
 import { CyclingWord } from "./CyclingWord";
-import { ExampleChips } from "./ExampleChips";
 import { HeroBackdrop } from "./illustrations/HeroBackdrop";
 import { AttentionFan } from "./illustrations/AttentionFan";
 import { ModuleTree } from "./illustrations/ModuleTree";
@@ -21,11 +20,9 @@ import styles from "./Hero.module.css";
 
 const CYCLE = ["Llama", "Qwen", "Mistral", "Gemma", "transformer"] as const;
 
-type Props = {
-  onSubmit: (modelId: string) => void;
-};
+export function Hero() {
+  const requestSearchFocus = useArchStore((s) => s.requestSearchFocus);
 
-export function Hero({ onSubmit }: Props) {
   return (
     <section className={styles.hero}>
       <HeroBackdrop />
@@ -54,42 +51,22 @@ export function Hero({ onSubmit }: Props) {
         animate="shown"
         variants={staggerContainer(0.09, 0.1)}
       >
-        <motion.p className={styles.eyebrow} variants={fadeUp}>
-          LLM architecture visualizer
-        </motion.p>
         <motion.h1 className={styles.headline} variants={fadeUp} aria-label="See inside any model">
           <span aria-hidden="true">
             See inside any <CyclingWord words={CYCLE} />
           </span>
         </motion.h1>
+        <br></br>
         <motion.p className={styles.lead} variants={fadeUp}>
-          Paste a HuggingFace model id and watch its real architecture unfold — the module tree,
-          tensor shapes, attention, and parameter scale, as a clickable diagram.
+          Not sure how LLM model is working internally?<br></br>
+          Enter the model id, to know what's inside.
         </motion.p>
-        <motion.div className={styles.search} variants={fadeUp}>
-          <ModelInputBar onSubmit={onSubmit} />
-        </motion.div>
-        <motion.div variants={fadeUp}>
-          <ExampleChips onSubmit={onSubmit} />
+        <motion.div className={styles.cta} variants={fadeUp}>
+          <button type="button" className={styles.enterButton} onClick={requestSearchFocus}>
+            Enter Model
+          </button>
         </motion.div>
       </motion.div>
-
-      <div className={styles.cue} aria-hidden="true">
-        <span>Scroll to explore</span>
-        <svg
-          className={styles.cueArrow}
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
-      </div>
     </section>
   );
 }
