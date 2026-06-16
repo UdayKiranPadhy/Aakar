@@ -6,7 +6,6 @@
  */
 
 import type { ModelInfo } from "../domain/modelInfo";
-import type { ModelSummary } from "../domain/modelSearch";
 import type { Paper, RepoInfo, SourceSnippet } from "../domain/research";
 import type { Spec } from "../domain/spec";
 import type { TrendingModel } from "../domain/trending";
@@ -25,14 +24,14 @@ export interface ModelInfoRepository {
 
 export interface ModelSearchRepository {
   /**
-   * Live model search straight from the HuggingFace Hub — the one repository
-   * that talks to the Hub directly from the browser, so search-bar autocomplete
-   * never hits our backend. `signal` lets callers abort a superseded request.
+   * Returns model ids matching `query`, most relevant first. The default
+   * implementation filters a bundled list (no network); `signal` is accepted so
+   * a network-backed implementation can drop in unchanged.
    */
   search(
     query: string,
     options?: { limit?: number; signal?: AbortSignal },
-  ): Promise<ReadonlyArray<ModelSummary>>;
+  ): Promise<ReadonlyArray<string>>;
 }
 
 export interface TrendingRepository {

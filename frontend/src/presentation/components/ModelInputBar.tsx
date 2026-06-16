@@ -1,15 +1,15 @@
 /**
- * Search input for a HuggingFace model ID, with live Hub autocomplete.
+ * Search input for a HuggingFace model ID, with autocomplete.
  *
- * Combobox pattern: as the user types we query the Hub's `/api/models` endpoint
- * directly from the browser (see `useModelSearch` / `HfModelSearchRepository`) —
- * no backend hop — and surface matching repos in a listbox. Arrow keys move the
- * active option, Enter selects it (or submits the typed text when none is
- * active), Escape closes the list. Inline spinner on the right while a request
- * (search or model load) is in flight. Load failures are surfaced by the
- * dashboard's full ErrorState (see ModelViewHost), not inline here.
+ * Combobox pattern: as the user types, we suggest matching model ids from a
+ * bundled popularity-ranked list (see `useModelSearch` / `StaticModelSearchRepository`)
+ * — entirely client-side, no network call. Arrow keys move the active option,
+ * Enter selects it (or submits the typed text when none is active), Escape closes
+ * the list. Suggestions are assistance only: any typed id can still be submitted.
+ * Load failures are surfaced by the dashboard's full ErrorState (see
+ * ModelViewHost), not inline here.
  *
- * The dropdown is rendered through a portal with fixed positioning: this bar is
+ * The dropdown renders through a portal with fixed positioning: this bar is
  * mounted inside the nav's `overflow: hidden` collapse row (and could land in
  * other clipping/transformed containers), so anchoring the list in normal flow
  * would clip it. The portal escapes any such ancestor.
@@ -29,7 +29,6 @@ import { createPortal } from "react-dom";
 import type { ModelSearchRepository } from "../../application/interfaces";
 import { useModelSearch } from "../../application/useModelSearch";
 import { useArchStore } from "../../store/archStore";
-import { formatCompact } from "./ui/format";
 import { Spinner } from "./ui/Spinner";
 import styles from "./ModelInputBar.module.css";
 
@@ -39,7 +38,7 @@ type Anchor = { top: number; left: number; width: number };
 
 type Props = {
   onSubmit: (modelId: string) => void;
-  /** Injectable for tests; defaults to the live HF Hub search inside the hook. */
+  /** Injectable for tests; defaults to the bundled popular-models search. */
   searchRepo?: ModelSearchRepository;
 };
 
@@ -53,9 +52,10 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
 
-  // Search only while the list is meant to be open and we're not mid model-load.
+  // Suggest only while the list is meant to be open and we're not mid model-load.
   const { results, loading: searching } = useModelSearch(modelInput, {
     enabled: open && !loading,
     repo: searchRepo,
@@ -64,7 +64,7 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
   const active = activeIndex >= 0 && activeIndex < results.length ? activeIndex : -1;
   const trimmed = modelInput.trim();
   // Render the listbox once there's something to show — results, or a settled
-  // "no matches" — so it never flashes empty during the first in-flight request.
+  // "no matches" — so it never flashes empty during the first lookup.
   const hasContent = results.length > 0 || (!searching && trimmed.length >= MIN_QUERY_LENGTH);
   const showList = open && !loading && trimmed.length >= MIN_QUERY_LENGTH && hasContent;
 
@@ -113,7 +113,7 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
     if (loading) return;
     const chosen = showList && active >= 0 ? results[active] : undefined;
     if (chosen) {
-      choose(chosen.id);
+      choose(chosen);
       return;
     }
     if (trimmed) {
@@ -147,6 +147,7 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
           <SearchIcon />
         </span>
         <input
+          ref={inputRef}
           type="text"
           name="model_id"
           autoComplete="off"
@@ -171,11 +172,25 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
           disabled={loading}
           className={styles.input}
         />
-        {(loading || searching) && (
+        {loading ? (
           <span className={styles.spinnerSlot}>
             <Spinner />
           </span>
-        )}
+        ) : modelInput ? (
+          <button
+            type="button"
+            className={styles.clearButton}
+            aria-label="Clear search"
+            onClick={() => {
+              setModelInput("");
+              setOpen(false);
+              setActiveIndex(-1);
+              inputRef.current?.focus();
+            }}
+          >
+            <ClearIcon />
+          </button>
+        ) : null}
       </form>
 
       {showList &&
@@ -189,9 +204,9 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
             aria-label="Model suggestions"
             style={{ top: anchor.top, left: anchor.left, width: anchor.width }}
           >
-            {results.map((m, i) => (
+            {results.map((id, i) => (
               <li
-                key={m.id}
+                key={id}
                 id={optionId(i)}
                 role="option"
                 aria-selected={i === active}
@@ -199,15 +214,9 @@ export function ModelInputBar({ onSubmit, searchRepo }: Props) {
                 // Keep focus on the input so the click isn't pre-empted by a blur.
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseEnter={() => setActiveIndex(i)}
-                onClick={() => choose(m.id)}
+                onClick={() => choose(id)}
               >
-                <span className={styles.optionId}>{m.id}</span>
-                <span className={styles.optionMeta}>
-                  {m.pipelineTag && <span className={styles.optionTag}>{m.pipelineTag}</span>}
-                  <span className={styles.optionDownloads} title="downloads">
-                    ↓ {formatCompact(m.downloads)}
-                  </span>
-                </span>
+                {id}
               </li>
             ))}
             {results.length === 0 && (
@@ -237,6 +246,25 @@ function SearchIcon() {
     >
       <circle cx="11" cy="11" r="7" />
       <line x1="20" y1="20" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function ClearIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
 }

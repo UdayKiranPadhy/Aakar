@@ -1,27 +1,29 @@
 /**
- * Use case: live model-search suggestions for the search bar's autocomplete.
+ * Use case: model-search suggestions for the search bar's autocomplete.
  *
- * Debounces keystrokes and aborts the in-flight request when the query changes
- * (or the component unmounts), so fast typing collapses to a single trailing
- * Hub request and stays well under the Hub's unauthenticated rate cap. Errors
- * are non-fatal — the dropdown just shows nothing rather than a broken UI.
+ * Debounces query changes and ignores superseded (aborted) requests, so the
+ * dropdown stays responsive regardless of the search source. The default source
+ * is a bundled, popularity-ranked id list filtered in memory (no network call),
+ * but any `ModelSearchRepository` can be injected. Errors are non-fatal — the
+ * dropdown just shows nothing rather than a broken UI.
  */
 
 import { useEffect, useState } from "react";
 
-import { HfModelSearchRepository } from "../infrastructure/api/HfModelSearchRepository";
-import type { ModelSummary } from "../domain/modelSearch";
+import { StaticModelSearchRepository } from "../infrastructure/api/StaticModelSearchRepository";
 import type { ModelSearchRepository } from "./interfaces";
 
-const defaultRepo: ModelSearchRepository = new HfModelSearchRepository();
+const defaultRepo: ModelSearchRepository = new StaticModelSearchRepository();
 
-/** Below this many (trimmed) characters we don't search — avoids firing on a
- *  single keystroke and keeps request volume sane. */
+/** Below this many (trimmed) characters we don't search — avoids dumping the
+ *  whole list on the first keystroke. */
 const MIN_QUERY_LENGTH = 2;
-const DEBOUNCE_MS = 250;
+// The default source is local/synchronous, so no debounce is needed; a
+// network-backed repo can pass a non-zero `debounceMs`.
+const DEBOUNCE_MS = 0;
 
 export type ModelSearchState = Readonly<{
-  results: ReadonlyArray<ModelSummary>;
+  results: ReadonlyArray<string>;
   loading: boolean;
 }>;
 
@@ -30,7 +32,7 @@ type Options = {
   enabled?: boolean;
   limit?: number;
   debounceMs?: number;
-  /** Injectable for tests; defaults to the live HF Hub search. */
+  /** Injectable for tests; defaults to the bundled popular-models search. */
   repo?: ModelSearchRepository;
 };
 
@@ -47,9 +49,8 @@ export function useModelSearch(
       return;
     }
 
-    // Show the spinner straight away (keeping any prior results visible to avoid
-    // a flicker), but defer the request until typing settles, and abort whatever
-    // is in flight when it does.
+    // Keep any prior results visible (no flicker) while the next query settles,
+    // and abort whatever is in flight when it does.
     setState((prev) => ({ results: prev.results, loading: true }));
     const controller = new AbortController();
     const timer = setTimeout(() => {

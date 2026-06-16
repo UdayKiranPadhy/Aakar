@@ -1,19 +1,13 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { ModelSummary } from "../domain/modelSearch";
 import type { ModelSearchRepository } from "./interfaces";
 import { useModelSearch } from "./useModelSearch";
 
-const hit: ModelSummary = {
-  id: "openai-community/gpt2",
-  downloads: 1,
-  likes: 1,
-  pipelineTag: "text-generation",
-};
+const HIT = "openai-community/gpt2";
 
 /** A fake repo that records the queries it was asked for. */
-function fakeRepo(results: ReadonlyArray<ModelSummary> = [hit]): ModelSearchRepository & {
+function fakeRepo(results: ReadonlyArray<string> = [HIT]): ModelSearchRepository & {
   calls: string[];
 } {
   const calls: string[] = [];
@@ -29,7 +23,7 @@ function fakeRepo(results: ReadonlyArray<ModelSummary> = [hit]): ModelSearchRepo
 describe("useModelSearch", () => {
   it("does not search below the minimum query length", async () => {
     const repo = fakeRepo();
-    const { result } = renderHook(() => useModelSearch("g", { repo, debounceMs: 0 }));
+    const { result } = renderHook(() => useModelSearch("g", { repo }));
     await new Promise((r) => setTimeout(r, 20));
     expect(repo.calls).toEqual([]);
     expect(result.current.results).toEqual([]);
@@ -37,14 +31,14 @@ describe("useModelSearch", () => {
 
   it("fetches and exposes results once the query is long enough", async () => {
     const repo = fakeRepo();
-    const { result } = renderHook(() => useModelSearch("gpt2", { repo, debounceMs: 0 }));
-    await waitFor(() => expect(result.current.results).toEqual([hit]));
+    const { result } = renderHook(() => useModelSearch("gpt2", { repo }));
+    await waitFor(() => expect(result.current.results).toEqual([HIT]));
     expect(repo.calls).toEqual(["gpt2"]);
   });
 
   it("does not search when disabled", async () => {
     const repo = fakeRepo();
-    renderHook(() => useModelSearch("gpt2", { repo, enabled: false, debounceMs: 0 }));
+    renderHook(() => useModelSearch("gpt2", { repo, enabled: false }));
     await new Promise((r) => setTimeout(r, 20));
     expect(repo.calls).toEqual([]);
   });

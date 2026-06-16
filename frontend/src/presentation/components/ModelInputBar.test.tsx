@@ -3,16 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ModelSearchRepository } from "../../application/interfaces";
-import type { ModelSummary } from "../../domain/modelSearch";
 import { ModelInputBar } from "./ModelInputBar";
 import { useArchStore } from "../../store/archStore";
 
-/** A repo returning no suggestions — keeps the autocomplete offline + quiet for
- *  tests that aren't about the dropdown. */
+/** A repo returning no suggestions — keeps the autocomplete quiet for tests that
+ *  aren't about the dropdown. */
 const silentRepo: ModelSearchRepository = { async search() { return []; } };
 
-/** A repo returning fixed suggestions for the dropdown tests. */
-function repoWith(results: ReadonlyArray<ModelSummary>): ModelSearchRepository {
+/** A repo returning fixed id suggestions for the dropdown tests. */
+function repoWith(results: ReadonlyArray<string>): ModelSearchRepository {
   return { async search() { return results; } };
 }
 
@@ -51,15 +50,26 @@ describe("ModelInputBar", () => {
     expect(useArchStore.getState().modelInput).toBe("Qwen/Qwen3-0.6B");
   });
 
-  it("shows Hub suggestions while typing and submits the clicked one", async () => {
+  it("clears the input and refocuses it via the X button", async () => {
+    render(<ModelInputBar onSubmit={() => {}} searchRepo={silentRepo} />);
+    const input = screen.getByRole("combobox");
+    await userEvent.type(input, "gpt2");
+    await userEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(useArchStore.getState().modelInput).toBe("");
+    expect(input).toHaveFocus();
+  });
+
+  it("shows no clear button when the field is empty", () => {
+    render(<ModelInputBar onSubmit={() => {}} searchRepo={silentRepo} />);
+    expect(screen.queryByRole("button", { name: "Clear search" })).not.toBeInTheDocument();
+  });
+
+  it("shows id suggestions while typing and submits the clicked one", async () => {
     const onSubmit = vi.fn();
-    const repo = repoWith([
-      { id: "openai-community/gpt2", downloads: 10154763, likes: 5, pipelineTag: "text-generation" },
-    ]);
-    render(<ModelInputBar onSubmit={onSubmit} searchRepo={repo} />);
+    render(<ModelInputBar onSubmit={onSubmit} searchRepo={repoWith(["openai-community/gpt2"])} />);
 
     await userEvent.type(screen.getByRole("combobox"), "gpt2");
-    const option = await screen.findByRole("option", { name: /openai-community\/gpt2/ });
+    const option = await screen.findByRole("option", { name: "openai-community/gpt2" });
     await userEvent.click(option);
 
     expect(onSubmit).toHaveBeenCalledWith("openai-community/gpt2");
@@ -68,14 +78,11 @@ describe("ModelInputBar", () => {
 
   it("picks a suggestion via arrow keys + Enter", async () => {
     const onSubmit = vi.fn();
-    const repo = repoWith([
-      { id: "openai-community/gpt2", downloads: 100, likes: 1, pipelineTag: null },
-      { id: "openai-community/gpt2-large", downloads: 50, likes: 1, pipelineTag: null },
-    ]);
+    const repo = repoWith(["openai-community/gpt2", "openai-community/gpt2-large"]);
     render(<ModelInputBar onSubmit={onSubmit} searchRepo={repo} />);
 
     await userEvent.type(screen.getByRole("combobox"), "gpt2");
-    await screen.findByRole("option", { name: /gpt2-large/ });
+    await screen.findByRole("option", { name: "openai-community/gpt2-large" });
     await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}");
 
     expect(onSubmit).toHaveBeenCalledWith("openai-community/gpt2-large");
@@ -83,13 +90,10 @@ describe("ModelInputBar", () => {
 
   it("closes the dropdown on Escape without submitting", async () => {
     const onSubmit = vi.fn();
-    const repo = repoWith([
-      { id: "openai-community/gpt2", downloads: 100, likes: 1, pipelineTag: null },
-    ]);
-    render(<ModelInputBar onSubmit={onSubmit} searchRepo={repo} />);
+    render(<ModelInputBar onSubmit={onSubmit} searchRepo={repoWith(["openai-community/gpt2"])} />);
 
     await userEvent.type(screen.getByRole("combobox"), "gpt2");
-    await screen.findByRole("option", { name: /openai-community\/gpt2/ });
+    await screen.findByRole("option", { name: "openai-community/gpt2" });
     await userEvent.keyboard("{Escape}");
 
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();

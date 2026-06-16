@@ -65,6 +65,35 @@
   display: flex;
 }
 
+/* Clear ("X") button — shown on the right when the field has text. */
+.clearButton {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+.clearButton:hover {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+.clearButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent-subtle);
+}
+
 .error {
   margin-top: 6px;
   padding: 0 20px;
@@ -98,43 +127,18 @@
 .option {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-ink);
-}
-.optionActive {
-  background: var(--color-accent-subtle);
-}
-
-.optionId {
-  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.optionMeta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
-  color: var(--color-ink-subtle);
-  font-size: 11px;
-}
-.optionTag {
-  padding: 1px 8px;
-  border-radius: var(--radius-pill);
-  background: var(--color-canvas);
-  color: var(--color-ink-muted);
-  white-space: nowrap;
-}
-.optionDownloads {
-  white-space: nowrap;
+.optionActive {
+  background: var(--color-accent-subtle);
 }
 
 .empty {
