@@ -7,6 +7,7 @@
 import { useMemo, useState } from "react";
 
 import { formatFlops } from "../../components/ui/format";
+import { Slider } from "../../components/ui/Slider";
 import type { ModelViewProps } from "../ModelViewRegistry";
 import { scaleFlops, sumFlops, topLevelComponents } from "../shared/breakdown";
 import { ProportionalBar, ViewEmpty, ViewSection } from "../shared/primitives";
@@ -72,38 +73,5 @@ export function ComputeView({ spec }: ModelViewProps) {
         </div>
       </ViewSection>
     </div>
-  );
-}
-
-function Slider({
-  label,
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <label className={styles.slider}>
-      <span className={styles.sliderLabel}>
-        {label}
-        <strong className={styles.sliderValue}>{value}</strong>
-      </span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    </label>
   );
 }

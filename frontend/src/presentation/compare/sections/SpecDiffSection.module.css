@@ -1,0 +1,63 @@
+.card {
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-block);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.metricHead,
+.colHead {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+  text-align: start;
+}
+.metricHead {
+  width: 28%;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.colHead {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metric {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  text-align: start;
+}
+.value {
+  overflow: hidden;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+}
+.table tbody tr {
+  border-bottom: 1px solid var(--color-hairline);
+}
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+.differ {
+  background: var(--color-accent-subtle);
+}
+.differ .value {
+  font-weight: var(--weight-semibold);
+}

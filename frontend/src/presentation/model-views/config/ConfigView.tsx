@@ -9,15 +9,8 @@ import { useMemo, useState } from "react";
 import type { ModelViewProps } from "../ModelViewRegistry";
 import { ViewEmpty } from "../shared/primitives";
 import shared from "../shared/primitives.module.css";
-import { type ConfigValue, flattenConfig, groupConfig } from "./configGrouping";
+import { flattenConfig, formatConfigValue, groupConfig } from "./configGrouping";
 import styles from "./ConfigView.module.css";
-
-function formatValue(value: ConfigValue): string {
-  if (value === null) return "null";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return value.toLocaleString("en-US", { maximumFractionDigits: 20 });
-  return value;
-}
 
 export function ConfigView({ spec }: ModelViewProps) {
   const [query, setQuery] = useState("");
@@ -29,7 +22,9 @@ export function ConfigView({ spec }: ModelViewProps) {
     () =>
       q
         ? leaves.filter(
-            (l) => l.path.toLowerCase().includes(q) || formatValue(l.value).toLowerCase().includes(q),
+            (l) =>
+              l.path.toLowerCase().includes(q) ||
+              formatConfigValue(l.value).toLowerCase().includes(q),
           )
         : leaves,
     [leaves, q],
@@ -68,7 +63,7 @@ export function ConfigView({ spec }: ModelViewProps) {
               {group.leaves.map((leaf) => (
                 <div key={leaf.path} className={styles.row}>
                   <dt className={styles.key}>{leaf.path}</dt>
-                  <dd className={styles.val}>{formatValue(leaf.value)}</dd>
+                  <dd className={styles.val}>{formatConfigValue(leaf.value)}</dd>
                 </div>
               ))}
             </dl>

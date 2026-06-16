@@ -8,17 +8,9 @@
  */
 
 import { useArchStore } from "../../store/archStore";
+import { bytesForDtype } from "./ui/dtypeBytes";
 import { formatBytes } from "./ui/format";
 import styles from "./ModelInfoStrip.module.css";
-
-const _DTYPE_BYTES: Record<string, number> = {
-  float32: 4,
-  float16: 2,
-  bfloat16: 2,
-  float64: 8,
-  int8: 1,
-  uint8: 1,
-};
 
 export function ModelInfoStrip() {
   const spec = useArchStore((s) => s.spec);
@@ -26,7 +18,7 @@ export function ModelInfoStrip() {
 
   const summary = spec.config_summary;
   const totalParams = typeof summary.total_params === "number" ? summary.total_params : null;
-  const dtypeBytes = _DTYPE_BYTES[spec.param_dtype ?? ""] ?? 4;
+  const dtypeBytes = bytesForDtype(spec.param_dtype) ?? 4;
   const totalBytes = totalParams ? totalParams * dtypeBytes : null;
 
   const pills: Array<{ key: string; label: string; value: string }> = [];

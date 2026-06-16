@@ -20,6 +20,9 @@ export type Level = 1 | 2 | 3;
  */
 export type AppMode = "home" | "model" | "compare" | "learn";
 
+/** Which column a model occupies in the Compare view. */
+export type CompareSlot = "a" | "b";
+
 /**
  * Which model-scoped view the dashboard shows (left sidebar selection).
  * `architecture` is the React Flow diagram; the rest are information views.

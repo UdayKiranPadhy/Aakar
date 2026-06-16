@@ -222,20 +222,28 @@ describe("archStore", () => {
       expect(useArchStore.getState().detailCollapsed).toBe(false);
     });
 
-    it("setCompareSpec stores and clears the second spec", () => {
-      useArchStore.getState().setCompareSpec(fakeSpec);
-      expect(useArchStore.getState().compareSpec).toBe(fakeSpec);
-      useArchStore.getState().setCompareSpec(null);
-      expect(useArchStore.getState().compareSpec).toBeNull();
+    it("setCompareSpec sets and clears each Compare slot independently", () => {
+      useArchStore.setState({ compareA: null, compareB: null });
+      useArchStore.getState().setCompareSpec("a", fakeSpec);
+      expect(useArchStore.getState().compareA).toBe(fakeSpec);
+      expect(useArchStore.getState().compareB).toBeNull();
+
+      useArchStore.getState().setCompareSpec("b", fakeSpec);
+      expect(useArchStore.getState().compareB).toBe(fakeSpec);
+
+      useArchStore.getState().setCompareSpec("a", null);
+      expect(useArchStore.getState().compareA).toBeNull();
+      expect(useArchStore.getState().compareB).toBe(fakeSpec); // unaffected
     });
   });
 
   describe("reset", () => {
-    it("clears spec / paths, preserves modelInput + appMode, resets modelView to Overview", () => {
+    it("clears spec / paths, preserves modelInput + appMode + Compare slots, resets modelView to Overview", () => {
       useArchStore.setState({
         modelInput: "gpt2",
         spec: fakeSpec,
-        compareSpec: fakeSpec,
+        compareA: fakeSpec,
+        compareB: fakeSpec,
         expansionPath: ["block_1"],
         selectionPath: ["block_1"],
         level: 2,
@@ -251,7 +259,8 @@ describe("archStore", () => {
       expect(s.appMode).toBe("model"); // preserved
       expect(s.modelView).toBe("overview"); // every search lands on Overview
       expect(s.spec).toBeNull();
-      expect(s.compareSpec).toBeNull();
+      expect(s.compareA).toBe(fakeSpec); // preserved — Compare is standalone
+      expect(s.compareB).toBe(fakeSpec); // preserved
       expect(s.expansionPath).toEqual([]);
       expect(s.selectionPath).toEqual([]);
       expect(s.level).toBe(1);

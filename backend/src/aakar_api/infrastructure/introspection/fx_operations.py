@@ -147,23 +147,91 @@ class _OperationTracer:
                 return out
 
         self._model.eval()
-        # Trace on a single device. The model is built on `meta`, but some classes
-        # keep buffers/constants on `cpu`; FakeTensor refuses to mix devices (e.g.
-        # `aten.add` of a meta activation and a cpu buffer — hit on MoE models like
-        # MiniMax). Moving the whole module to meta and defaulting tensor factories
-        # (the dummy input, any constants the forward builds) to meta keeps every
-        # tensor on one device.
+        # Trace on a single device. The model is built on `meta`, but some classes keep
+        # buffers/constants on `cpu`; FakeTensor refuses to mix devices (e.g. `aten.add`
+        # of a meta activation and a cpu buffer — hit on MoE models like MiniMax).
         self._model.to("meta")
-        handles = self._install_hooks()
+        accepted = self._accepted_params()
+
+        # Try input strategies in order and keep the richest result. A clean run (no
+        # exception) wins immediately; otherwise we keep whatever ops were captured
+        # before a forward blew up — so a model that traces 30 of 40 layers still yields
+        # 30 layers of ops instead of nothing. Every strategy is generic: it reads the
+        # model's own `main_input_name` / `dummy_inputs` / forward signature, never a
+        # hardcoded family or id.
+        best: dict[str, list[Operation]] = {}
+        for build_inputs in (self._token_inputs, self._declared_dummy_inputs):
+            self._reset()
+            handles = self._install_hooks()
+            try:
+                with FakeTensorMode(allow_non_fake_inputs=True), torch.device("meta"):
+                    inputs = self._coerce_to_meta(build_inputs(accepted))
+                    if not any(_is_tensor(v) for v in inputs.values()):
+                        continue  # this strategy can't feed the model; try the next one
+                    with torch.no_grad(), _Dispatch():
+                        self._model(**inputs)
+                return self._ops_by_path  # clean trace — the best we can do
+            except Exception:  # noqa: BLE001 — keep the richest partial capture
+                if _total_ops(self._ops_by_path) > _total_ops(best):
+                    best = self._ops_by_path
+            finally:
+                for handle in handles:
+                    handle.remove()
+        return best
+
+    def _accepted_params(self) -> set[str]:
+        import inspect
+
         try:
-            with FakeTensorMode(allow_non_fake_inputs=True), torch.device("meta"):
-                inputs = {"input_ids": torch.zeros(_BATCH_DUMMY, _SEQ_DUMMY, dtype=torch.long)}
-                with torch.no_grad(), _Dispatch():
-                    self._model(**inputs, use_cache=False)
-        finally:
-            for handle in handles:
-                handle.remove()
-        return self._ops_by_path
+            return set(inspect.signature(self._model.forward).parameters)
+        except (TypeError, ValueError):
+            return set()
+
+    def _token_inputs(self, accepted: set[str]) -> dict[str, Any]:
+        """Primary strategy: symbolic `input_ids` of shape (B, S) for token models —
+        gives the nicest `[B, S, …]` shapes. Skipped when the model's main input isn't
+        tokens (e.g. a vision model)."""
+        import torch
+
+        main = getattr(self._model, "main_input_name", "input_ids")
+        if main != "input_ids" and "input_ids" not in accepted:
+            return {}
+        inputs: dict[str, Any] = {
+            "input_ids": torch.zeros(_BATCH_DUMMY, _SEQ_DUMMY, dtype=torch.long)
+        }
+        if "use_cache" in accepted:
+            inputs["use_cache"] = False
+        return inputs
+
+    def _declared_dummy_inputs(self, accepted: set[str]) -> dict[str, Any]:
+        """Fallback strategy: the model's own `dummy_inputs` — transformers builds the
+        right ones per modality (`pixel_values`, `decoder_input_ids`, `input_features`, …).
+        Filtered to the forward signature. Covers vision / seq2seq / audio with no
+        per-family code."""
+        try:
+            declared = dict(getattr(self._model, "dummy_inputs", None) or {})
+        except Exception:  # noqa: BLE001 — defensive: the property can raise on odd configs
+            declared = {}
+        inputs = {k: v for k, v in declared.items() if not accepted or k in accepted}
+        if "use_cache" in accepted:
+            inputs["use_cache"] = False
+        return inputs
+
+    def _coerce_to_meta(self, inputs: dict[str, Any]) -> dict[str, Any]:
+        """Force every input tensor onto `meta` so it matches the (meta) params — some
+        `dummy_inputs` build cpu tensors that would otherwise trip device propagation."""
+        import torch
+
+        return {
+            key: (value.to("meta") if isinstance(value, torch.Tensor) else value)
+            for key, value in inputs.items()
+        }
+
+    def _reset(self) -> None:
+        self._stack = []
+        self._ops_by_path = {}
+        self._producer = {}
+        self._counts = {}
 
     def _install_hooks(self) -> list[Any]:
         handles: list[Any] = []
@@ -190,34 +258,41 @@ class _OperationTracer:
         return post_hook
 
     def _record(self, func: Any, args: tuple, kwargs: dict, out: Any) -> None:
-        primary = _primary_tensor(out)
-        if primary is None:
-            return
-        base = func._overloadpacket.__name__ if hasattr(func, "_overloadpacket") else str(func)
-        if base in _SKIP:
-            return
-
-        self._counts[base] = self._counts.get(base, 0) + 1
-        op_id = f"{base}_{self._counts[base]}"
-
-        inputs: list[str] = []
-        for arg in (*args, *kwargs.values()):
-            producer_id = self._producer.get(id(arg)) if _is_tensor(arg) else None
-            if producer_id is not None and producer_id not in inputs:
-                inputs.append(producer_id)
-        self._producer[id(primary)] = op_id
-
-        scope = self._stack[-1] if self._stack else ""
-        self._ops_by_path.setdefault(scope, []).append(
-            Operation(
-                id=op_id,
-                op=base,
-                label=_LABEL.get(base, base.replace("_", " ").strip()),
-                category=_CATEGORY.get(base, "other"),
-                inputs=inputs,
-                out_shape=self._symbolize(primary.shape),
+        # Wrapped whole: a single op we can't characterize is skipped, never fatal —
+        # recording runs inside the model's forward, so a raise here would abort it.
+        try:
+            primary = _primary_tensor(out)
+            if primary is None:
+                return
+            base = (
+                func._overloadpacket.__name__ if hasattr(func, "_overloadpacket") else str(func)
             )
-        )
+            if base in _SKIP:
+                return
+
+            self._counts[base] = self._counts.get(base, 0) + 1
+            op_id = f"{base}_{self._counts[base]}"
+
+            inputs: list[str] = []
+            for arg in (*args, *kwargs.values()):
+                producer_id = self._producer.get(id(arg)) if _is_tensor(arg) else None
+                if producer_id is not None and producer_id not in inputs:
+                    inputs.append(producer_id)
+            self._producer[id(primary)] = op_id
+
+            scope = self._stack[-1] if self._stack else ""
+            self._ops_by_path.setdefault(scope, []).append(
+                Operation(
+                    id=op_id,
+                    op=base,
+                    label=_LABEL.get(base, base.replace("_", " ").strip()),
+                    category=_CATEGORY.get(base, "other"),
+                    inputs=inputs,
+                    out_shape=self._symbolize(primary.shape),
+                )
+            )
+        except Exception:  # noqa: BLE001 — best-effort per op
+            return
 
     def _symbolize(self, shape: Any) -> str:
         parts: list[str] = []
@@ -230,6 +305,10 @@ class _OperationTracer:
             else:
                 parts.append(str(value))
         return "[" + ", ".join(parts) + "]"
+
+
+def _total_ops(ops: dict[str, list[Operation]]) -> int:
+    return sum(len(value) for value in ops.values())
 
 
 def _primary_tensor(out: Any) -> Any:

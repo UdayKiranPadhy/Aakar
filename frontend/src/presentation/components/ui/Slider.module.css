@@ -1,0 +1,23 @@
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 240px;
+}
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.sliderValue {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}

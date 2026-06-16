@@ -1,0 +1,62 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.card {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+}
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  cursor: pointer;
+  list-style: none;
+}
+.summary::-webkit-details-marker {
+  display: none;
+}
+.title {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.eq {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-accent);
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-hairline-strong);
+}
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.subModel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+}
+.subText {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink);
+  word-break: break-word;
+}
+.muted {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-ink-subtle);
+}

@@ -39,6 +39,16 @@ function pushValue(out: ConfigLeaf[], path: string, value: unknown): void {
   }
 }
 
+/** Render a leaf value for display. Shared by the Config Explorer and Compare diff. */
+export function formatConfigValue(value: ConfigValue): string {
+  if (value === null) return "null";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") {
+    return value.toLocaleString("en-US", { maximumFractionDigits: 20 });
+  }
+  return value;
+}
+
 type GroupDef = Readonly<{ id: string; label: string; test: RegExp }>;
 
 // Order matters: first matching group on the TOP-LEVEL key wins.

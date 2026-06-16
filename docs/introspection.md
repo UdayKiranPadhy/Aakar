@@ -40,12 +40,30 @@ a stack of the module currently executing, so each op is attributed to the inner
 `nn.Module`. That attribution is exact and family-agnostic: a `Linear` reports its `mm`, an
 RMSNorm `pow/mean/rsqrt/mul`, a decoder layer its two residual `add`s, attention its
 Q·Kᵀ / softmax / ·V math (SDPA decomposes, so the softmax is visible even under
-`attn_impl: "sdpa"`).
+`attn_impl: "sdpa"`). MoE models work too — the router and experts report their ops.
 
-**Best-effort.** The whole pass is wrapped so it can never raise — a model that won't trace
-just gets no `operations`, and the module tree renders exactly as before. So unlike the tree
-walk (which works for *every* stock-transformers model), op tracing degrades gracefully: it
-covers the common decoder-LM forward and skips quietly otherwise.
+**Robustness — and it's all generic.** Nothing keys off a model family or id; the tracer reads
+only the model's own `main_input_name` / `dummy_inputs` / forward signature and stable ATen
+op names. Specifically:
+
+- **Single device.** The model is moved to `meta` and the forward runs under `torch.device("meta")`,
+  and inputs are coerced to `meta` — otherwise a cpu buffer added to a meta activation trips
+  FakeTensor's device check (this silently zeroed out every MoE/buffer-heavy model before the fix).
+- **Adaptive inputs.** It first feeds a symbolic `input_ids` of shape `(1, S)` (nicest `[B, S, …]`
+  shapes), then falls back to the model's *own* `dummy_inputs` (transformers builds the right ones
+  per modality — `pixel_values`, `decoder_input_ids`, …). `use_cache` is passed only when the
+  signature accepts it, so encoder-style models don't die on an unexpected kwarg.
+- **Partial capture.** If a forward blows up partway (e.g. unguarded data-dependent control flow,
+  or an op with no meta kernel), the ops captured *before* the failure are kept — a model that
+  traces 30 of 40 layers yields 30 layers of ops, not nothing.
+- **Never fatal.** Per-op recording and the whole pass are wrapped, so a model that can't trace
+  at all just gets no `operations`; the module tree (which works for *every* stock-transformers
+  model) is never affected.
+
+What still won't trace: forwards needing an input the model doesn't declare in `dummy_inputs`,
+ops with no meta kernel (flash-attention-2 kernels, some quantized layers), and unguarded
+value-dependent control flow — all of which now degrade to *partial or empty* ops rather than
+breaking anything.
 
 ## Why introspection, not adapters
 

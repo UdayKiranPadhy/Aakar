@@ -32,6 +32,30 @@
       "port": 5199
     },
     {
+      "name": "compare-verify",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd frontend && VITE_API_URL=http://localhost:8011 /Users/ukpadhy/.nvm/versions/node/v20.19.3/bin/node node_modules/vite/bin/vite.js --port 5175 --strictPort"],
+      "port": 5175
+    },
+    {
+      "name": "wt-web",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/ukpadhy/Personal/Aakar/.claude/worktrees/op-flow/frontend && VITE_API_URL=http://localhost:8001 /Users/ukpadhy/.nvm/versions/node/v20.19.3/bin/node node_modules/vite/bin/vite.js --port 5174 --strictPort"],
+      "port": 5174
+    },
+    {
+      "name": "wt-backend",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "CORS_ORIGINS=http://localhost:5174 /Users/ukpadhy/.local/bin/uv --directory /Users/ukpadhy/Personal/Aakar/backend run uvicorn aakar_api.main:app --host 127.0.0.1 --port 8001"],
+      "port": 8001
+    },
+    {
+      "name": "compare-backend",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "CORS_ORIGINS=http://localhost:5175 /Users/ukpadhy/.local/bin/uv --directory /Users/ukpadhy/Personal/Aakar/backend run uvicorn aakar_api.main:app --host 127.0.0.1 --port 8011"],
+      "port": 8011
+    },
+    {
       "name": "backend",
       "runtimeExecutable": "uv",
       "runtimeArgs": [

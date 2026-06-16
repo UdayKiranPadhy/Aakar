@@ -8,6 +8,7 @@ itself runs under a FakeTensorMode (no real compute).
 from __future__ import annotations
 
 import pytest
+import torch
 import torch.nn as nn
 
 from aakar_api.domain.spec import Node
@@ -124,16 +125,66 @@ async def test_container_has_no_operations(
     assert layers.operations is None
 
 
+def _tiny_ctx() -> WalkContext:
+    return WalkContext(
+        dtype_bytes=4,
+        hidden_size=8,
+        vocab_size=10,
+        num_heads=2,
+        num_kv_heads=2,
+        head_dim=4,
+        intermediate_size=16,
+    )
+
+
 def test_trace_degrades_gracefully_on_untraceable_model() -> None:
     """A model whose forward can't run under the trace yields `{}`, never raises."""
-    ctx = WalkContext(
-        dtype_bytes=4,
-        hidden_size=16,
-        vocab_size=32,
-        num_heads=4,
-        num_kv_heads=4,
-        head_dim=4,
-        intermediate_size=64,
-    )
     # Bare nn.Module.forward raises NotImplementedError when called.
-    assert trace_operations(nn.Module(), config=None, ctx=ctx) == {}
+    assert trace_operations(nn.Module(), config=None, ctx=_tiny_ctx()) == {}
+
+
+class _NoCacheModel(nn.Module):
+    """A token model whose forward has no `use_cache` arg (like an encoder)."""
+
+    main_input_name = "input_ids"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.emb = nn.Embedding(10, 8)
+        self.lin = nn.Linear(8, 8)
+
+    def forward(self, input_ids):  # noqa: ANN001, ANN201
+        return self.lin(self.emb(input_ids))
+
+
+def test_trace_does_not_force_unaccepted_kwargs() -> None:
+    """`use_cache` is only passed when the signature accepts it — otherwise a model
+    with no such arg would die on a TypeError and yield nothing."""
+    ops = trace_operations(_NoCacheModel(), config=None, ctx=_tiny_ctx())
+    assert any(o.op == "embedding" for o in ops.get("emb", []))
+    assert any(o.category == "matmul" for o in ops.get("lin", []))
+
+
+class _PartialModel(nn.Module):
+    """Runs a couple of ops, then hits data-dependent control flow that fails under
+    fake tensors (like a `.item()` an unguarded forward might do)."""
+
+    main_input_name = "input_ids"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.emb = nn.Embedding(10, 8)
+
+    def forward(self, input_ids):  # noqa: ANN001, ANN201
+        x = self.emb(input_ids)
+        if float(x.sum()) > 0:  # forces .item() → raises under FakeTensorMode
+            x = x + 1
+        return x
+
+
+def test_trace_keeps_partial_capture_when_forward_aborts() -> None:
+    """If the forward blows up partway, ops captured before the failure are kept —
+    we don't discard everything."""
+    ops = trace_operations(_PartialModel(), config=None, ctx=_tiny_ctx())
+    # The embedding ran before the data-dependent branch killed the trace.
+    assert any(o.op == "embedding" for o in ops.get("emb", []))

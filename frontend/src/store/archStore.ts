@@ -15,6 +15,7 @@ import { create } from "zustand";
 import type { LoadError } from "../application/loadError";
 import {
   type AppMode,
+  type CompareSlot,
   type ExpansionPath,
   type Level,
   type ModelView,
@@ -46,8 +47,9 @@ function persistToken(token: string | null, remember: boolean): void {
 type State = {
   modelInput: string;
   spec: Spec | null;
-  /** Second model for the Compare view; null otherwise. */
-  compareSpec: Spec | null;
+  /** The two models compared side by side in the Compare view; null when empty. */
+  compareA: Spec | null;
+  compareB: Spec | null;
   loading: boolean;
   error: LoadError | null;
   selectionPath: SelectionPath;
@@ -69,7 +71,7 @@ type State = {
 type Actions = {
   setModelInput(value: string): void;
   setSpec(spec: Spec): void;
-  setCompareSpec(spec: Spec | null): void;
+  setCompareSpec(slot: CompareSlot, spec: Spec | null): void;
   setLoading(loading: boolean): void;
   setError(error: LoadError | null): void;
   selectNode(id: string): void;
@@ -91,7 +93,8 @@ type Actions = {
 const initialState: State = {
   modelInput: "",
   spec: null,
-  compareSpec: null,
+  compareA: null,
+  compareB: null,
   loading: false,
   error: null,
   selectionPath: [],
@@ -114,7 +117,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
 
   setSpec: (spec) => set({ spec, error: null, loading: false }),
 
-  setCompareSpec: (compareSpec) => set({ compareSpec }),
+  setCompareSpec: (slot, spec) =>
+    set(slot === "a" ? { compareA: spec } : { compareB: spec }),
 
   setLoading: (loading) => set({ loading }),
 
@@ -191,6 +195,10 @@ export const useArchStore = create<State & Actions>()((set) => ({
       ...initialState,
       modelInput: s.modelInput,
       appMode: s.appMode,
+      // Compare is a standalone surface: loading a primary model must not wipe
+      // an in-progress side-by-side comparison.
+      compareA: s.compareA,
+      compareB: s.compareB,
       sidebarWidth: s.sidebarWidth,
       detailWidth: s.detailWidth,
       hfToken: s.hfToken,
