@@ -50,6 +50,22 @@
   --color-amber-900: #78350f;
   --color-red-600: #dc2626;
 
+  /* ── Syntax highlighting (source viewer code) ──────────────────────── */
+  /* Token colours for Prism-highlighted source, mapped onto the brand palette
+   * above. Defined as variables so the code viewer tracks the theme like every
+   * other surface: a future dark palette overrides these here alongside the
+   * rest, with nothing code-specific to maintain. */
+  --syntax-comment: var(--color-ink-subtle);
+  --syntax-punctuation: var(--color-ink-muted);
+  --syntax-operator: var(--color-ink-muted);
+  --syntax-keyword: var(--g-purple);
+  --syntax-decorator: var(--g-purple);
+  --syntax-string: var(--g-green);
+  --syntax-constant: var(--g-red); /* numbers + True / False / None */
+  --syntax-function: var(--g-blue-strong);
+  --syntax-class-name: var(--g-blue-strong);
+  --syntax-builtin: var(--g-blue-strong);
+
   /* ── Type ─────────────────────────────────────────────────────────── */
   --font-sans: "Google Sans", "Google Sans Flex", system-ui, -apple-system, sans-serif;
   --font-mono: "Google Sans Code", ui-monospace, SFMono-Regular, monospace;

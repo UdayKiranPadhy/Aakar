@@ -9,7 +9,7 @@ describe("NavBar", () => {
   it("renders the brand and the search input", () => {
     render(<NavBar onSubmit={() => {}} />);
     expect(screen.getByRole("link", { name: /Aakar/ })).toBeInTheDocument();
-    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 
   it("renders the section tabs once a model is loaded", () => {
@@ -23,7 +23,7 @@ describe("NavBar", () => {
   it("hides the tab row on the home view (only the top search bar shows)", () => {
     useArchStore.setState({ appMode: "home" });
     render(<NavBar onSubmit={() => {}} />);
-    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Model" })).not.toBeInTheDocument();
   });
 

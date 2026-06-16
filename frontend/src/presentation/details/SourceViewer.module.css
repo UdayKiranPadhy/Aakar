@@ -46,3 +46,45 @@
   color: var(--color-ink);
   tab-size: 4;
 }
+
+/* Prism token colours. The class names (`token`, `keyword`, …) are global —
+ * Prism emits them — so they're scoped under `.pre` with :global and coloured
+ * from the --syntax-* design tokens (which a future dark theme overrides). */
+.pre :global(.token.comment),
+.pre :global(.token.prolog),
+.pre :global(.token.doctype),
+.pre :global(.token.cdata) {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+.pre :global(.token.punctuation) {
+  color: var(--syntax-punctuation);
+}
+.pre :global(.token.operator) {
+  color: var(--syntax-operator);
+}
+.pre :global(.token.keyword) {
+  color: var(--syntax-keyword);
+}
+.pre :global(.token.decorator),
+.pre :global(.token.annotation) {
+  color: var(--syntax-decorator);
+}
+.pre :global(.token.string),
+.pre :global(.token.char),
+.pre :global(.token.triple-quoted-string) {
+  color: var(--syntax-string);
+}
+.pre :global(.token.number),
+.pre :global(.token.boolean) {
+  color: var(--syntax-constant);
+}
+.pre :global(.token.function) {
+  color: var(--syntax-function);
+}
+.pre :global(.token.class-name) {
+  color: var(--syntax-class-name);
+}
+.pre :global(.token.builtin) {
+  color: var(--syntax-builtin);
+}

@@ -7,6 +7,14 @@ export function formatParamCount(n: number): string {
   return n.toLocaleString();
 }
 
+/** Compact count for downloads/likes: 10154763 → "10.2M", 1234 → "1.2K". */
+export function formatCompact(n: number): string {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return String(n);
+}
+
 /** [4096, 4096] → "4096 × 4096"; [4096] → "4096"; empty → null. */
 export function formatShape(shape: ReadonlyArray<number> | undefined): string | null {
   if (!shape || shape.length === 0) return null;

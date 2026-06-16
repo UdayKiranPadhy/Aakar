@@ -16,7 +16,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     globals: true,
-    include: ["src/**/*.test.{ts,tsx}"],
+    // src/ holds co-located unit tests; tests/ holds cross-cutting guards
+    // (e.g. the case-sensitive-import build check).
+    include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.{ts,tsx}"],
     css: {
       modules: {
         // `non-scoped` returns the source class name unchanged. Lets tests

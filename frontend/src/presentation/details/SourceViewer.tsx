@@ -3,9 +3,10 @@
  * behind a module's `source_url` (only when opened) and shows it in a <pre>.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useSource } from "../../application/useResearch";
+import { highlightToHtml } from "./highlight";
 import styles from "./SourceViewer.module.css";
 
 export function SourceViewer({ url }: { url: string }) {
@@ -28,6 +29,10 @@ export function SourceViewer({ url }: { url: string }) {
 function SourceBody({ url }: { url: string }) {
   // Mounted only while open, so the fetch is lazy.
   const { snippet, loading, error } = useSource(url);
+  const html = useMemo(
+    () => (snippet ? highlightToHtml(snippet.code, snippet.language) : ""),
+    [snippet],
+  );
   if (loading) return <p className={styles.status}>Loading source…</p>;
   if (error) return <p className={styles.error}>{error}</p>;
   if (!snippet) return null;
@@ -37,7 +42,10 @@ function SourceBody({ url }: { url: string }) {
         {snippet.path} · L{snippet.start_line}–{snippet.end_line}
       </figcaption>
       <pre className={styles.pre}>
-        <code>{snippet.code}</code>
+        {/* Prism HTML-escapes the source and emits only <span> token markup;
+            the slice is trusted backend content, so dangerouslySetInnerHTML is
+            safe and lets the browser paint Prism's token classes. */}
+        <code dangerouslySetInnerHTML={{ __html: html }} />
       </pre>
     </figure>
   );

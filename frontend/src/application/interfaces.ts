@@ -6,6 +6,7 @@
  */
 
 import type { ModelInfo } from "../domain/modelInfo";
+import type { ModelSummary } from "../domain/modelSearch";
 import type { Paper, RepoInfo, SourceSnippet } from "../domain/research";
 import type { Spec } from "../domain/spec";
 import type { TrendingModel } from "../domain/trending";
@@ -20,6 +21,18 @@ export interface ModelInfoRepository {
   fetchInfo(modelId: string): Promise<ModelInfo>;
   /** Model-card README markdown, or null when the repo has no card. */
   fetchReadme(modelId: string): Promise<string | null>;
+}
+
+export interface ModelSearchRepository {
+  /**
+   * Live model search straight from the HuggingFace Hub — the one repository
+   * that talks to the Hub directly from the browser, so search-bar autocomplete
+   * never hits our backend. `signal` lets callers abort a superseded request.
+   */
+  search(
+    query: string,
+    options?: { limit?: number; signal?: AbortSignal },
+  ): Promise<ReadonlyArray<ModelSummary>>;
 }
 
 export interface TrendingRepository {
