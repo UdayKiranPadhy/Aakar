@@ -5,7 +5,7 @@
   place-items: center;
   border-radius: var(--radius-block);
   border: 1px solid var(--color-hairline);
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--color-bg);
   box-shadow: var(--shadow-block);
   padding: 10px;
   text-align: center;
@@ -61,21 +61,21 @@
 }
 
 .tone_residual .symbol {
-  background: #e8f0fe;
-  color: #1a73e8;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
 }
 
 .tone_attention .symbol {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--g-blue-subtle);
+  color: var(--g-blue-strong);
 }
 
 .tone_mlp .symbol {
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--g-green-subtle);
+  color: var(--g-green);
 }
 
 .tone_io .symbol {
-  background: #f3f4f6;
+  background: var(--color-canvas-hover);
   color: var(--color-ink-muted);
 }

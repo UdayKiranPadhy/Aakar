@@ -23,6 +23,7 @@ import {
   levelFromExpansion,
 } from "../domain/navigation";
 import type { Node, Spec } from "../domain/spec";
+import type { ThemePreference } from "../domain/theme";
 
 // Optional HF read token for gated models. Persisted to localStorage only when
 // the user opts in ("remember"); otherwise it lives in memory for the session.
@@ -39,6 +40,29 @@ function persistToken(token: string | null, remember: boolean): void {
   try {
     if (remember && token) localStorage.setItem(HF_TOKEN_KEY, token);
     else localStorage.removeItem(HF_TOKEN_KEY);
+  } catch {
+    /* storage unavailable — keep the in-memory value only */
+  }
+}
+
+// Colour-theme preference. Persisted so a returning visitor keeps their choice;
+// defaults to "system" (follow the OS) on a first visit. Same storage guard as
+// the HF token. The boot script in index.html reads this same key to set the
+// theme before first paint (avoiding a flash); the store and that script must
+// stay in agreement on the key.
+const THEME_KEY = "aakar.theme";
+function readStoredTheme(): ThemePreference {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  } catch {
+    /* storage unavailable — fall through to the default */
+  }
+  return "system";
+}
+function persistTheme(preference: ThemePreference): void {
+  try {
+    localStorage.setItem(THEME_KEY, preference);
   } catch {
     /* storage unavailable — keep the in-memory value only */
   }
@@ -85,6 +109,8 @@ type State = {
    * shows its explanation. Takes precedence over the path-based selection.
    */
   selectedFlowNode: Node | null;
+  /** Colour-theme preference; "system" follows the OS. Resolved in useTheme. */
+  themePreference: ThemePreference;
 };
 
 type Actions = {
@@ -115,6 +141,8 @@ type Actions = {
   setOpHideShapeOps(hide: boolean): void;
   /** Select a synthetic node (op/semantic glyph) to explain in the detail panel. */
   selectFlowNode(node: Node): void;
+  /** Set the colour-theme preference; persists it to localStorage. */
+  setThemePreference(preference: ThemePreference): void;
   reset(): void;
 };
 
@@ -140,6 +168,7 @@ const initialState: State = {
   opFlowPath: null,
   opHideShapeOps: true,
   selectedFlowNode: null,
+  themePreference: readStoredTheme(),
 };
 
 export const useArchStore = create<State & Actions>()((set) => ({
@@ -241,6 +270,11 @@ export const useArchStore = create<State & Actions>()((set) => ({
   selectFlowNode: (node) =>
     set({ selectedFlowNode: node, detailOpen: true, detailCollapsed: false }),
 
+  setThemePreference: (preference) => {
+    persistTheme(preference);
+    set({ themePreference: preference });
+  },
+
   reset: () =>
     set((s) => ({
       ...initialState,
@@ -253,5 +287,6 @@ export const useArchStore = create<State & Actions>()((set) => ({
       sidebarWidth: s.sidebarWidth,
       detailWidth: s.detailWidth,
       hfToken: s.hfToken,
+      themePreference: s.themePreference,
     })),
 }));

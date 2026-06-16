@@ -1,20 +1,26 @@
 .linearCard {
-  background: linear-gradient(135deg, var(--color-bg) 0%, rgba(191, 219, 254, 0.08) 100%);
-  border-left: 4px solid #bfdbfe !important;
+  /* Blue tone, derived so both themes adapt (see EmbeddingNode for the scheme). */
+  --tone: var(--color-accent);
+  --tone-edge: color-mix(in srgb, var(--tone) 42%, var(--color-bg));
+  --tone-fill: color-mix(in srgb, var(--tone) 12%, transparent);
+  --tone-chip: color-mix(in srgb, var(--tone) 18%, transparent);
+  --tone-ink: color-mix(in srgb, var(--tone) 70%, var(--color-ink));
+  background: linear-gradient(135deg, var(--color-bg) 0%, var(--tone-fill) 100%);
+  border-left: 4px solid var(--tone-edge) !important;
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .linearCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08), var(--shadow-block);
-  border-color: #bfdbfe;
+  border-color: var(--tone-edge);
 }
 
 .visualPattern {
   display: flex;
   flex-direction: column;
   margin-bottom: 10px;
-  background: rgba(191, 219, 254, 0.12);
+  background: var(--tone-fill);
   border-radius: 6px;
   padding: 8px 10px;
 }
@@ -35,17 +41,17 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #bfdbfe;
+  background: var(--tone-edge);
 }
 
 .dotActive {
-  background: #3b82f6;
+  background: var(--tone);
 }
 
 .mulSign {
   font-family: var(--font-sans);
   font-size: 8px;
-  color: #3b82f6;
+  color: var(--tone);
   font-weight: bold;
   margin: 0 2px;
 }
@@ -53,8 +59,13 @@
 .vectorBlock {
   width: 4px;
   height: 12px;
-  background: #3b82f6;
+  background: var(--tone);
   border-radius: 1px;
+}
+
+/* The "= result" block — a deeper shade than the operands. */
+.vectorBlockResult {
+  background: var(--tone-ink);
 }
 
 .titleContainer {
@@ -71,8 +82,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 1.5px 5px;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--tone-chip);
+  color: var(--tone-ink);
   border-radius: 4px;
   white-space: nowrap;
 }
@@ -88,7 +99,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: rgba(248, 250, 252, 0.8);
+  background: var(--color-canvas);
   border: 1px solid var(--color-hairline);
   border-radius: 4px;
   padding: 4px 6px;

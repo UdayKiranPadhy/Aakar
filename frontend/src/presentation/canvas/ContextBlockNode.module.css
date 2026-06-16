@@ -18,12 +18,12 @@
 
 .card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.18);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-accent) 18%, transparent);
 }
 
 .card:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.32);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 32%, transparent);
 }
 
 /* Speech-bubble tail. Two stacked pseudo-elements share each direction —

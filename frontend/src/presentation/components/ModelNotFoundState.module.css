@@ -111,16 +111,16 @@
   flex-shrink: 0;
 }
 .tipIcon[data-tone="blue"] {
-  color: #1a73e8;
+  color: var(--color-accent);
 }
 .tipIcon[data-tone="green"] {
-  color: #34a853;
+  color: var(--g-green);
 }
 .tipIcon[data-tone="yellow"] {
-  color: #f9ab00;
+  color: var(--g-yellow-ink);
 }
 .tipIcon[data-tone="purple"] {
-  color: #a142f4;
+  color: var(--g-purple);
 }
 /* Inline mono token inside a tip (e.g. an org namespace); flows with the text. */
 .tipCode {
@@ -207,16 +207,16 @@
   height: 38px;
   flex-shrink: 0;
   border-radius: 11px;
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .chipTile[data-tone="blue"] {
-  background: #1a73e8;
+  background: var(--color-accent);
 }
 .chipTile[data-tone="green"] {
-  background: #34a853;
+  background: var(--g-green);
 }
 .chipTile[data-tone="yellow"] {
-  background: #f9ab00;
+  background: var(--g-yellow-ink);
 }
 .chipLines {
   display: flex;
@@ -247,7 +247,7 @@
   right: 0;
   width: 42%;
   height: 48%;
-  background: #fefefe;
+  background: var(--color-bg);
 }
 .notFoundPill {
   position: absolute;
@@ -268,8 +268,8 @@
   width: 20px;
   height: 20px;
   border-radius: var(--radius-pill);
-  background: #ea4335;
-  color: #fff;
+  background: var(--g-red);
+  color: var(--color-on-accent);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;

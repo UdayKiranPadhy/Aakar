@@ -33,11 +33,11 @@
   border-left: 3px solid var(--cat);
 }
 .input {
-  border: 2px solid #34a853; /* Google Green — predecessor */
+  border: 2px solid var(--g-green); /* predecessor */
   border-left: 3px solid var(--cat);
 }
 .output {
-  border: 2px solid #fbbc04; /* Google Yellow — successor */
+  border: 2px solid var(--g-yellow); /* successor */
   border-left: 3px solid var(--cat);
 }
 

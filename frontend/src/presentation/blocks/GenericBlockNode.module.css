@@ -33,16 +33,16 @@
  * this one is a predecessor (input, green) or successor (output, amber). Pairs
  * with the recoloured edges in edges.ts. */
 .cardInput {
-  border: 2px solid #34a853; /* Google Green */
+  border: 2px solid var(--g-green);
 }
 .cardInput:hover {
-  border-color: #34a853;
+  border-color: var(--g-green);
 }
 .cardOutput {
-  border: 2px solid #fbbc04; /* Google Yellow */
+  border: 2px solid var(--g-yellow);
 }
 .cardOutput:hover {
-  border-color: #fbbc04;
+  border-color: var(--g-yellow);
 }
 
 .body {
@@ -84,17 +84,17 @@
 }
 
 .tone_attention {
-  border-color: #bfdbfe;
+  border-color: color-mix(in srgb, var(--viz-attention) 40%, var(--color-bg));
 }
 .tone_mlp {
-  border-color: #bbf7d0;
+  border-color: color-mix(in srgb, var(--viz-mlp) 40%, var(--color-bg));
 }
 .tone_norm {
-  border-color: #e9d5ff;
+  border-color: color-mix(in srgb, var(--g-purple) 40%, var(--color-bg));
 }
 .tone_embedding,
 .tone_matrix {
-  border-color: #bae6fd;
+  border-color: color-mix(in srgb, var(--viz-io) 40%, var(--color-bg));
 }
 
 .title {

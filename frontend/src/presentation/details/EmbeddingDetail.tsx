@@ -53,8 +53,8 @@ export function EmbeddingDetail({ node, onExpand, onClose }: DetailPanelProps) {
 
       <div className={styles.body}>
         {/* Educational Section */}
-        <section className={styles.section} style={{ borderLeft: "4px solid #bae6fd", paddingLeft: "12px" }}>
-          <h3 className={styles.sectionTitle} style={{ color: "#0369a1" }}>Concept & Education</h3>
+        <section className={styles.section} style={{ borderLeft: "4px solid color-mix(in srgb, var(--viz-io) 42%, var(--color-bg))", paddingLeft: "12px" }}>
+          <h3 className={styles.sectionTitle} style={{ color: "color-mix(in srgb, var(--viz-io) 70%, var(--color-ink))" }}>Concept & Education</h3>
           <div className={styles.kvValue} style={{ fontWeight: "bold", marginBottom: "8px" }}>
             {description}
           </div>

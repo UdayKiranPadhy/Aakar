@@ -44,12 +44,12 @@ export function ResidualEdge({
             style={{
               position: "absolute",
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              background: "rgba(255, 255, 255, 0.92)",
+              background: "var(--color-bg)",
               padding: "2px 8px",
               borderRadius: 4,
               fontSize: 11,
               fontFamily: "var(--font-mono)",
-              color: "#1a73e8",
+              color: "var(--color-accent)",
               pointerEvents: "all",
             }}
           >

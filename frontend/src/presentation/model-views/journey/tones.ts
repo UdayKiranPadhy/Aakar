@@ -20,14 +20,17 @@ export const KIND_TONE: Record<JourneyStageKind, BlockVisualTone> = {
   add: "residual",
 };
 
+// Values are CSS variables (the same --viz-* tokens the rail CSS uses), so the
+// JS-driven tones — the pulse `--tone` and the legend swatch — track the theme
+// too. Both consumers use these only as CSS values, where var() resolves.
 export const TONE_COLOR: Record<BlockVisualTone, string> = {
-  io: "#0891b2",
-  embedding: "#7c3aed",
-  attention: "#1a73e8",
-  norm: "#64748b",
-  mlp: "#16a34a",
-  residual: "#f59e0b",
-  matrix: "#4f46e5",
+  io: "var(--viz-io)",
+  embedding: "var(--viz-embedding)",
+  attention: "var(--viz-attention)",
+  norm: "var(--viz-norm)",
+  mlp: "var(--viz-mlp)",
+  residual: "var(--viz-residual)",
+  matrix: "var(--viz-matrix)",
 };
 
 export function toneColor(kind: JourneyStageKind): string {

@@ -59,8 +59,8 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
 
       <div className={styles.body}>
         {/* Educational Section */}
-        <section className={styles.section} style={{ borderLeft: "4px solid #bfdbfe", paddingLeft: "12px" }}>
-          <h3 className={styles.sectionTitle} style={{ color: "#1d4ed8" }}>Concept & Education</h3>
+        <section className={styles.section} style={{ borderLeft: "4px solid color-mix(in srgb, var(--color-accent) 42%, var(--color-bg))", paddingLeft: "12px" }}>
+          <h3 className={styles.sectionTitle} style={{ color: "color-mix(in srgb, var(--color-accent) 70%, var(--color-ink))" }}>Concept & Education</h3>
           <div className={styles.kvValue} style={{ fontWeight: "bold", marginBottom: "8px" }}>
             {description}
           </div>

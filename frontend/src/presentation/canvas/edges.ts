@@ -21,14 +21,16 @@ import { MarkerType, type Edge } from "@xyflow/react";
 
 import type { Node as SpecNode } from "../../domain/spec";
 
+// CSS-variable values: React Flow applies edge `style.stroke` and marker colours
+// via inline style, where var() resolves — so edges track the theme.
 export const HIGHLIGHT_COLORS = {
-  selected: "#1a73e8", // Google Blue — current accent
-  input: "#34a853", // Google Green — predecessor (feeds the selected node)
-  output: "#fbbc04", // Google Yellow/Amber — successor (selected node feeds it)
+  selected: "var(--color-accent)", // current accent (also the selected outline)
+  input: "var(--g-green)", // predecessor (feeds the selected node)
+  output: "var(--g-yellow)", // successor (selected node feeds it)
 } as const;
 
 const SEQUENTIAL_STYLE = {
-  stroke: "#9ca3af",
+  stroke: "var(--color-edge)",
   strokeWidth: 1.5,
   // `1 6` = 1px dash + 6px gap → with round caps the dash becomes a circle,
   // giving evenly-spaced dots along the curve.

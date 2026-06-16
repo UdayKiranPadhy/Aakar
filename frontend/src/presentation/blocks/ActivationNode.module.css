@@ -31,16 +31,16 @@
 }
 
 .pillInput {
-  border: 2px solid #34a853;
+  border: 2px solid var(--g-green);
 }
 .pillInput:hover {
-  border-color: #34a853;
+  border-color: var(--g-green);
 }
 .pillOutput {
-  border: 2px solid #fbbc04;
+  border: 2px solid var(--g-yellow);
 }
 .pillOutput:hover {
-  border-color: #fbbc04;
+  border-color: var(--g-yellow);
 }
 
 .glyph {

@@ -93,7 +93,7 @@
   font-weight: var(--weight-bold);
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .tag_changed {
   background: var(--color-accent);

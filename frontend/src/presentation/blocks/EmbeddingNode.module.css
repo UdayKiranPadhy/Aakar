@@ -1,20 +1,27 @@
 .embeddingCard {
-  background: linear-gradient(135deg, var(--color-bg) 0%, rgba(186, 230, 253, 0.08) 100%);
-  border-left: 4px solid #bae6fd !important;
+  /* Cyan tone, derived so both themes adapt: --color-bg / --color-ink flip
+   * with the theme, so the mixes below recolour automatically. */
+  --tone: var(--viz-io);
+  --tone-edge: color-mix(in srgb, var(--tone) 42%, var(--color-bg));
+  --tone-fill: color-mix(in srgb, var(--tone) 12%, transparent);
+  --tone-chip: color-mix(in srgb, var(--tone) 18%, transparent);
+  --tone-ink: color-mix(in srgb, var(--tone) 68%, var(--color-ink));
+  background: linear-gradient(135deg, var(--color-bg) 0%, var(--tone-fill) 100%);
+  border-left: 4px solid var(--tone-edge) !important;
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .embeddingCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08), var(--shadow-block);
-  border-color: #bae6fd;
+  border-color: var(--tone-edge);
 }
 
 .visualPattern {
   display: flex;
   flex-direction: column;
   margin-bottom: 10px;
-  background: rgba(186, 230, 253, 0.12);
+  background: var(--tone-fill);
   border-radius: 6px;
   padding: 8px 10px;
 }
@@ -30,22 +37,22 @@
   font-size: 9px;
   font-weight: var(--weight-medium);
   padding: 2px 4px;
-  background: #bae6fd;
-  color: #0369a1;
+  background: var(--tone-edge);
+  color: var(--tone-ink);
   border-radius: 3px;
 }
 
 .arrow {
   font-family: var(--font-sans);
   font-size: 10px;
-  color: #0369a1;
+  color: var(--tone-ink);
   opacity: 0.7;
 }
 
 .vectorBar {
   height: 6px;
   width: 24px;
-  background: #bae6fd;
+  background: var(--tone-edge);
   border-radius: 1.5px;
 }
 
@@ -63,8 +70,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 1.5px 5px;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--tone-chip);
+  color: var(--tone-ink);
   border-radius: 4px;
   white-space: nowrap;
 }
@@ -80,7 +87,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: rgba(248, 250, 252, 0.8);
+  background: var(--color-canvas);
   border: 1px solid var(--color-hairline);
   border-radius: 4px;
   padding: 4px 6px;

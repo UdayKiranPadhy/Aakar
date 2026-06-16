@@ -63,7 +63,7 @@ export function LinearNode({
             <span className={styles.mulSign}>×</span>
             <div className={styles.vectorBlock} />
             <span className={styles.mulSign}>=</span>
-            <div className={styles.vectorBlock} style={{ backgroundColor: "#1d4ed8" }} />
+            <div className={clsx(styles.vectorBlock, styles.vectorBlockResult)} />
           </div>
         </div>
 

@@ -1,0 +1,10 @@
+.toggle {
+  width: 34px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.toggle svg {
+  width: 18px;
+  height: 18px;
+}

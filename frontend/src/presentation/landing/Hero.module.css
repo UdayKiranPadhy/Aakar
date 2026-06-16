@@ -63,7 +63,7 @@
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: var(--weight-medium);
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--color-accent);
   box-shadow: var(--shadow-block);
   transition:
@@ -72,7 +72,7 @@
 }
 .enterButton:hover {
   background: var(--color-accent-hover);
-  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
 .enterButton:focus-visible {
   outline: none;

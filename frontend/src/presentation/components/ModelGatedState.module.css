@@ -49,8 +49,8 @@
 }
 .input:focus {
   outline: none;
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
 }
 
 .reveal {
@@ -70,7 +70,7 @@
 }
 .reveal:hover {
   color: var(--color-ink);
-  background: rgba(60, 64, 67, 0.08);
+  background: color-mix(in srgb, var(--color-ink-muted) 8%, transparent);
 }
 .reveal svg {
   width: 17px;
@@ -90,7 +90,7 @@
 .remember input {
   width: 15px;
   height: 15px;
-  accent-color: #1a73e8;
+  accent-color: var(--color-accent);
   cursor: pointer;
 }
 .info {
@@ -111,14 +111,14 @@
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: var(--weight-medium);
-  color: #fff;
-  background: #1a73e8;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
   border: none;
   border-radius: 10px;
   cursor: pointer;
 }
 .submit:hover {
-  background: #1666c8;
+  background: var(--color-accent-hover);
 }
 .submit:disabled {
   opacity: 0.5;
@@ -156,7 +156,7 @@
   cursor: pointer;
 }
 .altRow:hover {
-  background: rgba(60, 64, 67, 0.05);
+  background: color-mix(in srgb, var(--color-ink-muted) 5%, transparent);
   border-color: var(--color-hairline);
   color: var(--color-ink);
 }
@@ -167,10 +167,10 @@
   flex-shrink: 0;
 }
 .altIcon[data-tone="purple"] {
-  color: #a142f4;
+  color: var(--g-purple);
 }
 .altIcon[data-tone="yellow"] {
-  color: #f9ab00;
+  color: var(--g-yellow-ink);
 }
 .altText {
   flex: 1;

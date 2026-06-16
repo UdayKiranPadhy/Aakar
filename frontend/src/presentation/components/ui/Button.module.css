@@ -25,7 +25,7 @@
 
 .primary {
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 .primary:not(:disabled):hover {
   background: var(--color-accent-hover);

@@ -105,6 +105,11 @@
   min-width: 0;
   align-items: center;
 }
+/* Right spacer: push its contents (the theme toggle) to the edge so the search
+ * pill stays centred. */
+.sideEnd {
+  justify-content: flex-end;
+}
 
 .searchSlot {
   display: flex;

@@ -269,4 +269,18 @@ describe("archStore", () => {
       expect(s.error).toBeNull();
     });
   });
+
+  describe("setThemePreference", () => {
+    it("updates the preference and persists it to localStorage", () => {
+      useArchStore.getState().setThemePreference("dark");
+      expect(useArchStore.getState().themePreference).toBe("dark");
+      expect(localStorage.getItem("aakar.theme")).toBe("dark");
+    });
+
+    it("is preserved across reset (like the HF token)", () => {
+      useArchStore.getState().setThemePreference("light");
+      useArchStore.getState().reset();
+      expect(useArchStore.getState().themePreference).toBe("light");
+    });
+  });
 });
