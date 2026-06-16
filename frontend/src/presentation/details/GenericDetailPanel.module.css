@@ -52,7 +52,12 @@
 
 .body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  /* Keep wheel/touch scrolling inside the panel — without this, scrolling past
+   * the panel's top/bottom (or out of a nested scroller like the operations
+   * list) chains to the canvas/page behind it. */
+  overscroll-behavior: contain;
   padding: 16px 20px;
 }
 

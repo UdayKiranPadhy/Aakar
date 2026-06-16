@@ -57,6 +57,7 @@ export function DetailPanel() {
     <aside
       className={clsx(styles.dock, resizing && styles.resizing)}
       style={{ width }}
+      data-scroll-ignore
     >
       <ResizeHandle
         width={width}

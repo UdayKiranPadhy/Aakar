@@ -26,9 +26,9 @@ const DELTA_THRESHOLD = 6; // ignore sub-pixel jitter / trackpad rubber-banding
 
 export function useHideOnScroll(
   el: HTMLElement | null,
-  options: { capture?: boolean; resetKey?: unknown } = {},
+  options: { capture?: boolean; resetKey?: unknown; ignoreSelector?: string } = {},
 ): boolean {
-  const { capture = false, resetKey } = options;
+  const { capture = false, resetKey, ignoreSelector } = options;
   const [hidden, setHidden] = useState(false);
   const lastY = useRef(0);
 
@@ -42,6 +42,10 @@ export function useHideOnScroll(
       // In capture mode the scroll originates from a descendant scroller, so
       // read its position from the event target; otherwise `el` is the scroller.
       const scroller = capture ? (e.target as HTMLElement | null) : el;
+      // Side chrome (e.g. the detail panel dock) scrolls independently of the
+      // page; its scroll must not drive nav headroom. Such scrollers opt out
+      // via `ignoreSelector`.
+      if (ignoreSelector && scroller?.closest?.(ignoreSelector)) return;
       const y = scroller?.scrollTop ?? 0;
       const delta = y - lastY.current;
 
@@ -58,7 +62,7 @@ export function useHideOnScroll(
 
     el.addEventListener("scroll", onScroll, { passive: true, capture });
     return () => el.removeEventListener("scroll", onScroll, { capture });
-  }, [el, capture, resetKey]);
+  }, [el, capture, resetKey, ignoreSelector]);
 
   return hidden;
 }

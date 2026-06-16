@@ -37,6 +37,8 @@
   list-style: none;
   max-height: 360px;
   overflow-y: auto;
+  /* Don't let scrolling this capped list chain out to the panel body / canvas. */
+  overscroll-behavior: contain;
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-md);
 }

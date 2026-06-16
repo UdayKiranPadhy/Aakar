@@ -75,7 +75,13 @@ export function App() {
   // stable `.content` wrapper in the capture phase and re-arm on view change.
   const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
   const setContentRef = useCallback((el: HTMLElement | null) => setContentEl(el), []);
-  const navCompact = useHideOnScroll(contentEl, { capture: true, resetKey: modelView });
+  // `[data-scroll-ignore]` opts the detail panel dock out: scrolling that side
+  // panel must not compact the nav (it isn't the view's main content scroll).
+  const navCompact = useHideOnScroll(contentEl, {
+    capture: true,
+    resetKey: modelView,
+    ignoreSelector: "[data-scroll-ignore]",
+  });
 
   return (
     <div className={styles.root}>
