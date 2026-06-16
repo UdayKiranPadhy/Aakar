@@ -19,6 +19,9 @@ dependencies = [
     "safetensors==0.7.0",
     "huggingface-hub==1.16.1",
     "lagom==2.7.7",
+    "redis==8.0.0",
+    "certifi==2026.05.20",
+    "python-dotenv==1.2.2",
 ]
 
 # On Linux (Docker), torch defaults to CUDA wheels (~3 GB). Pin to the CPU

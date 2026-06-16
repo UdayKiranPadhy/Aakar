@@ -8,10 +8,12 @@ from aakar_api.infrastructure.hub_cache import InMemoryHubCache
 from aakar_api.infrastructure.hub_client import HfHubClient
 from aakar_api.infrastructure.openalex_client import OpenAlexClient
 from aakar_api.infrastructure.paper_cache import InMemoryPaperCache
+from aakar_api.infrastructure.redis_spec_cache import RedisSpecCache
 from aakar_api.infrastructure.sandbox import HubSnapshotFetcher, SubprocessSandboxRunner
 from aakar_api.infrastructure.sandboxed_introspector import SandboxedIntrospector
 from aakar_api.infrastructure.semantic_scholar_client import SemanticScholarClient
 from aakar_api.infrastructure.spec_cache import DiskSpecCache
+from aakar_api.infrastructure.tiered_spec_cache import TieredSpecCache
 from aakar_api.infrastructure.transformers_introspector import TransformersIntrospector
 
 __all__ = [
@@ -25,8 +27,10 @@ __all__ = [
     "InMemoryHubCache",
     "InMemoryPaperCache",
     "OpenAlexClient",
+    "RedisSpecCache",
     "SandboxedIntrospector",
     "SemanticScholarClient",
     "SubprocessSandboxRunner",
+    "TieredSpecCache",
     "TransformersIntrospector",
 ]

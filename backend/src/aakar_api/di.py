@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
+import certifi
+import redis.asyncio as aioredis
+from dotenv import load_dotenv
 from lagom import Container, Singleton
 from lagom.integrations.fast_api import FastApiIntegration
 
@@ -12,6 +16,7 @@ from aakar_api.application import (
     PaperService,
     RepoService,
     SourceService,
+    SpecCache,
 )
 from aakar_api.infrastructure import (
     ArxivApiClient,
@@ -24,15 +29,22 @@ from aakar_api.infrastructure import (
     InMemoryHubCache,
     InMemoryPaperCache,
     OpenAlexClient,
+    RedisSpecCache,
     SandboxedIntrospector,
     SemanticScholarClient,
     SubprocessSandboxRunner,
+    TieredSpecCache,
     TransformersIntrospector,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_CACHE_ROOT = _REPO_ROOT / ".cache" / "specs"
 _SANDBOX_HF_CACHE = _REPO_ROOT / ".cache" / "sandbox-hf"
+
+# Make backend/.env authoritative for the os.environ reads below (REDIS_URL,
+# AAKAR_ALLOW_REMOTE_CODE, HF/CORS, …). override=False ⇒ real env still wins, so
+# deploy-time config takes precedence; a missing .env file is a silent no-op.
+load_dotenv(_REPO_ROOT / ".env")
 
 
 def _allow_remote_code() -> bool:
@@ -60,6 +72,45 @@ def _build_introspector(c: Container) -> FallbackIntrospector:
     )
 
 
+def _redis_client(url: str) -> aioredis.Redis:
+    """Pooled async Redis client with tight timeouts.
+
+    Short timeouts are deliberate: a slow/unreachable Redis must fail *fast* so the
+    lookup falls open to disk/introspection instead of adding latency. For TLS
+    (`rediss://`, e.g. Upstash) we verify the server cert against certifi's CA
+    bundle, so the connection doesn't depend on the OS trust store being present
+    (it isn't for some Python builds and slim container images).
+    """
+    options: dict[str, Any] = {
+        "socket_timeout": 1.0,
+        "socket_connect_timeout": 2.0,
+        "max_connections": 16,
+    }
+    if url.startswith("rediss://"):
+        options["ssl_ca_certs"] = certifi.where()
+    return aioredis.from_url(url, **options)
+
+
+def _build_spec_cache(c: Container) -> SpecCache:
+    """Disk cache alone, or local disk in front of a shared Redis tier.
+
+    No `REDIS_URL` (local dev, tests, CI) ⇒ exactly today's disk-only behavior.
+    With one set, reads hit local disk first and fall through to Redis (which
+    survives redeploys and is shared across instances); writes go to both.
+    """
+    disk = c[DiskSpecCache]
+    url = os.environ.get("REDIS_URL", "").strip()
+    if not url:
+        return disk
+    ttl = os.environ.get("REDIS_SPEC_TTL_SECONDS")
+    redis_cache = (
+        RedisSpecCache(_redis_client(url), ttl_seconds=int(ttl))
+        if ttl
+        else RedisSpecCache(_redis_client(url))
+    )
+    return TieredSpecCache(primary=disk, secondary=redis_cache)
+
+
 container = Container()
 
 container[TransformersIntrospector] = Singleton(lambda c: TransformersIntrospector())
@@ -80,7 +131,7 @@ container[FallbackCitationClient] = Singleton(
 )
 
 container[ArchitectureService] = Singleton(
-    lambda c: ArchitectureService(c[FallbackIntrospector], c[DiskSpecCache])
+    lambda c: ArchitectureService(c[FallbackIntrospector], _build_spec_cache(c))
 )
 container[HubService] = Singleton(
     lambda c: HubService(c[HfHubClient], c[InMemoryHubCache])
