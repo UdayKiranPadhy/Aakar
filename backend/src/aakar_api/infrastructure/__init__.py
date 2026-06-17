@@ -14,7 +14,12 @@ from aakar_api.infrastructure.sandboxed_introspector import SandboxedIntrospecto
 from aakar_api.infrastructure.semantic_scholar_client import SemanticScholarClient
 from aakar_api.infrastructure.spec_cache import DiskSpecCache
 from aakar_api.infrastructure.tiered_spec_cache import TieredSpecCache
-from aakar_api.infrastructure.transformers_introspector import TransformersIntrospector
+
+# TransformersIntrospector is deliberately NOT re-exported here: importing it pulls in
+# torch + transformers, and this package is imported at app startup via the DI root.
+# The root imports it lazily instead (see di._build_introspector), so starting the API
+# stays torch-free and the Hub-metadata endpoints don't wait on the ML stack. Import it
+# directly from `aakar_api.infrastructure.transformers_introspector` where needed.
 
 __all__ = [
     "ArxivApiClient",
@@ -32,5 +37,4 @@ __all__ = [
     "SemanticScholarClient",
     "SubprocessSandboxRunner",
     "TieredSpecCache",
-    "TransformersIntrospector",
 ]

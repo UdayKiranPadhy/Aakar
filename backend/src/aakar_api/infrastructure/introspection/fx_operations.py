@@ -29,12 +29,13 @@ module tree is never affected.
 
 from __future__ import annotations
 
-from typing import Any
-
-from torch import nn
+from typing import TYPE_CHECKING, Any
 
 from aakar_api.domain.spec import Operation
 from aakar_api.infrastructure.introspection.walk_context import WalkContext
+
+if TYPE_CHECKING:
+    from torch import nn
 
 # Distinctive trace dimensions, symbolized back to "B"/"S" in `out_shape`. The
 # sequence length is an odd prime so it can't collide with the power-of-two-ish

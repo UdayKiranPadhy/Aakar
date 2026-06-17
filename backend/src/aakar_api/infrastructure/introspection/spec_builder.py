@@ -9,9 +9,7 @@ sandbox) — the assembly below is shared.
 
 from __future__ import annotations
 
-from typing import Any
-
-from torch import nn
+from typing import TYPE_CHECKING, Any
 
 from aakar_api.domain.spec import Spec
 from aakar_api.infrastructure.introspection.fx_operations import trace_operations
@@ -26,6 +24,9 @@ from aakar_api.infrastructure.introspection.walk_context import (
     clean_dtype,
     walk_context_from_config,
 )
+
+if TYPE_CHECKING:
+    from torch import nn
 
 
 def build_spec(

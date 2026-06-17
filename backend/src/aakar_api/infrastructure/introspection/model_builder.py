@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, cast
-
-from torch import nn
+from typing import TYPE_CHECKING, Any, cast
 
 from aakar_api.domain.exceptions import UnsupportedArchitecture
 
-ModelFactory = Callable[[Any], nn.Module]
+if TYPE_CHECKING:
+    from torch import nn
+
+ModelFactory = Callable[[Any], "nn.Module"]
 
 
 def resolve_model_class(config: Any, model_id: str) -> tuple[str, ModelFactory]:

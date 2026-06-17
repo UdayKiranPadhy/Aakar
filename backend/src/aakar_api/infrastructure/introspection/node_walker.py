@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from torch import nn
+from typing import TYPE_CHECKING
 
 from aakar_api.domain.spec import Node, Operation
 from aakar_api.infrastructure.introspection.naming import humanize, snake_case
@@ -18,6 +18,9 @@ from aakar_api.infrastructure.introspection.node_metadata import (
 )
 from aakar_api.infrastructure.introspection.role import is_decoder_layer, role
 from aakar_api.infrastructure.introspection.walk_context import WalkContext
+
+if TYPE_CHECKING:
+    from torch import nn
 
 
 def walk_module_tree(

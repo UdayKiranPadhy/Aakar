@@ -35,7 +35,6 @@ from aakar_api.infrastructure import (
     SemanticScholarClient,
     SubprocessSandboxRunner,
     TieredSpecCache,
-    TransformersIntrospector,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -63,7 +62,12 @@ def _allow_remote_code() -> bool:
 
 
 def _build_introspector(c: Container) -> FallbackIntrospector:
-    primary = c[TransformersIntrospector]
+    # Imported lazily (not at module top) so merely starting the API never pulls in
+    # torch + transformers — only resolving this, on the first /architecture or
+    # /operations request, pays that import. The Hub-metadata endpoints stay torch-free.
+    from aakar_api.infrastructure.transformers_introspector import TransformersIntrospector
+
+    primary = TransformersIntrospector()
     sandbox = SandboxedIntrospector(
         fetcher=HubSnapshotFetcher(cache_dir=_SANDBOX_HF_CACHE),
         runner=SubprocessSandboxRunner(),
@@ -114,7 +118,6 @@ def _build_spec_cache(c: Container) -> SpecCache:
 
 container = Container()
 
-container[TransformersIntrospector] = Singleton(lambda c: TransformersIntrospector())
 container[FallbackIntrospector] = Singleton(_build_introspector)
 container[DiskSpecCache] = Singleton(lambda c: DiskSpecCache(root=_DEFAULT_CACHE_ROOT))
 container[HfHubClient] = Singleton(lambda c: HfHubClient())

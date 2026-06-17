@@ -17,7 +17,8 @@ from fastapi.testclient import TestClient
 
 from aakar_api.application import ArchitectureService
 from aakar_api.di import deps
-from aakar_api.infrastructure import DiskSpecCache, TransformersIntrospector
+from aakar_api.infrastructure import DiskSpecCache
+from aakar_api.infrastructure.transformers_introspector import TransformersIntrospector
 from aakar_api.main import app
 
 
