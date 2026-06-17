@@ -29,6 +29,7 @@ from aakar_api.infrastructure import (
     HubSnapshotFetcher,
     InMemoryHubCache,
     InMemoryPaperCache,
+    LazyIntrospector,
     OpenAlexClient,
     RedisSpecCache,
     SandboxedIntrospector,
@@ -134,13 +135,19 @@ container[FallbackCitationClient] = Singleton(
     )
 )
 
+# One lazy wrapper shared by both services: it builds the real (torch-backed) introspector
+# only on first use, so a request served entirely from cache never triggers the
+# torch + transformers import. The services check the cache before ever calling it.
+container[LazyIntrospector] = Singleton(
+    lambda c: LazyIntrospector(lambda: c[FallbackIntrospector])
+)
 container[ArchitectureService] = Singleton(
-    lambda c: ArchitectureService(c[FallbackIntrospector], _build_spec_cache(c))
+    lambda c: ArchitectureService(c[LazyIntrospector], _build_spec_cache(c))
 )
 # Shares the SAME disk tier (a Singleton) and Redis backing store as the architecture
 # service, so the in-place upgrade from structure-only to fully-traced is visible to both.
 container[OperationsService] = Singleton(
-    lambda c: OperationsService(c[FallbackIntrospector], _build_spec_cache(c))
+    lambda c: OperationsService(c[LazyIntrospector], _build_spec_cache(c))
 )
 container[HubService] = Singleton(
     lambda c: HubService(c[HfHubClient], c[InMemoryHubCache])

@@ -6,6 +6,7 @@ from aakar_api.infrastructure.fallback_introspector import FallbackIntrospector
 from aakar_api.infrastructure.github_client import GitHubApiClient
 from aakar_api.infrastructure.hub_cache import InMemoryHubCache
 from aakar_api.infrastructure.hub_client import HfHubClient
+from aakar_api.infrastructure.lazy_introspector import LazyIntrospector
 from aakar_api.infrastructure.openalex_client import OpenAlexClient
 from aakar_api.infrastructure.paper_cache import InMemoryPaperCache
 from aakar_api.infrastructure.redis_spec_cache import RedisSpecCache
@@ -31,6 +32,7 @@ __all__ = [
     "HubSnapshotFetcher",
     "InMemoryHubCache",
     "InMemoryPaperCache",
+    "LazyIntrospector",
     "OpenAlexClient",
     "RedisSpecCache",
     "SandboxedIntrospector",
