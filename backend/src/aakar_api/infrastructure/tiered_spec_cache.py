@@ -26,16 +26,16 @@ class TieredSpecCache:
         self._primary = primary
         self._secondary = secondary
 
-    async def get(self, model_id: str, config_hash: str) -> Spec | None:
-        hit = await self._primary.get(model_id, config_hash)
+    async def get(self, model_id: str) -> Spec | None:
+        hit = await self._primary.get(model_id)
         if hit is not None:
             return hit
-        hit = await self._secondary.get(model_id, config_hash)
+        hit = await self._secondary.get(model_id)
         if hit is not None:
             # Warm the fast tier so the next read for this entry stays local.
-            await self._primary.set(model_id, config_hash, hit)
+            await self._primary.set(model_id, hit)
         return hit
 
-    async def set(self, model_id: str, config_hash: str, spec: Spec) -> None:
-        await self._primary.set(model_id, config_hash, spec)
-        await self._secondary.set(model_id, config_hash, spec)
+    async def set(self, model_id: str, spec: Spec) -> None:
+        await self._primary.set(model_id, spec)
+        await self._secondary.set(model_id, spec)

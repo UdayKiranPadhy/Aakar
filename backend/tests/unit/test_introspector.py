@@ -24,6 +24,14 @@ from aakar_api.infrastructure.transformers_introspector import (
 _TINY_LLAMA = "hf-internal-testing/tiny-random-LlamaForCausalLM"
 
 
+def _all_operations(node: object) -> list:
+    """Flatten every Node.operations in the subtree, depth-first."""
+    ops = list(getattr(node, "operations", None) or [])
+    for child in getattr(node, "children", None) or []:
+        ops.extend(_all_operations(child))
+    return ops
+
+
 @pytest.fixture(scope="module")
 def introspector() -> TransformersIntrospector:
     return TransformersIntrospector()
@@ -251,11 +259,24 @@ async def test_buffers_on_rotary(introspector: TransformersIntrospector) -> None
 
 
 @pytest.mark.asyncio
-async def test_fetch_config_hash_is_stable(introspector: TransformersIntrospector) -> None:
-    h1 = await introspector.fetch_config_hash(_TINY_LLAMA)
-    h2 = await introspector.fetch_config_hash(_TINY_LLAMA)
-    assert h1 == h2
-    assert len(h1) == 64  # sha256 hex
+async def test_introspect_is_structure_only(introspector: TransformersIntrospector) -> None:
+    # `/architecture` must stay off the slow trace: the structure build carries no
+    # operations and flags that the trace hasn't run.
+    spec = await introspector.introspect(_TINY_LLAMA)
+    assert spec.operations_traced is False
+    assert _all_operations(spec.graph[0]) == []
+
+
+@pytest.mark.asyncio
+async def test_introspect_with_operations_runs_the_trace(
+    introspector: TransformersIntrospector,
+) -> None:
+    spec = await introspector.introspect_with_operations(_TINY_LLAMA)
+    # The flag flips regardless of how many ops the (best-effort) trace found.
+    assert spec.operations_traced is True
+    # A Linear's matmul is the most robust op to expect on a Llama tree.
+    ops = _all_operations(spec.graph[0])
+    assert any(op.op in {"mm", "addmm", "matmul"} for op in ops)
 
 
 @pytest.mark.asyncio

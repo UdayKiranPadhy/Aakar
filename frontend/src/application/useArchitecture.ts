@@ -21,6 +21,24 @@ export function useArchitecture(repo: ArchitectureRepository) {
   const setRequestedModelId = useArchStore((s) => s.setRequestedModelId);
   const hfToken = useArchStore((s) => s.hfToken);
 
+  // Background upgrade: pull the forward-pass operations and swap in the enriched
+  // spec. The trace is the slow part of introspection, so it must never block the
+  // first paint — the tree is already on screen; ops stream in and the op-flow view
+  // / forward-op panels light up when they land. Best-effort: on failure the
+  // structure spec stays and those op-only surfaces simply don't appear.
+  const loadOperations = useCallback(
+    async (modelId: string, token: string | undefined): Promise<void> => {
+      try {
+        const enriched = await repo.fetchOperations(modelId, token);
+        // Only swap if this is still the model on screen — the user may have moved on.
+        if (useArchStore.getState().requestedModelId === modelId) setSpec(enriched);
+      } catch {
+        /* non-fatal — operations are an enhancement over the structure view */
+      }
+    },
+    [repo, setSpec],
+  );
+
   const loadModel = useCallback(
     // `tokenOverride` lets the gated page retry with a just-entered token
     // (before the store-backed value re-renders the hook). Otherwise the
@@ -37,14 +55,27 @@ export function useArchitecture(repo: ArchitectureRepository) {
       // (the pill's inline error remains visible regardless of mode).
       setAppMode("model");
       setLoading(true);
+      const token = tokenOverride ?? hfToken ?? undefined;
       try {
-        const spec = await repo.fetch(trimmed, tokenOverride ?? hfToken ?? undefined);
+        const spec = await repo.fetch(trimmed, token);
         setSpec(spec);
+        // Fire-and-forget the operations fetch; never awaited, so it can't delay paint.
+        if (!spec.operations_traced) void loadOperations(trimmed, token);
       } catch (e) {
         setError(toLoadError(e));
       }
     },
-    [repo, hfToken, reset, setLoading, setSpec, setError, setAppMode, setRequestedModelId],
+    [
+      repo,
+      hfToken,
+      reset,
+      setLoading,
+      setSpec,
+      setError,
+      setAppMode,
+      setRequestedModelId,
+      loadOperations,
+    ],
   );
 
   return { loadModel };

@@ -30,7 +30,9 @@ from pathlib import Path
 from typing import Any
 
 
-def _build_spec_from_snapshot(model_id: str, snapshot_dir: str) -> Any:
+def _build_spec_from_snapshot(
+    model_id: str, snapshot_dir: str, *, include_operations: bool
+) -> Any:
     import transformers
     from transformers import AutoConfig
 
@@ -58,7 +60,13 @@ def _build_spec_from_snapshot(model_id: str, snapshot_dir: str) -> Any:
         factory = _dynamic_factory(config, architecture_name, snapshot_dir)
 
     model = build_model_on_meta_device(config, factory)
-    return build_spec(model_id, config, architecture_name or "model", model)
+    return build_spec(
+        model_id,
+        config,
+        architecture_name or "model",
+        model,
+        include_operations=include_operations,
+    )
 
 
 def _dynamic_factory(
@@ -101,6 +109,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-id", required=True)
     parser.add_argument("--snapshot", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument(
+        "--operations",
+        action="store_true",
+        help="Also run the fake-tensor forward trace and attach per-module ops.",
+    )
     args = parser.parse_args(argv)
 
     out = Path(args.out)
@@ -108,7 +121,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         try:
-            spec = _build_spec_from_snapshot(args.model_id, args.snapshot)
+            spec = _build_spec_from_snapshot(
+                args.model_id, args.snapshot, include_operations=args.operations
+            )
         except UnsupportedArchitecture as exc:
             _write(
                 out,

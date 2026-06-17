@@ -71,8 +71,13 @@ export function App() {
   const hasSpec = useArchStore((s) => s.spec !== null);
   const error = useArchStore((s) => s.error);
   // Identity of whatever is loaded — used to key the model-view error boundary
-  // so loading a different model clears any caught render crash.
-  const modelId = useArchStore((s) => s.spec?.model_id ?? s.error?.modelId ?? null);
+  // so loading a different model clears any caught render crash. Falls back to the
+  // requested id so the key stays STABLE across the card-first stub → real-spec swap
+  // (and the later structure → operations swap), which keeps Overview mounted and
+  // stops its Hub metadata fetch from re-firing on each swap.
+  const modelId = useArchStore(
+    (s) => s.spec?.model_id ?? s.error?.modelId ?? s.requestedModelId ?? null,
+  );
   // Show the sidebar for partial failures where the model id is known and at
   // least the Overview + Research tabs can still fetch from the HF Hub.
   const showSidebar =

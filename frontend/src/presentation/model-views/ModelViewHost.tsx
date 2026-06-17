@@ -33,10 +33,21 @@ export function ModelViewHost({
   const loading = useArchStore((s) => s.loading);
   const modelInput = useArchStore((s) => s.modelInput);
   const modelView = useArchStore((s) => s.modelView);
+  const requestedModelId = useArchStore((s) => s.requestedModelId);
 
-  // Mid-fetch the store is reset (spec + error both null); show the loading
-  // illustration before falling through to the empty/error states below.
-  if (loading) return <ModelLoadingState modelId={modelInput.trim() || undefined} />;
+  // Mid-fetch the store is reset (spec + error both null). Card-first: Overview and
+  // Research need only the model id — they fetch Hub metadata independently of
+  // introspection — so render them from a stub the instant the load starts. The model
+  // card then paints in ~a Hub round-trip instead of waiting on the full (slow)
+  // introspection; the architecture-dependent cards fill in once the real spec lands.
+  // Every other view needs the tree, so it keeps the loading illustration.
+  if (loading) {
+    if (requestedModelId && (modelView === "overview" || modelView === "research")) {
+      const View = modelViewRegistry.resolve(modelView);
+      if (View) return <View spec={stubSpec(requestedModelId)} />;
+    }
+    return <ModelLoadingState modelId={requestedModelId ?? (modelInput.trim() || undefined)} />;
+  }
 
   if (!spec) {
     if (error?.kind === "not_found") return <ModelNotFoundState error={error} />;

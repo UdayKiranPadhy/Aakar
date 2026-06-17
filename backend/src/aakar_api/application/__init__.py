@@ -12,6 +12,7 @@ from aakar_api.application.interfaces import (
     PaperCache,
     SpecCache,
 )
+from aakar_api.application.operations_service import OperationsService
 from aakar_api.application.paper_service import PaperService
 from aakar_api.application.repo_service import RepoService
 from aakar_api.application.source_service import SourceService
@@ -25,6 +26,7 @@ __all__ = [
     "HubMetadataCache",
     "HubMetadataClient",
     "Introspector",
+    "OperationsService",
     "PaperCache",
     "PaperService",
     "RepoService",

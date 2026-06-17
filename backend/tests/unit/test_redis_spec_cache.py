@@ -1,7 +1,7 @@
 """Tests for the Redis-backed `RedisSpecCache`.
 
 A tiny in-memory fake stands in for `redis.asyncio.Redis` — no network, no server.
-The behaviors that matter: gzip round-trip, the composite key, TTL, and the
+The behaviors that matter: gzip round-trip, the id-keyed key, TTL, and the
 fail-open contract (any Redis fault ⇒ miss / no-op, never an exception).
 """
 
@@ -71,22 +71,22 @@ async def test_set_get_roundtrip() -> None:
     fake = FakeRedis()
     cache = RedisSpecCache(fake)  # type: ignore[arg-type]
     spec = _make_spec()
-    await cache.set("foo/bar", "abcdef0123456789", spec)
-    got = await cache.get("foo/bar", "abcdef0123456789")
+    await cache.set("foo/bar", spec)
+    got = await cache.get("foo/bar")
     assert got == spec
 
 
 @pytest.mark.asyncio
 async def test_miss_returns_none() -> None:
     cache = RedisSpecCache(FakeRedis())  # type: ignore[arg-type]
-    assert await cache.get("foo/bar", "deadbeefcafe") is None
+    assert await cache.get("foo/bar") is None
 
 
 @pytest.mark.asyncio
 async def test_value_is_gzip_compressed() -> None:
     fake = FakeRedis()
     cache = RedisSpecCache(fake)  # type: ignore[arg-type]
-    await cache.set("foo/bar", "abcdef0123456789", _make_spec())
+    await cache.set("foo/bar", _make_spec())
     (blob,) = fake.store.values()
     assert blob[:2] == b"\x1f\x8b"  # gzip magic number
     # And it's genuinely the spec JSON underneath.
@@ -94,19 +94,19 @@ async def test_value_is_gzip_compressed() -> None:
 
 
 @pytest.mark.asyncio
-async def test_key_carries_schema_version_and_config_hash() -> None:
+async def test_key_carries_schema_version_and_safe_id() -> None:
     fake = FakeRedis()
     cache = RedisSpecCache(fake)  # type: ignore[arg-type]
-    await cache.set("meta-llama/Llama-3-8B", "abc123def456ZZZ", _make_spec())
+    await cache.set("meta-llama/Llama-3-8B", _make_spec())
     (key,) = fake.store.keys()
-    assert key == f"aakar:spec:v{_SPEC_SCHEMA_VERSION}:meta-llama__Llama-3-8B:abc123def456"
+    assert key == f"aakar:spec:v{_SPEC_SCHEMA_VERSION}:meta-llama__Llama-3-8B"
 
 
 @pytest.mark.asyncio
 async def test_default_ttl_applied_on_set() -> None:
     fake = FakeRedis()
     cache = RedisSpecCache(fake)  # type: ignore[arg-type]
-    await cache.set("foo/bar", "abcdef0123456789", _make_spec())
+    await cache.set("foo/bar", _make_spec())
     assert fake.set_calls[0][1] == _DEFAULT_TTL_SECONDS
 
 
@@ -114,29 +114,29 @@ async def test_default_ttl_applied_on_set() -> None:
 async def test_custom_ttl_applied_on_set() -> None:
     fake = FakeRedis()
     cache = RedisSpecCache(fake, ttl_seconds=123)  # type: ignore[arg-type]
-    await cache.set("foo/bar", "abcdef0123456789", _make_spec())
+    await cache.set("foo/bar", _make_spec())
     assert fake.set_calls[0][1] == 123
 
 
 @pytest.mark.asyncio
 async def test_get_fails_open_on_redis_error() -> None:
     cache = RedisSpecCache(BrokenRedis())  # type: ignore[arg-type]
-    assert await cache.get("foo/bar", "abcdef0123456789") is None
+    assert await cache.get("foo/bar") is None
 
 
 @pytest.mark.asyncio
 async def test_set_fails_open_on_redis_error() -> None:
     cache = RedisSpecCache(BrokenRedis())  # type: ignore[arg-type]
     # Must not raise.
-    await cache.set("foo/bar", "abcdef0123456789", _make_spec())
+    await cache.set("foo/bar", _make_spec())
 
 
 @pytest.mark.asyncio
 async def test_corrupt_payload_is_treated_as_miss_and_evicted() -> None:
     fake = FakeRedis()
     cache = RedisSpecCache(fake)  # type: ignore[arg-type]
-    key = f"aakar:spec:v{_SPEC_SCHEMA_VERSION}:foo__bar:abcdef012345"
+    key = f"aakar:spec:v{_SPEC_SCHEMA_VERSION}:foo__bar"
     fake.store[key] = b"not gzip, not a spec"
-    assert await cache.get("foo/bar", "abcdef0123456789") is None
+    assert await cache.get("foo/bar") is None
     # The undecodable entry is dropped so it won't be retried forever.
     assert key not in fake.store

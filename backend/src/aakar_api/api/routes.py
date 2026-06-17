@@ -10,6 +10,7 @@ from fastapi.responses import PlainTextResponse
 from aakar_api.application import (
     ArchitectureService,
     HubService,
+    OperationsService,
     PaperService,
     RepoService,
     SourceService,
@@ -62,6 +63,7 @@ SourceUrlQuery = Annotated[
     ),
 ]
 ArchitectureServiceDep = Annotated[ArchitectureService, deps.depends(ArchitectureService)]
+OperationsServiceDep = Annotated[OperationsService, deps.depends(OperationsService)]
 HubServiceDep = Annotated[HubService, deps.depends(HubService)]
 PaperServiceDep = Annotated[PaperService, deps.depends(PaperService)]
 RepoServiceDep = Annotated[RepoService, deps.depends(RepoService)]
@@ -84,6 +86,20 @@ async def get_architecture(
     hf_token: HfTokenHeader = None,
 ) -> Spec:
     return await service.get_architecture(model_id, token=hf_token)
+
+
+@router.get("/operations", response_model=Spec, tags=["architecture"])
+async def get_operations(
+    model_id: ModelIdQuery,
+    service: OperationsServiceDep,
+    hf_token: HfTokenHeader = None,
+) -> Spec:
+    """The same module tree as /architecture, plus each module's forward-pass ops.
+
+    Fetched lazily by the frontend once the structure has rendered — it runs the
+    expensive fake-tensor trace, so it stays off the initial paint.
+    """
+    return await service.get_operations(model_id, token=hf_token)
 
 
 @router.get("/models", response_model=list[HubTrendingItem], tags=["hub"])

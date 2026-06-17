@@ -22,7 +22,11 @@ Heavy synchronous work runs in `asyncio.to_thread` so FastAPI's event loop stays
 The tree above shows *which* modules exist; `Node.operations` shows *what each module's
 `forward()` actually computes* — the matmuls, softmax, scaling, residual adds, RoPE math,
 and reshapes that the module-tree alone can't reveal. It's produced by
-`infrastructure/introspection/fx_operations.py` as a refinement pass inside `build_spec`.
+`infrastructure/introspection/fx_operations.py`, run inside `build_spec` only when
+`include_operations=True` — i.e. for `GET /api/operations`, not the structure-only
+`GET /api/architecture`. The trace is the slow part of introspection (a full forward
+pass through every layer), so the frontend fetches it lazily in the background and the
+module tree never waits on it.
 
 **How it works — and why it isn't FX.** The obvious tool (`torch.fx.symbolic_trace` /
 transformers' old `HFTracer`) is a dead end here: stock FX chokes on the data-dependent
@@ -79,27 +83,37 @@ This is non-negotiable: enabling `trust_remote_code` would mean executing arbitr
 
 ## Caching
 
-`backend/src/aakar_api/infrastructure/spec_cache.py` provides `DiskSpecCache`. The cache key is `(model_id, sha256(config_dict)[:12])`:
+`backend/src/aakar_api/infrastructure/spec_cache.py` provides `DiskSpecCache`. The cache key is **the model id + a schema version** (`{model_id_safe}.v{schema}.json`):
 
-- The model id keeps results separated per HF repo.
-- The config hash means fine-tuned forks or local config edits invalidate naturally.
+- Keying by id alone means a warm hit is a single local file read — no Hub round-trip. (An earlier design hashed `config.json` into the key, but computing that hash required fetching the config from the Hub on *every* request, warm hits included — the round-trip this id-only key removes.)
+- The schema version invalidates payloads written by older code. A config edited in place under the same id is bounded by the Redis TTL (default 60 days) rather than invalidated instantly — fine for a study tool.
+- With `REDIS_URL` set, a shared `RedisSpecCache` sits behind the disk tier (`TieredSpecCache`) so one instance's cold build warms every instance and survives redeploys.
 
 Files live under `backend/.cache/specs/` (gitignored). Each file holds one `Spec.model_dump_json()` payload. Cold lookups hit the introspector; warm lookups round-trip the cached JSON in ~10 ms.
 
-`ArchitectureService` orchestrates the flow:
+Two services share that one cache, splitting the cheap structure build from the slow trace:
 
 ```python
-async def get_architecture(self, model_id: str) -> Spec:
-    config_hash = await self._introspector.fetch_config_hash(model_id)
-    cached = await self._cache.get(model_id, config_hash)
+# ArchitectureService — structure only (GET /api/architecture)
+async def get_architecture(self, model_id: str, *, token=None) -> Spec:
+    cached = await self._cache.get(model_id)
     if cached is not None:
         return cached
-    spec = await self._introspector.introspect(model_id)
-    await self._cache.set(model_id, config_hash, spec)
+    spec = await self._introspector.introspect(model_id, token=token)
+    await self._cache.set(model_id, spec)
+    return spec
+
+# OperationsService — adds the forward-pass trace (GET /api/operations)
+async def get_operations(self, model_id: str, *, token=None) -> Spec:
+    cached = await self._cache.get(model_id)
+    if cached is not None and cached.operations_traced:
+        return cached
+    spec = await self._introspector.introspect_with_operations(model_id, token=token)
+    await self._cache.set(model_id, spec)   # upgrades the entry in place
     return spec
 ```
 
-`fetch_config_hash` is a fast variant that loads the config but doesn't build the module tree — it's the price of detecting cache misses cheaply.
+`operations_traced` (not "has any ops") is the miss-gate, so a model that legitimately traces to zero ops is cached as done rather than re-traced on every request.
 
 ## Edge cases and gotchas
 

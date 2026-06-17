@@ -24,7 +24,7 @@ class StubIntrospector:
         self._spec = spec
         self._raises = raises
         self.introspect_calls: list[str] = []
-        self.hash_calls: list[str] = []
+        self.introspect_ops_calls: list[str] = []
         self.seen_tokens: list[str | None] = []
 
     async def introspect(self, model_id: str, *, token: str | None = None) -> Spec:
@@ -35,12 +35,15 @@ class StubIntrospector:
         assert self._spec is not None
         return self._spec
 
-    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str:
-        self.hash_calls.append(model_id)
+    async def introspect_with_operations(
+        self, model_id: str, *, token: str | None = None
+    ) -> Spec:
+        self.introspect_ops_calls.append(model_id)
         self.seen_tokens.append(token)
         if self._raises is not None:
             raise self._raises
-        return "stub-hash"
+        assert self._spec is not None
+        return self._spec
 
 
 async def test_primary_success_never_touches_sandbox() -> None:
@@ -97,12 +100,14 @@ async def test_sandbox_timeout_propagates() -> None:
         await fb.introspect("org/custom")
 
 
-async def test_config_hash_falls_through_to_sandbox_when_allowed() -> None:
+async def test_operations_fall_through_to_sandbox_when_allowed() -> None:
+    # The structure→ops split shares the same fallback decision: a remote-code model
+    # the primary can't build is traced inside the sandbox instead.
     primary = StubIntrospector(raises=UnsupportedArchitecture("org/custom", None))
     sandbox = StubIntrospector(spec=_CUSTOM)
     fb = FallbackIntrospector(primary, sandbox, allow_remote_code=True)
-    assert await fb.fetch_config_hash("org/custom") == "stub-hash"
-    assert sandbox.hash_calls == ["org/custom"]
+    assert await fb.introspect_with_operations("org/custom") is _CUSTOM
+    assert sandbox.introspect_ops_calls == ["org/custom"]
 
 
 async def test_token_forwarded_to_primary_but_never_to_sandbox() -> None:

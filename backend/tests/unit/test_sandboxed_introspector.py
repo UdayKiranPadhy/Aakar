@@ -1,8 +1,8 @@
 """Unit tests for `SandboxedIntrospector` — fakes only, no subprocess, no network.
 
 Verifies the orchestration contract: the worker's JSON result is turned into a
-Spec (or the right domain error), `fetch_config_hash` stays code-free, and the
-worker is launched with a scrubbed, offline environment.
+Spec (or the right domain error), the `--operations` flag is threaded through, and
+the worker is launched with a scrubbed, offline environment.
 """
 
 from __future__ import annotations
@@ -22,7 +22,6 @@ from aakar_api.domain.exceptions import (
 from aakar_api.domain.spec import Spec
 from aakar_api.infrastructure.sandbox import SandboxResult
 from aakar_api.infrastructure.sandboxed_introspector import SandboxedIntrospector
-from aakar_api.infrastructure.spec_cache import hash_config
 
 _SPEC_PAYLOAD: dict[str, Any] = {
     "model_id": "org/custom",
@@ -141,12 +140,13 @@ async def test_timeout_raises_introspection_timeout() -> None:
         await _introspector(FakeFetcher(), runner).introspect("org/custom")
 
 
-async def test_fetch_config_hash_is_code_free_and_matches_hash_config() -> None:
-    config = {"model_type": "custom", "architectures": ["FooModel"], "hidden_size": 42}
-    fetcher = FakeFetcher(config=config)
+async def test_introspect_omits_operations_flag() -> None:
     runner = FakeRunner(payload={"ok": True, "spec": _SPEC_PAYLOAD})
-    digest = await _introspector(fetcher, runner).fetch_config_hash("org/custom")
-    assert digest == hash_config(config)
-    # Computing the cache key must NOT spin up the sandbox.
-    assert runner.calls == []
-    assert fetcher.read == ["org/custom"]
+    await _introspector(FakeFetcher(), runner).introspect("org/custom")
+    assert "--operations" not in runner.calls[0]["argv"]
+
+
+async def test_introspect_with_operations_passes_flag() -> None:
+    runner = FakeRunner(payload={"ok": True, "spec": _SPEC_PAYLOAD})
+    await _introspector(FakeFetcher(), runner).introspect_with_operations("org/custom")
+    assert "--operations" in runner.calls[0]["argv"]

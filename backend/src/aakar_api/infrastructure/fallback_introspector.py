@@ -12,9 +12,14 @@ the *original* `UnsupportedArchitecture` so genuinely-unsupported models keep
 their clear 422 rather than a confusing 502. A sandbox timeout propagates as-is.
 When `allow_remote_code` is False this is a transparent pass-through — exactly
 today's "refuse" behavior.
+
+Both build methods share the same fallback logic; only the call delegated to the
+members differs (structure-only vs. structure + forward-pass operations).
 """
 
 from __future__ import annotations
+
+from collections.abc import Awaitable, Callable
 
 from aakar_api.application.interfaces import Introspector
 from aakar_api.domain.exceptions import IntrospectionFailed, UnsupportedArchitecture
@@ -35,24 +40,37 @@ class FallbackIntrospector:
         self._sandbox = sandbox
         self._allow_remote_code = allow_remote_code
 
-    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str:
-        try:
-            return await self._primary.fetch_config_hash(model_id, token=token)
-        except UnsupportedArchitecture:
-            if not self._allow_remote_code:
-                raise
-            # The sandbox runs fully offline with a scrubbed env — no token by
-            # design, so gated + custom-code stays out of scope.
-            return await self._sandbox.fetch_config_hash(model_id)
-
     async def introspect(self, model_id: str, *, token: str | None = None) -> Spec:
+        return await self._build(
+            model_id,
+            token,
+            lambda i, t: i.introspect(model_id, token=t),
+        )
+
+    async def introspect_with_operations(
+        self, model_id: str, *, token: str | None = None
+    ) -> Spec:
+        return await self._build(
+            model_id,
+            token,
+            lambda i, t: i.introspect_with_operations(model_id, token=t),
+        )
+
+    async def _build(
+        self,
+        model_id: str,
+        token: str | None,
+        call: Callable[[Introspector, str | None], Awaitable[Spec]],
+    ) -> Spec:
         try:
-            return await self._primary.introspect(model_id, token=token)
+            return await call(self._primary, token)
         except UnsupportedArchitecture as primary_exc:
             if not self._allow_remote_code:
                 raise
             try:
-                return await self._sandbox.introspect(model_id)  # offline; token never forwarded
+                # The sandbox runs fully offline with a scrubbed env — no token by
+                # design, so gated + custom-code stays out of scope.
+                return await call(self._sandbox, None)
             except IntrospectionFailed:
                 # The sandbox tried and couldn't — this model is genuinely
                 # unsupported. Keep the original, clearer error (→ 422).

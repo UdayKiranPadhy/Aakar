@@ -179,3 +179,36 @@ describe("HttpArchitectureRepository.fetch", () => {
     expect((err as ApiError).status).toBe(500);
   });
 });
+
+describe("HttpArchitectureRepository.fetchOperations", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("calls the /api/operations endpoint with the model_id query param", async () => {
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(JSON.stringify({ ...successSpec, operations_traced: true }), { status: 200 }),
+    );
+    const repo = new HttpArchitectureRepository("http://localhost:8000");
+    await repo.fetchOperations("meta-llama/Llama-3-8B");
+    const url = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(url).toBe(
+      "http://localhost:8000/api/operations?model_id=meta-llama%2FLlama-3-8B",
+    );
+  });
+
+  it("sends the X-HF-Token header only when a token is provided", async () => {
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(JSON.stringify(successSpec), { status: 200 }),
+    );
+    const repo = new HttpArchitectureRepository("http://localhost:8000");
+    await repo.fetchOperations("gpt2", "hf_secret");
+    const headers = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+    expect(headers["X-HF-Token"]).toBe("hf_secret");
+  });
+});

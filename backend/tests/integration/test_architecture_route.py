@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from aakar_api.application import ArchitectureService
+from aakar_api.application import ArchitectureService, OperationsService
 from aakar_api.di import deps
 from aakar_api.domain.exceptions import (
     IntrospectionFailed,
@@ -36,6 +36,27 @@ class FakeArchitectureService(ArchitectureService):
         self.seen_tokens: list[str | None] = []
 
     async def get_architecture(self, model_id: str, *, token: str | None = None) -> Spec:
+        self.seen_tokens.append(token)
+        if model_id in self._raises:
+            raise self._raises[model_id]
+        if model_id in self._responses:
+            return self._responses[model_id]
+        raise ModelNotFound(model_id)
+
+
+class FakeOperationsService(OperationsService):
+    """Bypass introspector + cache; map model_id → traced Spec or exception."""
+
+    def __init__(
+        self,
+        responses: dict[str, Spec] | None = None,
+        raises: dict[str, Exception] | None = None,
+    ) -> None:
+        self._responses = responses or {}
+        self._raises = raises or {}
+        self.seen_tokens: list[str | None] = []
+
+    async def get_operations(self, model_id: str, *, token: str | None = None) -> Spec:
         self.seen_tokens.append(token)
         if model_id in self._raises:
             raise self._raises[model_id]
@@ -107,6 +128,28 @@ def test_architecture_for_llama(client: TestClient, overrides) -> None:
     head = body["graph"][0]["children"][0]
     assert head["module_class"] == "Linear"
     assert head["weight_shape"] == [128256, 4096]
+
+
+def test_operations_returns_traced_spec(client: TestClient, overrides) -> None:
+    spec = _llama_spec("meta-llama/Llama-3-8B")
+    overrides[OperationsService] = FakeOperationsService(
+        responses={"meta-llama/Llama-3-8B": spec}
+    )
+    r = client.get("/api/operations", params={"model_id": "meta-llama/Llama-3-8B"})
+    assert r.status_code == 200
+    assert r.json()["model_id"] == "meta-llama/Llama-3-8B"
+
+
+def test_operations_forwards_hf_token_header(client: TestClient, overrides) -> None:
+    fake = FakeOperationsService(responses={"gated/model": _llama_spec("gated/model")})
+    overrides[OperationsService] = fake
+    r = client.get(
+        "/api/operations",
+        params={"model_id": "gated/model"},
+        headers={"X-HF-Token": "hf_secret"},
+    )
+    assert r.status_code == 200
+    assert fake.seen_tokens == ["hf_secret"]
 
 
 def test_architecture_forwards_hf_token_header(client: TestClient, overrides) -> None:

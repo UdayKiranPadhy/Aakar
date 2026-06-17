@@ -145,3 +145,9 @@ class Spec(BaseModel):
     # The complete, unfiltered config (`config.to_dict()`) so a generic Config
     # Explorer can render every key
     config_full: dict[str, Any] | None = None
+    # True once the fake-tensor forward trace has run for this model — even if it found
+    # nothing (the trace is best-effort). `/architecture` returns a structure Spec with
+    # this False and every `Node.operations` None; `/operations` returns the same tree
+    # with the trace applied and this True. Lets the lazy operations endpoint (and the
+    # cache) tell "not traced yet" apart from "traced, no ops found".
+    operations_traced: bool = False

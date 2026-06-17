@@ -49,7 +49,7 @@ def _find_optional(node: Node, path: str) -> Node | None:
 async def test_attention_shows_matmul_and_softmax(
     introspector: TransformersIntrospector,
 ) -> None:
-    spec = await introspector.introspect(_TINY_LLAMA)
+    spec = await introspector.introspect_with_operations(_TINY_LLAMA)
     attn = _find(spec.graph[0], "model.layers.0.self_attn")
 
     assert attn.operations is not None and len(attn.operations) > 5
@@ -65,7 +65,7 @@ async def test_attention_shows_matmul_and_softmax(
 async def test_decoder_layer_shows_residual_adds(
     introspector: TransformersIntrospector,
 ) -> None:
-    spec = await introspector.introspect(_TINY_LLAMA)
+    spec = await introspector.introspect_with_operations(_TINY_LLAMA)
     layer = _find(spec.graph[0], "model.layers.0")
 
     assert layer.operations is not None
@@ -78,7 +78,7 @@ async def test_decoder_layer_shows_residual_adds(
 
 @pytest.mark.asyncio
 async def test_rmsnorm_shows_its_math(introspector: TransformersIntrospector) -> None:
-    spec = await introspector.introspect(_TINY_LLAMA)
+    spec = await introspector.introspect_with_operations(_TINY_LLAMA)
     norm = _find(spec.graph[0], "model.layers.0.input_layernorm")
 
     assert norm.operations is not None
@@ -92,7 +92,7 @@ async def test_rmsnorm_shows_its_math(introspector: TransformersIntrospector) ->
 async def test_leaf_linear_shows_its_matmul(
     introspector: TransformersIntrospector,
 ) -> None:
-    spec = await introspector.introspect(_TINY_LLAMA)
+    spec = await introspector.introspect_with_operations(_TINY_LLAMA)
     q_proj = _find(spec.graph[0], "model.layers.0.self_attn.q_proj")
 
     assert q_proj.children is None  # it's a leaf
@@ -105,7 +105,7 @@ async def test_leaf_linear_shows_its_matmul(
 async def test_symbolic_shapes_and_dataflow_inputs(
     introspector: TransformersIntrospector,
 ) -> None:
-    spec = await introspector.introspect(_TINY_LLAMA)
+    spec = await introspector.introspect_with_operations(_TINY_LLAMA)
     attn = _find(spec.graph[0], "model.layers.0.self_attn")
     assert attn.operations is not None
 
@@ -120,7 +120,7 @@ async def test_container_has_no_operations(
     introspector: TransformersIntrospector,
 ) -> None:
     """A ModuleList has no forward of its own, so no ops are attributed to it."""
-    spec = await introspector.introspect(_TINY_LLAMA)
+    spec = await introspector.introspect_with_operations(_TINY_LLAMA)
     layers = _find(spec.graph[0], "model.layers")
     assert layers.operations is None
 

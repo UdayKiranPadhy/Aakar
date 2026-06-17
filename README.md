@@ -96,6 +96,25 @@ docker build --target prod -t aakar-api  ./backend
 docker build --target prod --build-arg VITE_API_URL=https://api.example.com -t aakar-web ./frontend
 ```
 
+### Cloud Run runtime config (latency-critical)
+
+The backend imports `torch` + `transformers` and builds a model on the meta device on every
+cold start, so the *runtime* settings matter as much as the image:
+
+```bash
+gcloud run deploy aakar-api \
+  --image <registry>/aakar-api \
+  --min-instances 1 \     # keep one warm: removes the ~25s cold-start import on the common path
+  --cpu-boost \           # extra CPU during startup, so the torch import finishes faster when a cold start does happen
+  --concurrency 4 \       # the image runs ONE uvicorn worker (CPU-bound introspection); scale containers, not in-process workers
+  --cpu 2 --memory 2Gi \  # headroom for a large meta build; a single worker keeps memory bounded
+  --set-env-vars HF_TOKEN=<read-token>,REDIS_URL=<rediss://…>
+```
+
+- `HF_TOKEN` — without it the Hub warns about unauthenticated requests (lower rate limits, slower config fetches). A read-only token is enough; it's never logged or used as a cache key.
+- `REDIS_URL` — enables the shared, persistent spec-cache tier (`rediss://` for TLS, e.g. Upstash) so one instance's cold build warms every instance and survives redeploys. Optional; omit for disk-only.
+- The prod image runs `uvicorn --workers 1` on purpose (see `backend/Dockerfile`): `torch` is imported and a model built per worker, so N workers means N× the cold-start import + memory. Scale out with `--min/--max-instances` and a low `--concurrency` instead.
+
 ## License
 
 Personal study project. No license set.

@@ -13,6 +13,7 @@ from lagom.integrations.fast_api import FastApiIntegration
 from aakar_api.application import (
     ArchitectureService,
     HubService,
+    OperationsService,
     PaperService,
     RepoService,
     SourceService,
@@ -132,6 +133,11 @@ container[FallbackCitationClient] = Singleton(
 
 container[ArchitectureService] = Singleton(
     lambda c: ArchitectureService(c[FallbackIntrospector], _build_spec_cache(c))
+)
+# Shares the SAME disk tier (a Singleton) and Redis backing store as the architecture
+# service, so the in-place upgrade from structure-only to fully-traced is visible to both.
+container[OperationsService] = Singleton(
+    lambda c: OperationsService(c[FallbackIntrospector], _build_spec_cache(c))
 )
 container[HubService] = Singleton(
     lambda c: HubService(c[HfHubClient], c[InMemoryHubCache])

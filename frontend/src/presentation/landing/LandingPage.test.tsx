@@ -19,9 +19,10 @@ describe("LandingPage", () => {
   it("renders the feature section headings", () => {
     render(<LandingPage onSubmit={() => {}} />);
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(headings).toContain("From a model id to its real module tree");
-    expect(headings).toContain("Q, K, V come together as a fan-in");
-    expect(headings).toContain("Parameters have visual weight");
+    expect(headings).toContain("Find What's inside your model");
+    expect(headings).toContain("Zoom in, see the Math");
+    expect(headings).toContain("Is Attention all you need?");
+    expect(headings).toContain("Journey of a token");
     expect(headings).toContain("Any HuggingFace architecture, automatically");
   });
 

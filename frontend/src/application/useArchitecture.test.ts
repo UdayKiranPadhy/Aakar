@@ -19,15 +19,18 @@ const sampleSpec: Spec = {
   graph: [
     { id: "embed", type: "token_embedding", label: "Token embedding", params: {} },
   ],
+  // Already traced ⇒ loadModel won't fire the background operations fetch, keeping
+  // the error/state-transition tests below free of an extra async swap.
+  operations_traced: true,
 };
 
 function fakeRepo(spec: Spec | Promise<Spec> | Error): ArchitectureRepository {
-  return {
-    fetch: vi.fn(async () => {
-      if (spec instanceof Error) throw spec;
-      return spec instanceof Promise ? spec : spec;
-    }),
+  const impl = async () => {
+    if (spec instanceof Error) throw spec;
+    return spec instanceof Promise ? spec : spec;
   };
+  // Separate mocks so a call to one isn't counted against the other.
+  return { fetch: vi.fn(impl), fetchOperations: vi.fn(impl) };
 }
 
 describe("useArchitecture.loadModel", () => {
@@ -132,5 +135,36 @@ describe("useArchitecture.loadModel", () => {
     const s = useArchStore.getState();
     expect(s.expansionPath).toEqual([]);
     expect(s.selectionPath).toEqual([]);
+  });
+
+  it("prefetches operations in the background and swaps in the traced spec", async () => {
+    const structure: Spec = { ...sampleSpec, operations_traced: false };
+    const traced: Spec = { ...sampleSpec, operations_traced: true };
+    const repo: ArchitectureRepository = {
+      fetch: vi.fn(async () => structure),
+      fetchOperations: vi.fn(async () => traced),
+    };
+    const { result } = renderHook(() => useArchitecture(repo));
+    await act(async () => {
+      await result.current.loadModel("gpt2");
+    });
+    // The structure is fetched and the operations call is fired in the background.
+    expect(repo.fetch).toHaveBeenCalledWith("gpt2", undefined);
+    expect(repo.fetchOperations).toHaveBeenCalledWith("gpt2", undefined);
+    // Flush the background fetch's microtasks; the enriched spec is then swapped in.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(useArchStore.getState().spec?.operations_traced).toBe(true);
+  });
+
+  it("skips the operations prefetch when the spec is already traced", async () => {
+    const repo = fakeRepo(sampleSpec); // sampleSpec.operations_traced === true
+    const { result } = renderHook(() => useArchitecture(repo));
+    await act(async () => {
+      await result.current.loadModel("gpt2");
+    });
+    expect(repo.fetchOperations).not.toHaveBeenCalled();
   });
 });

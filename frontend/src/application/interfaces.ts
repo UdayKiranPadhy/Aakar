@@ -11,8 +11,13 @@ import type { Spec } from "../domain/spec";
 import type { TrendingModel } from "../domain/trending";
 
 export interface ArchitectureRepository {
-  /** `token` is an optional HF read token for gated models (sent as a header). */
+  /** The module tree only (fast). `token` is an optional HF read token (sent as a header). */
   fetch(modelId: string, token?: string): Promise<Spec>;
+  /**
+   * The same tree with each module's forward-pass `operations` populated. Slower
+   * (runs the fake-tensor trace), so it's fetched lazily after `fetch` resolves.
+   */
+  fetchOperations(modelId: string, token?: string): Promise<Spec>;
 }
 
 export interface ModelInfoRepository {

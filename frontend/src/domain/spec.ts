@@ -111,4 +111,13 @@ export type Spec = Readonly<{
    * every key generically. May contain nested objects (e.g. `rope_scaling`).
    */
   config_full?: Readonly<Record<string, unknown>>;
+  /**
+   * True once the backend's fake-tensor forward trace has run for this model.
+   * `GET /api/architecture` returns the structure with this `false` and every
+   * `Node.operations` absent (the trace is the slow part, so it's deferred);
+   * `GET /api/operations` returns the same tree with the trace applied and this
+   * `true`. The frontend fetches operations in the background and swaps in the
+   * enriched spec — see `useArchitecture`.
+   */
+  operations_traced?: boolean;
 }>;

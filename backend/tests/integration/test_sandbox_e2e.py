@@ -40,12 +40,3 @@ async def test_sandboxed_introspection_gpt2_end_to_end(tmp_path: Path) -> None:
     assert root.param_count and root.param_count > 0
     # The walk reached real submodules (transformer blocks, lm_head, …).
     assert root.children
-
-
-async def test_config_hash_is_code_free_sha256(tmp_path: Path) -> None:
-    introspector = SandboxedIntrospector(
-        fetcher=HubSnapshotFetcher(cache_dir=tmp_path / "hf-cache"),
-        runner=SubprocessSandboxRunner(),
-    )
-    digest = await introspector.fetch_config_hash("gpt2")
-    assert len(digest) == 64 and all(ch in "0123456789abcdef" for ch in digest)

@@ -33,13 +33,21 @@ def build_spec(
     config: Any,
     architecture_name: str,
     model: nn.Module,
+    *,
+    include_operations: bool = False,
 ) -> Spec:
-    """Walk `model` and pack the result + config metadata into a `Spec`."""
+    """Walk `model` and pack the result + config metadata into a `Spec`.
+
+    `include_operations` gates the expensive fake-tensor forward trace: `/architecture`
+    builds with it False (structure only, fast), `/operations` with it True. When True
+    but the model can't be traced, ops are simply absent — `operations_traced` still
+    flips True so the lazy endpoint doesn't keep recomputing a model that yields nothing.
+    """
     param_dtype = clean_dtype(getattr(config, "torch_dtype", None))
     walk_context = walk_context_from_config(config, param_dtype)
-    # Best-effort fake-tensor trace of the forward pass; `{}` when the model can't
-    # be traced (the tree below still renders, just without per-module operations).
-    ops_by_path = trace_operations(model, config, walk_context)
+    # Best-effort fake-tensor trace of the forward pass; `{}` when skipped or when the
+    # model can't be traced (the tree still renders, just without per-module operations).
+    ops_by_path = trace_operations(model, config, walk_context) if include_operations else {}
     root = walk_module_tree(
         model,
         path="",
@@ -62,4 +70,5 @@ def build_spec(
             "seq_len": walk_context.seq_ref,
         },
         config_full=config.to_dict(),
+        operations_traced=include_operations,
     )

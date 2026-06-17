@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 from aakar_api.domain.exceptions import ModelGated, ModelNotFound, UnsupportedArchitecture
-from aakar_api.infrastructure.spec_cache import hash_config
 
 
 def load_config(model_id: str, *, token: str | None = None) -> Any:
@@ -61,10 +60,6 @@ def _auth_status(exc: BaseException | None) -> int | None:
     """Return 401/403 if `exc` is an HTTP auth failure, else None."""
     status = getattr(getattr(exc, "response", None), "status_code", None)
     return status if status in (401, 403) else None
-
-
-def config_hash(config: Any) -> str:
-    return hash_config(config.to_dict())
 
 
 def _declared_architecture(model_id: str) -> str | None:

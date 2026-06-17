@@ -19,23 +19,27 @@ from aakar_api.domain.spec import Spec
 class Introspector(Protocol):
     """Builds a Spec for a HuggingFace model ID.
 
-    Implementations may walk the real `transformers` nn.Module tree (production)
-    or return canned specs (tests). Both methods are async because the production
-    impl wraps blocking work in `asyncio.to_thread`.
+    Two builds, so the slow forward-pass trace stays off the critical path:
+    `introspect` returns the module tree only (fast — what `/architecture` serves),
+    while `introspect_with_operations` additionally runs the fake-tensor trace and
+    attaches per-module `operations` (what `/operations` serves, lazily). Both are
+    async because the production impl wraps blocking work in `asyncio.to_thread`.
     """
 
     async def introspect(self, model_id: str, *, token: str | None = None) -> Spec: ...
 
-    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str: ...
+    async def introspect_with_operations(
+        self, model_id: str, *, token: str | None = None
+    ) -> Spec: ...
 
 
 @runtime_checkable
 class SpecCache(Protocol):
-    """Reads/writes `Spec` objects keyed by (model_id, config_hash)."""
+    """Reads/writes `Spec` objects keyed by model id (plus an internal schema version)."""
 
-    async def get(self, model_id: str, config_hash: str) -> Spec | None: ...
+    async def get(self, model_id: str) -> Spec | None: ...
 
-    async def set(self, model_id: str, config_hash: str, spec: Spec) -> None: ...
+    async def set(self, model_id: str, spec: Spec) -> None: ...
 
 
 @runtime_checkable

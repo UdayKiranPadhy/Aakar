@@ -7,9 +7,9 @@ Orchestration only — it owns no isolation logic itself:
      with a scrubbed environment — the one place `trust_remote_code` code runs.
   3. the worker's JSON result is parsed back into a validated `Spec`.
 
-`fetch_config_hash` deliberately does **not** go through the sandbox: it hashes
-the raw `config.json` bytes (plain JSON, no transformers, no code exec), so the
-Spec cache key is cheap and the expensive sandbox run happens only on a miss.
+`introspect` builds the module tree only; `introspect_with_operations` additionally
+asks the worker to run the fake-tensor forward trace (a `--operations` flag), so the
+expensive step stays off the `/architecture` critical path here too.
 """
 
 from __future__ import annotations
@@ -29,7 +29,6 @@ from aakar_api.domain.exceptions import (
 )
 from aakar_api.domain.spec import Spec
 from aakar_api.infrastructure.sandbox import HubSnapshotFetcher, SandboxRunner
-from aakar_api.infrastructure.spec_cache import hash_config
 
 _WORKER_MODULE = "aakar_api.infrastructure.sandbox.worker"
 
@@ -55,14 +54,15 @@ class SandboxedIntrospector:
     # `token` is accepted to satisfy the Introspector Protocol but deliberately
     # ignored: the sandbox runs offline with a scrubbed env (no credentials),
     # so gated custom-code repos remain out of scope.
-    async def fetch_config_hash(self, model_id: str, *, token: str | None = None) -> str:
-        raw = await asyncio.to_thread(self._fetcher.read_config, model_id)
-        return hash_config(raw)
-
     async def introspect(self, model_id: str, *, token: str | None = None) -> Spec:
-        return await asyncio.to_thread(self._introspect_sync, model_id)
+        return await asyncio.to_thread(self._introspect_sync, model_id, False)
 
-    def _introspect_sync(self, model_id: str) -> Spec:
+    async def introspect_with_operations(
+        self, model_id: str, *, token: str | None = None
+    ) -> Spec:
+        return await asyncio.to_thread(self._introspect_sync, model_id, True)
+
+    def _introspect_sync(self, model_id: str, include_operations: bool) -> Spec:
         snapshot_dir = self._fetcher.fetch(model_id)
 
         # Per-call ephemeral workspace: the worker's HF_HOME (writable, for the
@@ -81,6 +81,8 @@ class SandboxedIntrospector:
                 "--out",
                 str(out_path),
             ]
+            if include_operations:
+                argv.append("--operations")
             result = self._runner.run(
                 argv,
                 env=self._worker_env(work_dir),

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from aakar_api.domain.spec import Node, Spec
-from aakar_api.infrastructure.spec_cache import DiskSpecCache, hash_config
+from aakar_api.infrastructure.spec_cache import DiskSpecCache
 
 
 def _make_spec(model_id: str = "foo/bar") -> Spec:
@@ -31,8 +31,8 @@ def _make_spec(model_id: str = "foo/bar") -> Spec:
 async def test_set_get_roundtrip(tmp_path: Path) -> None:
     cache = DiskSpecCache(root=tmp_path)
     spec = _make_spec()
-    await cache.set("foo/bar", "abcdef0123456789", spec)
-    got = await cache.get("foo/bar", "abcdef0123456789")
+    await cache.set("foo/bar", spec)
+    got = await cache.get("foo/bar")
     assert got is not None
     assert got == spec
 
@@ -40,36 +40,30 @@ async def test_set_get_roundtrip(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_miss_returns_none(tmp_path: Path) -> None:
     cache = DiskSpecCache(root=tmp_path)
-    assert await cache.get("foo/bar", "deadbeefcafe") is None
+    assert await cache.get("foo/bar") is None
 
 
 @pytest.mark.asyncio
-async def test_different_hash_is_separate_entry(tmp_path: Path) -> None:
+async def test_same_model_id_overwrites_single_entry(tmp_path: Path) -> None:
+    # Re-introspecting the same id (e.g. a structure spec, then the operations
+    # endpoint's fully-traced one) updates one file in place — the id is the whole key.
     cache = DiskSpecCache(root=tmp_path)
-    spec_a = _make_spec("foo/bar")
-    spec_b = _make_spec("foo/bar")
-    await cache.set("foo/bar", "1111111111ab", spec_a)
-    await cache.set("foo/bar", "2222222222cd", spec_b)
-    # Two distinct files written, both retrievable
-    files = list(tmp_path.iterdir())
-    assert len(files) == 2
+    await cache.set("foo/bar", _make_spec("foo/bar"))
+    await cache.set("foo/bar", _make_spec("foo/bar"))
+    assert len(list(tmp_path.iterdir())) == 1
+
+
+@pytest.mark.asyncio
+async def test_distinct_model_ids_are_separate_entries(tmp_path: Path) -> None:
+    cache = DiskSpecCache(root=tmp_path)
+    await cache.set("foo/bar", _make_spec("foo/bar"))
+    await cache.set("foo/baz", _make_spec("foo/baz"))
+    assert len(list(tmp_path.iterdir())) == 2
 
 
 @pytest.mark.asyncio
 async def test_model_id_with_slash_is_filesystem_safe(tmp_path: Path) -> None:
     cache = DiskSpecCache(root=tmp_path)
-    await cache.set("meta-llama/Llama-3-8B", "abc123def456", _make_spec("meta-llama/Llama-3-8B"))
+    await cache.set("meta-llama/Llama-3-8B", _make_spec("meta-llama/Llama-3-8B"))
     files = [p.name for p in tmp_path.iterdir()]
     assert any("meta-llama__Llama-3-8B" in f for f in files)
-
-
-def test_hash_config_is_canonical() -> None:
-    a = {"hidden_size": 4, "num_heads": 2}
-    b = {"num_heads": 2, "hidden_size": 4}  # different insertion order
-    assert hash_config(a) == hash_config(b)
-
-
-def test_hash_config_changes_with_content() -> None:
-    a = {"hidden_size": 4}
-    b = {"hidden_size": 5}
-    assert hash_config(a) != hash_config(b)

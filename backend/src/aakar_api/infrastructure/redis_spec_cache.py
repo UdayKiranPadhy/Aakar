@@ -9,11 +9,12 @@ and survives restarts.
 
 Design choices, each load-bearing:
 
-* **Same key scheme as `DiskSpecCache`** — `model_id · schema-version · config-hash`.
-  Keying by `model_id` alone would drop two invalidations we rely on: the schema
-  version (so old-shaped payloads are never served against new code) and the
-  config hash (so a model's config edit / fork invalidates naturally). We reuse
-  the disk cache's `_SPEC_SCHEMA_VERSION` / `_safe_model_id` so both tiers agree.
+* **Same key scheme as `DiskSpecCache`** — `model_id · schema-version`. We key by the
+  model id alone (no config hash): computing a content key would need a Hub round-trip
+  on *every* request, warm hits included — exactly the latency we're removing. The
+  schema version still invalidates old-shaped payloads against new code; a config edited
+  in place is bounded by the TTL below rather than invalidated instantly. We reuse the
+  disk cache's `_SPEC_SCHEMA_VERSION` / `_safe_model_id` so both tiers agree.
 * **gzip values** — Spec JSON is highly repetitive (repeated keys, repeated layer
   subtrees) and compresses ~8-12×. That keeps each write well under serverless
   request-size caps and stretches a capped plan's dataset + bandwidth budget.
@@ -36,14 +37,14 @@ from aakar_api.infrastructure.spec_cache import _SPEC_SCHEMA_VERSION, _safe_mode
 
 _log = logging.getLogger(__name__)
 
-# 60 days. Specs are ~immutable for a given (model, config), so the TTL exists to
-# bound the dataset under a capped plan (LRU-style turnover), not for freshness.
+# 60 days. Specs are ~immutable for a given model id, so the TTL exists to bound the
+# dataset under a capped plan (LRU-style turnover) and to cap config-edit staleness.
 _DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 60
 _DEFAULT_PREFIX = "aakar:spec"
 
 
 class RedisSpecCache:
-    """`SpecCache` backed by Redis: gzip JSON values, composite key, fail-open."""
+    """`SpecCache` backed by Redis: gzip JSON values, id-keyed, fail-open."""
 
     def __init__(
         self,
@@ -56,16 +57,13 @@ class RedisSpecCache:
         self._ttl = ttl_seconds
         self._prefix = prefix
 
-    def _key(self, model_id: str, config_hash: str) -> str:
-        # Mirrors DiskSpecCache._path: the schema version + config hash carry the
-        # invalidation, so both cache tiers key entries identically.
-        return (
-            f"{self._prefix}:v{_SPEC_SCHEMA_VERSION}"
-            f":{_safe_model_id(model_id)}:{config_hash[:12]}"
-        )
+    def _key(self, model_id: str) -> str:
+        # Mirrors DiskSpecCache._path: the schema version carries invalidation, so
+        # both cache tiers key entries identically.
+        return f"{self._prefix}:v{_SPEC_SCHEMA_VERSION}:{_safe_model_id(model_id)}"
 
-    async def get(self, model_id: str, config_hash: str) -> Spec | None:
-        key = self._key(model_id, config_hash)
+    async def get(self, model_id: str) -> Spec | None:
+        key = self._key(model_id)
         try:
             blob = await self._client.get(key)
         except (RedisError, OSError) as exc:
@@ -84,11 +82,11 @@ class RedisSpecCache:
                 await self._client.delete(key)
             return None
 
-    async def set(self, model_id: str, config_hash: str, spec: Spec) -> None:
+    async def set(self, model_id: str, spec: Spec) -> None:
         # Serialize outside the try: a serialization bug should surface, not be
         # silently swallowed as if it were a transport error.
         payload = gzip.compress(spec.model_dump_json().encode("utf-8"))
         try:
-            await self._client.set(self._key(model_id, config_hash), payload, ex=self._ttl)
+            await self._client.set(self._key(model_id), payload, ex=self._ttl)
         except (RedisError, OSError) as exc:
             _log.debug("redis set failed — best-effort write skipped: %s", exc)

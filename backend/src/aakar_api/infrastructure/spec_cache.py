@@ -1,71 +1,62 @@
 """Disk-backed cache of introspected Specs.
 
 Building the nn.Module tree for a real model takes ~3-30 s depending on the
-parameter count, so a single warm-cache hit is the difference between an
-instant page render and a noticeable delay. The cache is keyed by the model
-id plus a hash of the raw `config.json` — fine-tuned forks or config edits
-invalidate naturally without manual eviction.
+parameter count, so a single warm-cache hit is the difference between an instant
+page render and a noticeable delay. The cache is keyed by the model id alone
+(plus a schema version): a warm hit then costs nothing but a local file read,
+with no Hub round-trip to compute a content key first.
 
-File layout: `<root>/<model_id_safe>.v<schema>.<config_hash[:12]>.json` containing
-one `Spec.model_dump_json()` payload. All I/O runs in `asyncio.to_thread`.
+File layout: `<root>/<model_id_safe>.v<schema>.json` containing one
+`Spec.model_dump_json()` payload. All I/O runs in `asyncio.to_thread`.
 """
 
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
 from pathlib import Path
-from typing import Any
 
 from aakar_api.domain.spec import Spec
 
 _DEFAULT_ROOT = Path("backend/.cache/specs")
 
-# Bump whenever the Spec *shape* changes (a new field, a changed meaning). The config hash
-# invalidates on model/config edits, but not on code changes that alter what we emit — so the
-# schema version is part of the key, ensuring old payloads are never served against new code.
+# Bump whenever the Spec *shape* or its *meaning* changes, so payloads written by old
+# code are never served against new code. Since the key is model-id-only, this version
+# is the sole structural invalidator (a model whose config is edited in place is bounded
+# by the Redis TTL, not invalidated instantly — acceptable for a study tool).
 #   v2: added the fact-based `Node.role`.
 #   v3: added `Node.operations` (per-module forward ops from the FX/fake-tensor trace).
 #   v4: trace runs device-uniformly (meta), so MoE / buffer-heavy models now emit ops too.
-_SPEC_SCHEMA_VERSION = 4
+#   v5: operations split into a separate /operations call. /architecture now caches a
+#       structure-only Spec (`operations_traced=False`); the key dropped the config hash.
+_SPEC_SCHEMA_VERSION = 5
 
 
 def _safe_model_id(model_id: str) -> str:
     return model_id.replace("/", "__")
 
 
-def hash_config(raw_config: dict[str, Any]) -> str:
-    """sha256 of the canonicalized config dict. First 12 hex chars used as a key."""
-    blob = json.dumps(raw_config, sort_keys=True, default=str).encode("utf-8")
-    return hashlib.sha256(blob).hexdigest()
-
-
 class DiskSpecCache:
-    """File-backed Spec cache."""
+    """File-backed Spec cache, keyed by model id + schema version."""
 
     def __init__(self, root: Path = _DEFAULT_ROOT) -> None:
         self._root = root
 
-    async def get(self, model_id: str, config_hash: str) -> Spec | None:
-        return await asyncio.to_thread(self._get_sync, model_id, config_hash)
+    async def get(self, model_id: str) -> Spec | None:
+        return await asyncio.to_thread(self._get_sync, model_id)
 
-    async def set(self, model_id: str, config_hash: str, spec: Spec) -> None:
-        await asyncio.to_thread(self._set_sync, model_id, config_hash, spec)
+    async def set(self, model_id: str, spec: Spec) -> None:
+        await asyncio.to_thread(self._set_sync, model_id, spec)
 
-    def _path(self, model_id: str, config_hash: str) -> Path:
-        return (
-            self._root
-            / f"{_safe_model_id(model_id)}.v{_SPEC_SCHEMA_VERSION}.{config_hash[:12]}.json"
-        )
+    def _path(self, model_id: str) -> Path:
+        return self._root / f"{_safe_model_id(model_id)}.v{_SPEC_SCHEMA_VERSION}.json"
 
-    def _get_sync(self, model_id: str, config_hash: str) -> Spec | None:
-        path = self._path(model_id, config_hash)
+    def _get_sync(self, model_id: str) -> Spec | None:
+        path = self._path(model_id)
         if not path.is_file():
             return None
         return Spec.model_validate_json(path.read_text(encoding="utf-8"))
 
-    def _set_sync(self, model_id: str, config_hash: str, spec: Spec) -> None:
-        path = self._path(model_id, config_hash)
+    def _set_sync(self, model_id: str, spec: Spec) -> None:
+        path = self._path(model_id)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(spec.model_dump_json(), encoding="utf-8")

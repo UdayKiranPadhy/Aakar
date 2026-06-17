@@ -1,6 +1,6 @@
 # Spec contract
 
-The **composition Spec** is the JSON shape returned by `GET /api/architecture`. It is the only data structure crossing the wire between the backend and the frontend.
+The **composition Spec** is the JSON shape returned by `GET /api/architecture` (the module tree, fast) and `GET /api/operations` (the same tree with each module's forward-pass `operations` filled in, slower). It is the only data structure crossing the wire between the backend and the frontend.
 
 ## Source of truth
 
@@ -24,6 +24,7 @@ type Spec = {
   tied_word_embeddings?: boolean; // checked on the meta-instantiated model
   flops_reference?: { batch_size: number; seq_len: number }; // assumed dims for Node.flops
   config_full?: Record<string, unknown>; // full config.to_dict() — NOT key-filtered
+  operations_traced?: boolean; // false from /architecture, true from /operations once traced
 };
 
 type Node = {
@@ -48,7 +49,7 @@ type Node = {
   source_url?: string;     // GitHub link to the class definition (HF transformers / PyTorch)
   flops?: number;          // theoretical forward FLOPs at Spec.flops_reference (Linear / norms only)
   intermediates?: Record<string, string>; // per-class intermediate shapes (attention q/k/v/scores, MLP up)
-  operations?: Operation[]; // ops this module's own forward() runs (fake-tensor trace); best-effort
+  operations?: Operation[]; // ops this module's own forward() runs (fake-tensor trace); from /operations, best-effort
 };
 
 type Operation = {
@@ -84,7 +85,7 @@ type Operation = {
 | `role`         | no       | The module's **semantic role**, decided from facts only — config dims (head counts, FFN width, expert/layer counts, vocab) + real tensor shapes + namespace `category` + structure — and **never** from class/attribute/child names (see `infrastructure/introspection/role.py`). Values: `"layer_stack"` (the decoder ModuleList, length == num_hidden_layers), `"container"`, `"norm"`, `"token_embedding"` / `"position_embedding"` / `"embedding"`, `"attention"` (block carrying head-width projections), `"mlp"` / `"moe"` (FFN block by intermediate width; `moe` when experts are present), `"lm_head"` (Linear to vocab), `"linear"`. Absent when no rule proves a role — the UI renders a generic card. Both the canvas semantic flow and the Token Journey segment a model purely off this field, so they always agree. |
 | `flops`        | no       | Theoretical forward-pass FLOPs at `Spec.flops_reference`. Populated only for modules with closed-form formulas: `Linear` (2·S·in·out), norms (~5·S·H), `Embedding` (0). |
 | `intermediates` | no      | Symbolic shapes of tensors that live *inside* opaque blocks, emitted per the module's `role` from config facts (never attribute/child names). `role: "attention"` reports `q`, `k`, `v` (with GQA grouping on K/V) and `attn_scores` (the `[B, num_heads, S, S]` quadratic intermediate); `role: "mlp"`/`"moe"` report `up` (the `[B, S, intermediate_size]` expansion). |
-| `operations`   | no       | The ATen ops this module's **own** `forward()` runs, in execution order (a submodule's ops live on that submodule's Node, so a `Linear` reports its `mm`, an RMSNorm `pow/mean/rsqrt/mul`, a decoder layer its two residual `add`s, attention its Q·Kᵀ / softmax / ·V math). Captured by a single fake-tensor trace (see below) — **best-effort**: absent when a model can't be traced, and the module tree renders regardless. See the `Operation` semantics below. |
+| `operations`   | no       | The ATen ops this module's **own** `forward()` runs, in execution order (a submodule's ops live on that submodule's Node, so a `Linear` reports its `mm`, an RMSNorm `pow/mean/rsqrt/mul`, a decoder layer its two residual `add`s, attention its Q·Kᵀ / softmax / ·V math). Populated only by **`GET /api/operations`**, never `/architecture` (the trace is the slow part of introspection, so it's fetched lazily — see below). Captured by a single fake-tensor trace — **best-effort**: absent when a model can't be traced, and the module tree renders regardless. See the `Operation` semantics below. |
 | `notes`        | no       | Optional UI banner. Currently unused after the adapter system was removed. |
 
 ### `Operation` semantics
@@ -108,6 +109,7 @@ type Operation = {
 | `tied_word_embeddings` | `model.get_input_embeddings().weight is model.get_output_embeddings().weight` after meta-instantiation. Config flag isn't always honored at runtime. |
 | `flops_reference` | `{batch_size, seq_len}` assumed when computing each `Node.flops`. Defaults to `{1, 2048}`. |
 | `config_full` | The complete `config.to_dict()` — every key, unfiltered (unlike the curated `config_summary`). Backs a generic Config Explorer that must not drop fields as `transformers` evolves. May contain nested sub-configs. Adds ~KB to the cached Spec JSON. |
+| `operations_traced` | `false` from `GET /api/architecture` (structure only); `true` from `GET /api/operations` once the fake-tensor trace has run — *even if it found no ops* (the trace is best-effort). Lets the frontend tell "not traced yet" (still fetching) from "traced, none found", and lets the cache skip re-tracing a model that legitimately yields nothing. |
 
 ### Extra `config_summary` keys
 
@@ -120,17 +122,22 @@ Beyond the base config fields, the summary may include:
 
 ## How the Spec is produced
 
-The backend's `TransformersIntrospector` (`backend/src/aakar_api/infrastructure/transformers_introspector.py`):
+The backend's `TransformersIntrospector` (`backend/src/aakar_api/infrastructure/transformers_introspector.py`) builds the Spec in two modes, so the slow trace stays off the structure path:
+
+- **`introspect`** (serves `GET /api/architecture`) runs steps 1–4 and returns the module tree with `operations_traced: false`.
+- **`introspect_with_operations`** (serves `GET /api/operations`) runs steps 1–4 **and** step 5, returning the same tree with `operations` filled in and `operations_traced: true`.
 
 1. Calls `AutoConfig.from_pretrained(model_id)` (no weights).
 2. Reads `config.architectures[0]` and resolves it to a concrete class on the `transformers` module (e.g. `transformers.LlamaForCausalLM`). If the class is not bundled with stock transformers — i.e. the model would require `trust_remote_code=True` — the request fails with HTTP 422 `unsupported_architecture`.
 3. Instantiates the class inside `accelerate.init_empty_weights()` so all `nn.Parameter`s live on the meta device (zero RAM).
 4. Walks `model.named_children()` recursively, producing one `Node` per `nn.Module`. Tensor shapes are read from `module.weight.shape` etc.; `param_count` is `sum(p.numel() for p in module.parameters(recurse=True))`.
-5. Runs one **fake-tensor trace** of `forward()` (`infrastructure/introspection/fx_operations.py`) to populate `Node.operations`. The model stays on `meta`; the pass runs under a `FakeTensorMode` (so transformers' `is_tracing()` is true and its data-dependent branches are skipped), observing every ATen op via a `TorchDispatchMode` and attributing each to the innermost executing module via `forward` hooks. No weights, no real compute, no I/O. Best-effort — a model that won't trace simply gets no `operations` (the steps above are unaffected). This replaces the FX/`HFTracer` approach, which doesn't work on transformers v5 (the module was removed) or with modern forwards' control flow.
+5. *(operations build only)* Runs one **fake-tensor trace** of `forward()` (`infrastructure/introspection/fx_operations.py`) to populate `Node.operations`. The model stays on `meta`; the pass runs under a `FakeTensorMode` (so transformers' `is_tracing()` is true and its data-dependent branches are skipped), observing every ATen op via a `TorchDispatchMode` and attributing each to the innermost executing module via `forward` hooks. No weights, no real compute, no I/O. Best-effort — a model that won't trace simply gets no `operations` (the steps above are unaffected). This replaces the FX/`HFTracer` approach, which doesn't work on transformers v5 (the module was removed) or with modern forwards' control flow.
+
+The frontend fetches `/architecture` first (instant tree), then `/operations` in the background and swaps the enriched Spec in (see `useArchitecture`), so the trace never blocks the first paint.
 
 ## Caching
 
-Results are cached on disk by `DiskSpecCache` at `backend/.cache/specs/{model_id_safe}.{config_hash[:12]}.json`. The cache key includes a SHA-256 of the canonicalized config dict, so config edits and fine-tuned forks invalidate naturally.
+Results are cached by `DiskSpecCache` at `backend/.cache/specs/{model_id_safe}.v{schema}.json` (and, when `REDIS_URL` is set, a shared `RedisSpecCache` tier behind it). The key is the **model id + a schema version** — *no config hash*, because computing one would cost a Hub round-trip on every request, warm hits included, which is exactly the latency the id-only key removes. The schema version invalidates payloads written by older code; a config edited in place is bounded by the Redis TTL (default 60 days) rather than invalidated instantly — acceptable for a study tool. A model's entry is **upgraded in place** from structure-only (written by `/architecture`) to fully-traced (written by `/operations`), so once traced both endpoints read warm.
 
 ## Example: Llama-3-style (abridged)
 
