@@ -1,0 +1,18 @@
+.page {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The active section scrolls here. Sits on a faint canvas tint so the white
+ * content cards read as raised — the airy, spacious dashboard look. Each view
+ * owns its own inner padding/layout (single-column vs. two-column), so the
+ * scroller itself stays padding-free. */
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  background: var(--color-canvas);
+}

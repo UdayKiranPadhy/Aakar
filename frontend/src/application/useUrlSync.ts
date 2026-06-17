@@ -16,7 +16,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import type { CompareView, ModelView } from "../domain/navigation";
+import type { CompareView, LearnView, ModelView } from "../domain/navigation";
 import { pathToRoute, routeToPath } from "../domain/route";
 import { useArchStore } from "../store/archStore";
 import { useCompareModels } from "./useCompareModels";
@@ -30,6 +30,8 @@ export type UrlSyncOptions = Readonly<{
   toModelView: (raw: string | undefined) => ModelView;
   /** Coerce a raw `?view=` into a registered CompareView, else the default. */
   toCompareView: (raw: string | undefined) => CompareView;
+  /** Coerce a raw `?view=` into a registered LearnView, else the default. */
+  toLearnView: (raw: string | undefined) => LearnView;
 }>;
 
 /** The view both surfaces default to; omitted from the URL to keep it clean. */
@@ -59,7 +61,10 @@ function buildUrl(s: Store): string {
         view: s.compareView !== DEFAULT_VIEW ? s.compareView : undefined,
       });
     case "learn":
-      return routeToPath({ mode: "learn" });
+      return routeToPath({
+        mode: "learn",
+        view: s.learnView !== DEFAULT_VIEW ? s.learnView : undefined,
+      });
     default:
       return routeToPath({ mode: "home" });
   }
@@ -69,7 +74,7 @@ function sameIds(a: ReadonlyArray<string>, b: ReadonlyArray<string>): boolean {
   return a.length === b.length && a.every((id, i) => id === b[i]);
 }
 
-export function useUrlSync({ loadModel, toModelView, toCompareView }: UrlSyncOptions): void {
+export function useUrlSync({ loadModel, toModelView, toCompareView, toLearnView }: UrlSyncOptions): void {
   const location = useLocation();
   const navigate = useNavigate();
   const { load: loadCompare } = useCompareModels();
@@ -88,9 +93,12 @@ export function useUrlSync({ loadModel, toModelView, toCompareView }: UrlSyncOpt
       case "home":
         if (s.appMode !== "home") s.setAppMode("home");
         break;
-      case "learn":
+      case "learn": {
         if (s.appMode !== "learn") s.setAppMode("learn");
+        const view = toLearnView(route.view);
+        if (s.learnView !== view) s.setLearnView(view);
         break;
+      }
       case "model": {
         if (s.appMode !== "model") s.setAppMode("model");
         const currentId = s.spec?.model_id ?? s.requestedModelId ?? s.error?.modelId ?? null;
@@ -116,7 +124,7 @@ export function useUrlSync({ loadModel, toModelView, toCompareView }: UrlSyncOpt
         break;
       }
     }
-  }, [location.pathname, location.search, loadModel, loadCompare, toModelView, toCompareView]);
+  }, [location.pathname, location.search, loadModel, loadCompare, toModelView, toCompareView, toLearnView]);
 
   // Outbound: store → URL. Subscribe once; coalesce a burst of sets into a
   // single microtask so the navigation reflects the final state. Push for a

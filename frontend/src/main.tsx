@@ -13,6 +13,7 @@ import "./presentation/layout/register";
 import "./presentation/details/register";
 import "./presentation/model-views/register";
 import "./presentation/compare-views/register";
+import "./presentation/learn-views/register";
 
 // TEMP diagnostic: confirm whether VITE_API_URL was injected at build time.
 // On the deployed site, open DevTools → Console: you should see your backend

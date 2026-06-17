@@ -1,0 +1,394 @@
+/* Shared Learn building blocks. Airy, spacious, hairline-bordered cards on a
+ * faint canvas — the Google-flavoured visual language for the whole surface.
+ * Colour tones set two custom properties (--tone, --tone-soft) consumed by
+ * chips, badges and dots, so a single tone class drives every accent. */
+
+/* ── Tones ─────────────────────────────────────────────────────────────── */
+.toneBlue {
+  --tone: var(--g-blue-strong);
+  --tone-soft: var(--g-blue-subtle);
+}
+.toneRed {
+  --tone: var(--g-red);
+  --tone-soft: var(--g-red-subtle);
+}
+.toneYellow {
+  --tone: var(--g-yellow-ink);
+  --tone-soft: var(--g-yellow-subtle);
+}
+.toneGreen {
+  --tone: var(--g-green);
+  --tone-soft: var(--g-green-subtle);
+}
+.tonePurple {
+  --tone: var(--g-purple);
+  --tone-soft: var(--g-purple-subtle);
+}
+.toneTeal {
+  --tone: var(--viz-io);
+  --tone-soft: color-mix(in srgb, var(--viz-io) 14%, transparent);
+}
+
+/* ── Standard single-column view shell ─────────────────────────────────── */
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-10) var(--space-16);
+}
+@media (max-width: 880px) {
+  .view {
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-5) var(--space-12);
+  }
+}
+
+/* ── Page header (the big section title) ───────────────────────────────── */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+.pageHeadingText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pageTitle {
+  font-family: var(--font-sans);
+  font-size: 34px;
+  font-weight: var(--weight-bold);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+.pageSubtitle {
+  max-width: 60ch;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-ink-subtle);
+}
+.pageActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* ── Section header (within-page) ──────────────────────────────────────── */
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.sectionTitle {
+  font-family: var(--font-sans);
+  font-size: 19px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+.sectionSubtitle {
+  margin-top: 2px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+.sectionAction {
+  flex-shrink: 0;
+}
+
+.viewAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+.viewAll:hover {
+  text-decoration: underline;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.card {
+  display: block;
+  padding: var(--space-5);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  text-align: start;
+}
+.cardInteractive {
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.cardInteractive:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-hairline-strong);
+  box-shadow: var(--shadow-panel);
+}
+.cardInteractive:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-subtle);
+}
+.cardActive {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+/* ── Chips / tags / badges ─────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-canvas);
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+.tagButton {
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+.tagButton:hover {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-block);
+  background: var(--tone-soft);
+  color: var(--tone);
+}
+.iconBadge svg {
+  width: 22px;
+  height: 22px;
+}
+.iconBadgeSm {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+}
+.iconBadgeSm svg {
+  width: 18px;
+  height: 18px;
+}
+.iconBadgeLg {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-block);
+}
+.iconBadgeLg svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* ── Star rating ───────────────────────────────────────────────────────── */
+.stars {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--color-hairline-strong);
+}
+.star {
+  color: var(--color-hairline-strong);
+}
+.starOn {
+  color: var(--g-yellow-ink);
+}
+
+/* ── Difficulty dots ───────────────────────────────────────────────────── */
+.dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hairline-strong);
+}
+.dotOn {
+  background: var(--tone);
+}
+
+/* ── Misc ──────────────────────────────────────────────────────────────── */
+.meta {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--color-ink-subtle);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+}
+.emptyTitle {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.emptyMsg {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+
+/* ── Search ────────────────────────────────────────────────────────────── */
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  height: 44px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+.search:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+.searchIcon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--color-ink-subtle);
+}
+.searchField {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-ink);
+}
+.searchField::placeholder {
+  color: var(--color-ink-subtle);
+}
+.searchField:focus {
+  outline: none;
+}
+/* Hide the native clear affordance for a cleaner look. */
+.searchField::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/* ── Filter chips (tab-like) ───────────────────────────────────────────── */
+.filterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.filterChip {
+  padding: 6px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.filterChip:hover {
+  background: var(--color-canvas-hover);
+  color: var(--color-ink);
+}
+.filterChipActive {
+  border-color: transparent;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+.filterChipActive:hover {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+/* ── Segmented toggle (e.g. Timeline / Table) ──────────────────────────── */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+}
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.segment:hover {
+  color: var(--color-ink);
+}
+.segmentActive {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+.segmentActive:hover {
+  color: var(--color-accent);
+}
+.segment svg {
+  width: 16px;
+  height: 16px;
+}

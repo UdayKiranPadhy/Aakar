@@ -102,6 +102,7 @@ describe("round trip", () => {
     { mode: "model", modelId: "gpt2", view: "architecture", path: ["layers", "0", "self_attn"] },
     { mode: "compare", a: "gpt2", b: "meta-llama/Llama-3-8B", view: "tokens" },
     { mode: "compare", a: "gpt2" },
+    { mode: "learn", view: "timeline" },
   ];
 
   // `toEqual` ignores the `undefined` extras `pathToRoute` fills in (view/path/a/b).

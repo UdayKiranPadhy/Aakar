@@ -19,16 +19,17 @@ import { MotionConfig } from "framer-motion";
 
 import { useArchitecture } from "./application/useArchitecture";
 import { useUrlSync } from "./application/useUrlSync";
-import type { CompareView, ModelView } from "./domain/navigation";
+import type { CompareView, LearnView, ModelView } from "./domain/navigation";
 import { HttpArchitectureRepository } from "./infrastructure/api/HttpArchitectureRepository";
 import { useArchStore } from "./store/archStore";
 import { CompareHost } from "./presentation/compare/CompareHost";
 import { compareViewRegistry } from "./presentation/compare-views/CompareViewRegistry";
+import { learnViewRegistry } from "./presentation/learn-views/LearnViewRegistry";
 import { modelViewRegistry } from "./presentation/model-views/ModelViewRegistry";
 import { ErrorBoundary } from "./presentation/components/ErrorBoundary";
 import { ModelSidebar } from "./presentation/components/ModelSidebar";
 import { NavBar } from "./presentation/components/NavBar";
-import { PlaceholderScreen } from "./presentation/components/PlaceholderScreen";
+import { LearnHost } from "./presentation/learn/LearnHost";
 import { useHideOnScroll } from "./presentation/components/useHideOnScroll";
 import { ModelViewHost } from "./presentation/model-views/ModelViewHost";
 import { LandingPage } from "./presentation/landing/LandingPage";
@@ -58,7 +59,12 @@ export function App() {
       raw && compareViewRegistry.resolve(raw as CompareView) ? (raw as CompareView) : "overview",
     [],
   );
-  useUrlSync({ loadModel, toModelView, toCompareView });
+  const toLearnView = useCallback(
+    (raw: string | undefined): LearnView =>
+      raw && learnViewRegistry.resolve(raw as LearnView) ? (raw as LearnView) : "overview",
+    [],
+  );
+  useUrlSync({ loadModel, toModelView, toCompareView, toLearnView });
 
   const appMode = useArchStore((s) => s.appMode);
   const modelView = useArchStore((s) => s.modelView);
@@ -136,12 +142,7 @@ export function App() {
 
           {appMode === "compare" && <CompareHost />}
 
-          {appMode === "learn" && (
-            <PlaceholderScreen
-              title="Learn"
-              message="Guided LLM-architecture concepts are coming soon."
-            />
-          )}
+          {appMode === "learn" && <LearnHost />}
         </ErrorBoundary>
       </main>
     </div>

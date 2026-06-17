@@ -1,0 +1,98 @@
+/**
+ * Well-known evaluation benchmarks shown in the Benchmarks section. Top-model /
+ * top-score figures are illustrative placeholders; names, domains and what each
+ * benchmark measures are accurate.
+ */
+
+import type { Benchmark } from "./types";
+
+export const BENCHMARKS: ReadonlyArray<Benchmark> = [
+  {
+    id: "mmlu",
+    name: "MMLU",
+    fullName: "Massive Multitask Language Understanding",
+    domain: "Knowledge & Reasoning",
+    description: "57 subjects spanning STEM, humanities and social science, tested as multiple-choice questions.",
+    metric: "Accuracy (%)",
+    topModel: "Frontier LLMs",
+    topScore: "~90%",
+    tone: "blue",
+  },
+  {
+    id: "gsm8k",
+    name: "GSM8K",
+    fullName: "Grade School Math 8K",
+    domain: "Mathematical Reasoning",
+    description: "Grade-school word problems requiring multi-step arithmetic reasoning.",
+    metric: "Accuracy (%)",
+    topModel: "Reasoning models",
+    topScore: "~97%",
+    tone: "green",
+  },
+  {
+    id: "humaneval",
+    name: "HumanEval",
+    fullName: "HumanEval",
+    domain: "Code Generation",
+    description: "Hand-written programming problems graded by whether generated code passes unit tests.",
+    metric: "pass@1 (%)",
+    topModel: "Frontier code models",
+    topScore: "~95%",
+    tone: "purple",
+  },
+  {
+    id: "math",
+    name: "MATH",
+    fullName: "MATH",
+    domain: "Mathematical Reasoning",
+    description: "Competition mathematics problems requiring detailed, multi-step solutions.",
+    metric: "Accuracy (%)",
+    topModel: "Reasoning models",
+    topScore: "~90%",
+    tone: "red",
+  },
+  {
+    id: "swe-bench",
+    name: "SWE-bench",
+    fullName: "Software Engineering Benchmark",
+    domain: "Agentic Coding",
+    description: "Real GitHub issues an agent must resolve by editing a repository so tests pass.",
+    metric: "Resolved (%)",
+    topModel: "Coding agents",
+    topScore: "~70%",
+    tone: "yellow",
+  },
+  {
+    id: "mmmu",
+    name: "MMMU",
+    fullName: "Massive Multi-discipline Multimodal Understanding",
+    domain: "Multimodal Reasoning",
+    description: "College-level questions combining text with diagrams, charts and images.",
+    metric: "Accuracy (%)",
+    topModel: "Multimodal frontier models",
+    topScore: "~75%",
+    tone: "teal",
+  },
+  {
+    id: "hellaswag",
+    name: "HellaSwag",
+    fullName: "HellaSwag",
+    domain: "Commonsense Reasoning",
+    description: "Pick the most plausible continuation of a scenario — easy for humans, historically hard for models.",
+    metric: "Accuracy (%)",
+    topModel: "Frontier LLMs",
+    topScore: "~96%",
+    tone: "blue",
+  },
+  {
+    id: "gpqa",
+    name: "GPQA",
+    fullName: "Graduate-Level Google-Proof Q&A",
+    domain: "Expert Reasoning",
+    description: "Hard science questions written by domain experts to resist simple web lookup.",
+    metric: "Accuracy (%)",
+    topModel: "Reasoning models",
+    topScore: "~80%",
+    tone: "green",
+  },
+];

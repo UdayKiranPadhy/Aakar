@@ -1,0 +1,360 @@
+/* Shared layout + card primitives for the simpler Learn sections (Architecture
+ * Evolution, Blogs, Paths, Benchmarks, Companies, Datasets, Visualizations,
+ * Glossary). Keeps these views declarative and visually consistent. */
+
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-10) var(--space-16);
+}
+@media (max-width: 880px) {
+  .view {
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-5) var(--space-12);
+  }
+}
+
+/* ── Grids ─────────────────────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+.gridWide {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: var(--space-4);
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Generic info card ─────────────────────────────────────────────────── */
+.infoCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+  height: 100%;
+}
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.cardEyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-subtle);
+}
+.cardTitle {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+.cardTagline {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+}
+.cardText {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+}
+.kicker {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* key/value footer rows */
+.footRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-hairline);
+}
+.kv {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.kvLabel {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.kvValue {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+
+/* ── Status badges (visualizations) ────────────────────────────────────── */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+}
+.statusLive {
+  background: var(--g-green-subtle);
+  color: var(--g-green);
+}
+.statusSoon {
+  background: var(--color-canvas);
+  color: var(--color-ink-subtle);
+}
+
+/* ── Learning paths ────────────────────────────────────────────────────── */
+.pathCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+}
+.pathHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.pathHeadText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.pathTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+.pathBlurb {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+.pathStats {
+  display: flex;
+  gap: var(--space-5);
+  flex-shrink: 0;
+  text-align: right;
+}
+.pathStat {
+  display: flex;
+  flex-direction: column;
+}
+.pathStatVal {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+.pathStatLbl {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+}
+.progressTrack {
+  position: relative;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hairline);
+  overflow: hidden;
+}
+.progressFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-pill);
+  background: var(--tone);
+}
+.modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+.module {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+}
+.moduleHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.moduleTitle {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.moduleLessons {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+}
+
+/* ── Glossary ──────────────────────────────────────────────────────────── */
+.glossaryTop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.letter:hover:not(:disabled) {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+.letterActive {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+.letter:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.terms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-4);
+}
+.termCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-block);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-block);
+}
+.termWord {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+.termAbbr {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-subtle);
+}
+.termDef {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-ink-muted);
+}
+.termRelated {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.termRelatedLabel {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+  align-self: center;
+}
+
+/* ── Company avatar ────────────────────────────────────────────────────── */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+}
+
+/* ── Section intro line under the page header ──────────────────────────── */
+.count {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}

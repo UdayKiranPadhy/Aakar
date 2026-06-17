@@ -17,6 +17,7 @@ import {
   type AppMode,
   type CompareSlot,
   type CompareView,
+  type LearnView,
   type ExpansionPath,
   type Level,
   type ModelView,
@@ -106,6 +107,8 @@ type State = {
   modelView: ModelView;
   /** Within the Compare page, which tab is active (left CompareSidebar). */
   compareView: CompareView;
+  /** Within the Learn page, which section is active (left LearnSidebar). */
+  learnView: LearnView;
   sidebarCollapsed: boolean;
   /** Pixel widths of the resizable left/right rails (ignored while collapsed). */
   sidebarWidth: number;
@@ -151,6 +154,7 @@ type Actions = {
   setAppMode(mode: AppMode): void;
   setModelView(view: ModelView): void;
   setCompareView(view: CompareView): void;
+  setLearnView(view: LearnView): void;
   toggleSidebar(collapsed?: boolean): void;
   setSidebarWidth(width: number): void;
   setDetailWidth(width: number): void;
@@ -187,6 +191,7 @@ const initialState: State = {
   appMode: "home",
   modelView: "overview",
   compareView: "overview",
+  learnView: "overview",
   sidebarCollapsed: false,
   sidebarWidth: 248,
   detailWidth: 320,
@@ -279,6 +284,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
   setModelView: (modelView) => set({ modelView }),
 
   setCompareView: (compareView) => set({ compareView }),
+
+  setLearnView: (learnView) => set({ learnView }),
 
   toggleSidebar: (collapsed) =>
     set((s) => ({ sidebarCollapsed: collapsed ?? !s.sidebarCollapsed })),

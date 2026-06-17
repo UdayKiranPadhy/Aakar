@@ -52,6 +52,25 @@ export type CompareView =
   | "research";
 
 /**
+ * Which Learn-page section is active (left LearnSidebar selection). Maps to an
+ * entry in the frontend `LearnViewRegistry`. The Learn surface is entirely
+ * self-contained, statically-authored content — it never calls the backend.
+ */
+export type LearnView =
+  | "overview"
+  | "timeline"
+  | "concepts"
+  | "architectures"
+  | "papers"
+  | "blogs"
+  | "paths"
+  | "benchmarks"
+  | "companies"
+  | "datasets"
+  | "visualizations"
+  | "glossary";
+
+/**
  * Zoom level derived from how many nodes are currently expanded into.
  * 0 expansions → level 1; 1 → level 2; 2+ → level 3 (capped).
  */
