@@ -16,6 +16,7 @@ import type { LoadError } from "../application/loadError";
 import {
   type AppMode,
   type CompareSlot,
+  type CompareView,
   type ExpansionPath,
   type Level,
   type ModelView,
@@ -71,6 +72,13 @@ function persistTheme(preference: ThemePreference): void {
 type State = {
   modelInput: string;
   /**
+   * The id of the model currently being loaded as the primary spec. Set the
+   * instant `loadModel` starts, before the async fetch resolves, so the URL can
+   * reflect `/model?id=…` while `spec` is still null (mid-load) or an error
+   * cleared it. Distinct from `modelInput` (the search box's live text).
+   */
+  requestedModelId: string | null;
+  /**
    * Bumped to request that the nav's search field take focus — the channel for
    * the landing page's "Enter Model" CTA, which lives in a different subtree.
    * A monotonic counter rather than a boolean so repeated requests always fire.
@@ -80,6 +88,14 @@ type State = {
   /** The two models compared side by side in the Compare view; null when empty. */
   compareA: Spec | null;
   compareB: Spec | null;
+  /**
+   * Ids whose compare-slot load is in flight, mirroring `requestedModelId` for
+   * the two Compare columns. They keep the URL's `?a=`/`?b=` stable across the
+   * load window — without them, the slot that resolves first would briefly
+   * rewrite the URL and drop the other (still-loading) slot.
+   */
+  requestedCompareA: string | null;
+  requestedCompareB: string | null;
   loading: boolean;
   error: LoadError | null;
   selectionPath: SelectionPath;
@@ -88,6 +104,8 @@ type State = {
   detailOpen: boolean;
   appMode: AppMode;
   modelView: ModelView;
+  /** Within the Compare page, which tab is active (left CompareSidebar). */
+  compareView: CompareView;
   sidebarCollapsed: boolean;
   /** Pixel widths of the resizable left/right rails (ignored while collapsed). */
   sidebarWidth: number;
@@ -115,10 +133,14 @@ type State = {
 
 type Actions = {
   setModelInput(value: string): void;
+  /** Record the id whose load is starting (drives `/model?id=…` during load). */
+  setRequestedModelId(modelId: string | null): void;
   /** Request focus on the nav search field (landing "Enter Model" CTA). */
   requestSearchFocus(): void;
   setSpec(spec: Spec): void;
   setCompareSpec(slot: CompareSlot, spec: Spec | null): void;
+  /** Record the id whose compare-slot load is starting (keeps `?a=`/`?b=` stable). */
+  setCompareRequested(slot: CompareSlot, modelId: string | null): void;
   setLoading(loading: boolean): void;
   setError(error: LoadError | null): void;
   selectNode(id: string): void;
@@ -128,6 +150,7 @@ type Actions = {
   closeDetail(): void;
   setAppMode(mode: AppMode): void;
   setModelView(view: ModelView): void;
+  setCompareView(view: CompareView): void;
   toggleSidebar(collapsed?: boolean): void;
   setSidebarWidth(width: number): void;
   setDetailWidth(width: number): void;
@@ -148,10 +171,13 @@ type Actions = {
 
 const initialState: State = {
   modelInput: "",
+  requestedModelId: null,
   searchFocusNonce: 0,
   spec: null,
   compareA: null,
   compareB: null,
+  requestedCompareA: null,
+  requestedCompareB: null,
   loading: false,
   error: null,
   selectionPath: [],
@@ -160,6 +186,7 @@ const initialState: State = {
   detailOpen: false,
   appMode: "home",
   modelView: "overview",
+  compareView: "overview",
   sidebarCollapsed: false,
   sidebarWidth: 248,
   detailWidth: 320,
@@ -176,12 +203,17 @@ export const useArchStore = create<State & Actions>()((set) => ({
 
   setModelInput: (value) => set({ modelInput: value }),
 
+  setRequestedModelId: (requestedModelId) => set({ requestedModelId }),
+
   requestSearchFocus: () => set((s) => ({ searchFocusNonce: s.searchFocusNonce + 1 })),
 
   setSpec: (spec) => set({ spec, error: null, loading: false }),
 
   setCompareSpec: (slot, spec) =>
     set(slot === "a" ? { compareA: spec } : { compareB: spec }),
+
+  setCompareRequested: (slot, modelId) =>
+    set(slot === "a" ? { requestedCompareA: modelId } : { requestedCompareB: modelId }),
 
   setLoading: (loading) => set({ loading }),
 
@@ -246,6 +278,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
 
   setModelView: (modelView) => set({ modelView }),
 
+  setCompareView: (compareView) => set({ compareView }),
+
   toggleSidebar: (collapsed) =>
     set((s) => ({ sidebarCollapsed: collapsed ?? !s.sidebarCollapsed })),
 
@@ -284,6 +318,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
       // an in-progress side-by-side comparison.
       compareA: s.compareA,
       compareB: s.compareB,
+      requestedCompareA: s.requestedCompareA,
+      requestedCompareB: s.requestedCompareB,
       sidebarWidth: s.sidebarWidth,
       detailWidth: s.detailWidth,
       hfToken: s.hfToken,

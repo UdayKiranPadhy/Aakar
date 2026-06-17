@@ -1,0 +1,228 @@
+/* Full-bleed, centred scroll surface — replaces the sidebar + content body on a
+ * Compare cold start. Fills the flex-row main area and scrolls internally. */
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  /* No horizontal padding — the illustration banner is full-bleed. */
+  padding: 0 0 var(--space-16);
+}
+
+/* Full-bleed illustration banner (Google-Flights style). The SVG's solid sky was
+ * removed, so its transparent background blends into the page in any theme; we
+ * crop the empty upper area down to a short wide band and fade the bottom edge. */
+.heroArt {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1844 / 500;
+  object-fit: cover;
+  object-position: 50% 90%;
+  /* Dissolve all four edges into the page so the scene blends rather than reading
+   * as a framed image. Fading the top also melts the peaks into the page (Google
+   * style) and hides faint leftover sky wisps that show on the dark background.
+   * Two gradients intersected: visible only where BOTH are opaque. */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%);
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  pointer-events: none;
+  user-select: none;
+}
+
+.inner {
+  width: 100%;
+  max-width: 760px;
+  /* Horizontal breathing room for the text + card (the banner above is full-bleed). */
+  padding: 0 clamp(16px, 4vw, 40px);
+  text-align: center;
+}
+
+/* Google Flights' title is large but light-weight (not bold). */
+.title {
+  margin: clamp(8px, 2vh, 20px) 0 0;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+.subtitle {
+  margin: var(--space-3) auto 0;
+  max-width: 46ch;
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1.5vw, 16px);
+  line-height: 1.55;
+  color: var(--color-ink-subtle);
+}
+
+/* White search card with the Compare button floating over its bottom edge. The
+ * bottom margin leaves room for the button's protruding half before the chips. */
+.card {
+  position: relative;
+  margin: clamp(28px, 4vw, 44px) auto calc(var(--space-10) + var(--space-2));
+  padding: clamp(16px, 2.4vw, 24px) clamp(16px, 2.4vw, 24px) clamp(24px, 3vw, 32px);
+  border-radius: 16px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Two fields with the circular swap in its own middle column, baseline-aligned
+ * with the input row (labels are folded into placeholders, so no offset needed). */
+.fields {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.swap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  /* Centre the 40px control on the 52px input row. */
+  margin-top: 6px;
+  padding: 0;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  box-shadow: var(--shadow-block);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+.swap:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+.swap:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+
+/* Floating "Compare" pill — overlaps the card's bottom edge, like Flights' Explore. */
+.compare {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 44px;
+  padding: 0 var(--space-6);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--shadow-panel);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+.compare:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+.compare:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--color-accent-subtle);
+}
+.compare:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Example pairs (the "popular destinations" analogue) ─────────────────── */
+.examples {
+  margin-top: clamp(24px, 3vw, 36px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+.examplesLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.pairs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.pair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-bg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+.pair:hover {
+  border-color: var(--color-hairline-strong);
+  background: var(--color-canvas);
+  box-shadow: var(--shadow-block);
+}
+.pairVs {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+}
+.pairA {
+  color: var(--color-accent);
+  font-weight: var(--weight-medium);
+}
+.pairB {
+  color: var(--g-green);
+  font-weight: var(--weight-medium);
+}
+
+/* Stack the two fields on narrow widths; the swap rotates to sit between rows. */
+@media (max-width: 640px) {
+  /* A taller crop so the scene reads on narrow screens. */
+  .heroArt {
+    aspect-ratio: 1844 / 820;
+    object-position: 50% 90%;
+  }
+  .fields {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .swap {
+    justify-self: center;
+    margin-top: 0;
+    transform: rotate(90deg);
+  }
+}

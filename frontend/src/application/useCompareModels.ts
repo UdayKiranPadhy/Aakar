@@ -33,12 +33,16 @@ export function useCompareModels(
   repo: ArchitectureRepository = defaultRepo,
 ): CompareModelsApi {
   const setCompareSpec = useArchStore((s) => s.setCompareSpec);
+  const setCompareRequested = useArchStore((s) => s.setCompareRequested);
   const [status, setStatus] = useState<Record<CompareSlot, SlotStatus>>({ a: IDLE, b: IDLE });
 
   const load = useCallback(
     async (slot: CompareSlot, modelId: string): Promise<void> => {
       const trimmed = modelId.trim();
       if (!trimmed) return;
+      // Record the target id up-front so a deep-linked `?a=…&b=…` stays intact
+      // while one column resolves ahead of the other.
+      setCompareRequested(slot, trimmed);
       setStatus((s) => ({ ...s, [slot]: { loading: true, error: null } }));
       try {
         const spec = await repo.fetch(trimmed);
@@ -48,17 +52,19 @@ export function useCompareModels(
         setStatus((s) => ({ ...s, [slot]: { loading: false, error: toUserMessage(e) } }));
       }
     },
-    [repo, setCompareSpec],
+    [repo, setCompareSpec, setCompareRequested],
   );
 
   const swap = useCallback(() => {
     // Read the latest specs at call time (not from a render snapshot).
-    const { compareA, compareB } = useArchStore.getState();
+    const { compareA, compareB, requestedCompareA, requestedCompareB } = useArchStore.getState();
     setCompareSpec("a", compareB);
     setCompareSpec("b", compareA);
+    setCompareRequested("a", requestedCompareB);
+    setCompareRequested("b", requestedCompareA);
     // Keep each per-bar status with the model it describes.
     setStatus((s) => ({ a: s.b, b: s.a }));
-  }, [setCompareSpec]);
+  }, [setCompareSpec, setCompareRequested]);
 
   return { load, swap, a: status.a, b: status.b };
 }

@@ -35,18 +35,6 @@ export function CtaSection({ onSubmit }: Props) {
           <ExampleChips onSubmit={onSubmit} />
         </motion.div>
       </motion.div>
-
-      <footer className={styles.footer}>
-        <span className={styles.dots} aria-hidden="true">
-          <i style={{ background: "var(--g-blue)" }} />
-          <i style={{ background: "var(--g-red)" }} />
-          <i style={{ background: "var(--g-yellow)" }} />
-          <i style={{ background: "var(--g-green)" }} />
-        </span>
-        <span>
-          <strong>Aakar</strong> — an educational LLM architecture visualizer.
-        </span>
-      </footer>
     </section>
   );
 }

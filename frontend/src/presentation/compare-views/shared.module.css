@@ -1,0 +1,78 @@
+/* Small presentational helpers shared across the Compare tab views. */
+
+.muted {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Label → external-link rows (source-code mapping, etc.). */
+.linkList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.linkRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.linkRow:last-child {
+  border-bottom: none;
+}
+.linkClass {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.linkAnchor {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+.linkAnchor:hover {
+  text-decoration: underline;
+}
+
+/* A simple bulleted list (key differences). */
+.bullets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bullet {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink);
+}
+.bulletLabel {
+  flex-shrink: 0;
+  min-width: 96px;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}

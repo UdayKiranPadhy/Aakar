@@ -8,7 +8,7 @@
 
 import type { ComponentType, ReactNode, SVGProps } from "react";
 
-import type { ModelView } from "../../domain/navigation";
+import type { CompareView, ModelView } from "../../domain/navigation";
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -103,6 +103,23 @@ const ResearchIcon = (p: IconProps) => (
   </Svg>
 );
 
+const TokensIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="9" width="5" height="6" rx="1.5" />
+    <rect x="9.5" y="9" width="5" height="6" rx="1.5" />
+    <rect x="16" y="9" width="5" height="6" rx="1.5" />
+  </Svg>
+);
+
+const FilesIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 3 14 8 19 8" />
+    <line x1="9" y1="13" x2="15" y2="13" />
+    <line x1="9" y1="17" x2="13" y2="17" />
+  </Svg>
+);
+
 /** Neutral fallback for any view key without a bespoke glyph. */
 const FallbackIcon = (p: IconProps) => (
   <Svg {...p}>
@@ -123,6 +140,22 @@ const VIEW_ICONS: Partial<Record<ModelView, ComponentType<IconProps>>> = {
 /** Resolve a section glyph by view key, falling back to a neutral dot. */
 export function ViewIcon({ viewKey, ...props }: IconProps & { viewKey: ModelView }) {
   const Icon = VIEW_ICONS[viewKey] ?? FallbackIcon;
+  return <Icon {...props} />;
+}
+
+const COMPARE_VIEW_ICONS: Partial<Record<CompareView, ComponentType<IconProps>>> = {
+  overview: OverviewIcon,
+  architecture: ArchitectureIcon,
+  parameters: ParametersIcon,
+  compute: ComputeIcon,
+  tokens: TokensIcon,
+  files: FilesIcon,
+  research: ResearchIcon,
+};
+
+/** Resolve a Compare-tab glyph by view key, falling back to a neutral dot. */
+export function CompareViewIcon({ viewKey, ...props }: IconProps & { viewKey: CompareView }) {
+  const Icon = COMPARE_VIEW_ICONS[viewKey] ?? FallbackIcon;
   return <Icon {...props} />;
 }
 

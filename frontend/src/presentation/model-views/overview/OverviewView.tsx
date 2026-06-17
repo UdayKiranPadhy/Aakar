@@ -20,7 +20,16 @@ import type { ModelView } from "../../../domain/navigation";
 import type { HubSibling, ModelInfo } from "../../../domain/modelInfo";
 import type { Spec } from "../../../domain/spec";
 import { useArchStore } from "../../../store/archStore";
-import { formatBytes, formatParamCount } from "../../components/ui/format";
+import { formatBytes, formatCompact, formatDate, formatParamCount, pct } from "../../components/ui/format";
+import { dtypeColor, dtypeEntries } from "../../components/ui/dtypePalette";
+import { fileRank, fileType } from "../../components/ui/fileClassify";
+import {
+  deriveLicense,
+  deriveModality,
+  deriveTopicTags,
+  extractReadmeSummary,
+  prettyWords,
+} from "../../components/ui/hubFields";
 import type { ModelViewProps } from "../ModelViewRegistry";
 import { ViewEmpty, ViewError, ViewLoading } from "../shared/primitives";
 import shared from "../shared/primitives.module.css";
@@ -644,25 +653,6 @@ function ActionLink({ href, label, external }: { href: string; label: string; ex
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string | undefined): string | null {
-  if (!iso) return null;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(date);
-}
-
-/** 5595879 → "5.6M", 1639 → "1,639", 128000 → "128K". */
-function formatCompact(n: number): string {
-  if (n < 1000) return n.toLocaleString();
-  if (n < 1e6) return `${(n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 1)}K`.replace(".0K", "K");
-  if (n < 1e9) return `${(n / 1e6).toFixed(1)}M`.replace(".0M", "M");
-  return `${(n / 1e9).toFixed(1)}B`.replace(".0B", "B");
-}
-
-function pct(value: number, total: number): string {
-  return `${((value / total) * 100).toFixed(1)}%`.replace(".0%", "%");
-}
-
 function pushNum(
   out: Array<{ label: string; value: string }>,
   value: Spec["config_summary"][string] | undefined,
@@ -675,196 +665,6 @@ function totalParams(spec: Spec, info: ModelInfo): number | null {
   if (typeof info.safetensors?.total === "number") return info.safetensors.total;
   const cs = spec.config_summary.total_params;
   return typeof cs === "number" ? cs : null;
-}
-
-/** Param dtype distribution from safetensors, sorted largest-first. */
-function dtypeEntries(info: ModelInfo): { entries: Array<[string, number]>; total: number } | null {
-  const params = info.safetensors?.parameters;
-  const total = info.safetensors?.total;
-  if (!params || !total || total === 0) return null;
-  const entries = Object.entries(params).sort(([, a], [, b]) => b - a);
-  return entries.length > 0 ? { entries, total } : null;
-}
-
-const DTYPE_COLORS: Record<string, string> = {
-  BF16: "#4285f4",
-  F16: "#34a853",
-  F32: "#ea4335",
-  F64: "#fbbc05",
-  I8: "#8e24aa",
-  U8: "#e040fb",
-  I16: "#00acc1",
-  I32: "#ff7043",
-  I64: "#6d4c41",
-};
-function dtypeColor(dtype: string): string {
-  return DTYPE_COLORS[dtype] ?? "#9e9e9e";
-}
-
-/** Top-level "Multimodal / Vision / Audio / Text" descriptor from the pipeline tag. */
-function deriveModality(pipeline?: string): string | null {
-  if (!pipeline) return null;
-  const p = pipeline.toLowerCase();
-  const hasImg = p.includes("image") || p.includes("visual") || p.includes("video");
-  const hasAud = p.includes("audio") || p.includes("speech");
-  const hasTxt = p.includes("text") || p.includes("token");
-  if ((hasImg || hasAud) && hasTxt) return "Multimodal";
-  if (hasImg && hasAud) return "Multimodal";
-  if (hasImg) return "Vision";
-  if (hasAud) return "Audio";
-  return null;
-}
-
-function deriveLicense(info: ModelInfo): string | null {
-  if (typeof info.license === "string" && info.license) return prettyLicense(info.license);
-  const tag = info.tags.find((t) => t.toLowerCase().startsWith("license:"));
-  if (tag) return prettyLicense(tag.slice(tag.indexOf(":") + 1));
-  const cd = info.card_data?.license;
-  if (typeof cd === "string" && cd) return prettyLicense(cd);
-  return null;
-}
-
-const KNOWN_LICENSES: Record<string, string> = {
-  mit: "MIT",
-  "apache-2.0": "Apache-2.0",
-  apache: "Apache",
-  "bsd-3-clause": "BSD-3-Clause",
-  "bsd-2-clause": "BSD-2-Clause",
-  "gpl-3.0": "GPL-3.0",
-  "agpl-3.0": "AGPL-3.0",
-  "lgpl-3.0": "LGPL-3.0",
-  "cc-by-4.0": "CC-BY-4.0",
-  "cc-by-sa-4.0": "CC-BY-SA-4.0",
-  "cc-by-nc-4.0": "CC-BY-NC-4.0",
-  "cc-by-nc-sa-4.0": "CC-BY-NC-SA-4.0",
-  "creativeml-openrail-m": "CreativeML-OpenRAIL-M",
-  "bigscience-openrail-m": "BigScience-OpenRAIL-M",
-  openrail: "OpenRAIL",
-  "openrail++": "OpenRAIL++",
-  unlicense: "Unlicense",
-  other: "Other",
-};
-function prettyLicense(raw: string): string {
-  const key = raw.toLowerCase().trim();
-  if (KNOWN_LICENSES[key]) return KNOWN_LICENSES[key];
-  return raw
-    .split("-")
-    .map((seg) => (/^[a-z]+$/.test(seg) ? seg.charAt(0).toUpperCase() + seg.slice(1) : seg))
-    .join("-");
-}
-
-/** Capitalise each hyphen/underscore-separated word: "long-context" → "Long Context". */
-function prettyWords(raw: string): string {
-  return raw
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-/** Meaningful "topic" tags for the About section — Hub tags minus plumbing. */
-const TAG_NOISE_PREFIX = ["license:", "region:", "arxiv:", "dataset:", "base_model", "doi:", "co2_eq", "deploy:"];
-const TAG_NOISE_EXACT = new Set([
-  "safetensors",
-  "transformers",
-  "pytorch",
-  "tensorflow",
-  "jax",
-  "gguf",
-  "onnx",
-  "endpoints_compatible",
-  "autotrain_compatible",
-  "text-generation-inference",
-  "custom_code",
-  "has_space",
-  "model-index",
-  "eval-results",
-  "mteb",
-]);
-function deriveTopicTags(info: ModelInfo): string[] {
-  const cd = info.card_data?.tags;
-  const cardTags = Array.isArray(cd) ? cd.filter((t): t is string => typeof t === "string") : [];
-  const source = cardTags.length > 0 ? cardTags : info.tags;
-  const modelType = info.config?.model_type?.toLowerCase();
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const raw of source) {
-    const t = raw.toLowerCase();
-    if (TAG_NOISE_PREFIX.some((p) => t.startsWith(p))) continue;
-    if (TAG_NOISE_EXACT.has(t)) continue;
-    if (t === info.pipeline_tag || t === modelType) continue;
-    if (t.length < 2 || seen.has(t)) continue;
-    seen.add(t);
-    out.push(prettyWords(raw));
-    if (out.length >= 8) break;
-  }
-  return out;
-}
-
-/** First two prose paragraphs of the README (frontmatter / badges / tables stripped). */
-function extractReadmeSummary(readme: string | null): { lead: string | null; body: string | null } {
-  if (!readme) return { lead: null, body: null };
-  const md = readme.replace(/^﻿?\s*---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
-  const paras: string[] = [];
-  let buf: string[] = [];
-  const flush = () => {
-    if (buf.length) {
-      const text = buf.join(" ");
-      if (/[a-zA-Z]{3,}/.test(text)) paras.push(text);
-      buf = [];
-    }
-  };
-  for (const rawLine of md.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (
-      !line ||
-      line.startsWith("#") ||
-      line.startsWith(">") ||
-      line.startsWith("|") ||
-      line.startsWith("<") ||
-      /^[-*+]\s/.test(line) ||
-      /^\d+\.\s/.test(line) ||
-      /^([-*=_])\1{2,}$/.test(line)
-    ) {
-      flush();
-      if (paras.length >= 2) break;
-      continue;
-    }
-    const cleaned = cleanProse(line);
-    if (cleaned) buf.push(cleaned);
-    else flush();
-  }
-  flush();
-  return {
-    lead: paras[0] ? tidy(truncate(paras[0], 260)) : null,
-    body: paras[1] ? tidy(truncate(paras[1], 360)) : null,
-  };
-}
-
-// A paragraph that ends mid-thought (it ran into a heading or list in the
-// README) gets a trailing ellipsis so it doesn't read as a hard stop.
-function tidy(s: string): string {
-  return /[.!?:…]$/.test(s) ? s : `${s}…`;
-}
-
-function cleanProse(s: string): string {
-  return s
-    .replace(/\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)/g, "") // badge links: [![alt](img)](href)
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, "") // images
-    .replace(/\[\]\([^)]*\)/g, "") // empty-text links left after image strip
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // links → text
-    .replace(/`([^`]+)`/g, "$1") // inline code
-    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1") // bold / italic
-    .replace(/<[^>]+>/g, "") // stray html
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function truncate(s: string, n: number): string {
-  if (s.length <= n) return s;
-  const cut = s.slice(0, n);
-  const lastSpace = cut.lastIndexOf(" ");
-  return `${(lastSpace > n * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 function shortName(modelId: string): string {
@@ -914,36 +714,4 @@ function pipelineFlow(pipeline?: string): { input: string; output: string } {
   const head = p.split("-")[0] ?? p;
   if (p.includes("classification")) return { input: label(head), output: "Class" };
   return { input: label(head), output: "Output" };
-}
-
-/** Human label for a file by extension. */
-function fileType(name: string): string {
-  const n = name.toLowerCase();
-  if (n.endsWith(".safetensors.index.json")) return "Index";
-  if (n.endsWith(".safetensors")) return "Safetensors";
-  if (n.endsWith(".jinja")) return "Template";
-  if (n.endsWith(".md")) return "Markdown";
-  if (n.endsWith(".txt")) return "Text";
-  if (n.endsWith(".json")) return "JSON";
-  if (n.endsWith(".model") || n.endsWith(".vocab")) return "Tokenizer";
-  if (n.endsWith(".bin") || n.endsWith(".pt") || n.endsWith(".pth") || n.endsWith(".ckpt")) return "PyTorch";
-  if (n.endsWith(".gguf")) return "GGUF";
-  if (n.endsWith(".onnx")) return "ONNX";
-  if (n.endsWith(".h5")) return "Keras";
-  if (n === ".gitattributes" || n === "license" || n.endsWith("/license")) return "Config";
-  const dot = n.lastIndexOf(".");
-  return dot >= 0 ? n.slice(dot + 1).toUpperCase() : "File";
-}
-
-/** Sort priority so config / tokenizer files surface above weight shards. */
-function fileRank(name: string): number {
-  const n = name.toLowerCase();
-  if (n === "readme.md") return 0;
-  if (n === "config.json") return 1;
-  if (n.includes("config") && n.endsWith(".json")) return 2;
-  if (n.includes("token")) return 3;
-  if (n.endsWith(".safetensors.index.json")) return 4;
-  if (n.endsWith(".json") || n.endsWith(".jinja") || n.endsWith(".txt") || n.endsWith(".md")) return 5;
-  if (n.endsWith(".safetensors") || n.endsWith(".bin")) return 7;
-  return 6;
 }

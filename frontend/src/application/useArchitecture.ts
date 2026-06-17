@@ -18,6 +18,7 @@ export function useArchitecture(repo: ArchitectureRepository) {
   const setSpec = useArchStore((s) => s.setSpec);
   const setError = useArchStore((s) => s.setError);
   const setAppMode = useArchStore((s) => s.setAppMode);
+  const setRequestedModelId = useArchStore((s) => s.setRequestedModelId);
   const hfToken = useArchStore((s) => s.hfToken);
 
   const loadModel = useCallback(
@@ -28,6 +29,9 @@ export function useArchitecture(repo: ArchitectureRepository) {
       const trimmed = modelId.trim();
       if (!trimmed) return;
       reset();
+      // Record the target id before fetching so the URL can show `/model?id=…`
+      // throughout the load window (reset() cleared it; set it back here).
+      setRequestedModelId(trimmed);
       // Switch to the model dashboard up-front so the user sees the loading
       // state there, not on the Home view. On error we stay in the dashboard
       // (the pill's inline error remains visible regardless of mode).
@@ -40,7 +44,7 @@ export function useArchitecture(repo: ArchitectureRepository) {
         setError(toLoadError(e));
       }
     },
-    [repo, hfToken, reset, setLoading, setSpec, setError, setAppMode],
+    [repo, hfToken, reset, setLoading, setSpec, setError, setAppMode, setRequestedModelId],
   );
 
   return { loadModel };

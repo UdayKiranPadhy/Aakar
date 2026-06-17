@@ -18,9 +18,13 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { MotionConfig } from "framer-motion";
 
 import { useArchitecture } from "./application/useArchitecture";
+import { useUrlSync } from "./application/useUrlSync";
+import type { CompareView, ModelView } from "./domain/navigation";
 import { HttpArchitectureRepository } from "./infrastructure/api/HttpArchitectureRepository";
 import { useArchStore } from "./store/archStore";
 import { CompareHost } from "./presentation/compare/CompareHost";
+import { compareViewRegistry } from "./presentation/compare-views/CompareViewRegistry";
+import { modelViewRegistry } from "./presentation/model-views/ModelViewRegistry";
 import { ErrorBoundary } from "./presentation/components/ErrorBoundary";
 import { ModelSidebar } from "./presentation/components/ModelSidebar";
 import { NavBar } from "./presentation/components/NavBar";
@@ -40,6 +44,22 @@ export function App() {
     [],
   );
   const { loadModel } = useArchitecture(repo);
+
+  // Keep the URL and the navigation store in lockstep (deep links, back/forward,
+  // shareable pages). View strings are validated against the registries — so a
+  // newly registered view is deep-linkable with no change here.
+  const toModelView = useCallback(
+    (raw: string | undefined): ModelView =>
+      raw && modelViewRegistry.resolve(raw as ModelView) ? (raw as ModelView) : "overview",
+    [],
+  );
+  const toCompareView = useCallback(
+    (raw: string | undefined): CompareView =>
+      raw && compareViewRegistry.resolve(raw as CompareView) ? (raw as CompareView) : "overview",
+    [],
+  );
+  useUrlSync({ loadModel, toModelView, toCompareView });
+
   const appMode = useArchStore((s) => s.appMode);
   const modelView = useArchStore((s) => s.modelView);
   const hasSpec = useArchStore((s) => s.spec !== null);

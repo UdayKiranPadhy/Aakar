@@ -18,12 +18,13 @@
   color: var(--g-green);
 }
 
-.form {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin: 0;
+/* "Loaded" check beside the label (hero variant) — always reads as success. */
+.check {
+  margin-left: var(--space-1);
+  color: var(--g-green);
+  font-weight: var(--weight-bold);
 }
+
 .input {
   width: 100%;
   height: 38px;
@@ -39,13 +40,54 @@
   outline: none;
   border-color: var(--color-accent);
 }
-.spinner {
-  position: absolute;
-  right: var(--space-3);
-}
 
 .error {
   font-family: var(--font-sans);
   font-size: 12px;
   color: var(--color-red-600);
+}
+
+/* ── Large hero variant (Compare landing) ──────────────────────────────── */
+.colLg {
+  gap: var(--space-2);
+}
+.labelLg {
+  font-size: 12px;
+}
+.inputLg {
+  height: 52px;
+  padding: 0 var(--space-10) 0 var(--space-4);
+  border-radius: var(--radius-block);
+  font-size: 15px;
+}
+.inputLg:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+
+/* Field wrapper — anchors the absolutely-positioned leading icon over the input. */
+.field {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.leading {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+.leadingLoaded {
+  color: var(--g-green);
+}
+/* Clear the leading icon: icon left inset + icon width + a gap. */
+.inputWithIcon {
+  padding-left: calc(var(--space-4) + 18px + var(--space-2));
 }

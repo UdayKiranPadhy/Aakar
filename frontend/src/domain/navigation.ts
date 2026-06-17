@@ -38,6 +38,20 @@ export type ModelView =
   | "research";
 
 /**
+ * Which Compare tab is active (left CompareSidebar selection). Maps to an entry
+ * in the frontend `CompareViewRegistry`. Benchmarks is deliberately not a tab —
+ * eval data, when a model card carries it, renders inside the Overview tab.
+ */
+export type CompareView =
+  | "overview"
+  | "architecture"
+  | "parameters"
+  | "compute"
+  | "tokens"
+  | "files"
+  | "research";
+
+/**
  * Zoom level derived from how many nodes are currently expanded into.
  * 0 expansions → level 1; 1 → level 2; 2+ → level 3 (capped).
  */

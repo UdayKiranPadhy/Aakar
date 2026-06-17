@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 
 import { App } from "./App";
 import "./styles/global.css";
@@ -11,6 +12,7 @@ import "./presentation/blocks/register";
 import "./presentation/layout/register";
 import "./presentation/details/register";
 import "./presentation/model-views/register";
+import "./presentation/compare-views/register";
 
 // TEMP diagnostic: confirm whether VITE_API_URL was injected at build time.
 // On the deployed site, open DevTools → Console: you should see your backend
@@ -28,6 +30,8 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>,
 );

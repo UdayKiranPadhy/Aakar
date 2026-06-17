@@ -1,11 +1,16 @@
 /**
  * Compare — a standalone page that pits two models side by side. Both model IDs
- * are entered here (no pre-loading required) into independent store slots; the
- * page renders with zero, one, or two models loaded. A sticky dual-search header
- * and section sub-nav sit above a single scrolling stack of comparison sections.
+ * are entered here (no pre-loading required) into independent store slots.
+ *
+ * Two surfaces, switched on how many models are loaded:
+ *   - Cold start (fewer than two loaded) → a full-width landing hero
+ *     (`CompareLanding`): a Google-Flights-style dual search, no sidebar.
+ *   - Both loaded → the working layout: a sticky dual-search header above a left
+ *     navigation rail (`CompareSidebar`) and the active comparison tab, resolved
+ *     from the `CompareViewRegistry` — one tab visible at a time.
  *
  * The calculator inputs (batch / sequence / precision) are owned here and shared
- * with the derived sections so their numbers stay consistent.
+ * with the Compute tab via the CompareCalcContext, so its numbers stay consistent.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -13,34 +18,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useCompareModels } from "../../application/useCompareModels";
 import type { Spec } from "../../domain/spec";
 import { useArchStore } from "../../store/archStore";
+import { compareViewRegistry } from "../compare-views/CompareViewRegistry";
+import { PlaceholderScreen } from "../components/PlaceholderScreen";
 import { Button } from "../components/ui/Button";
 import { bytesForDtype } from "../components/ui/dtypeBytes";
+import { CompareLanding } from "./CompareLanding";
 import { CompareSearchBar } from "./CompareSearchBar";
-import { CompareSectionNav, type CompareSectionDef } from "./CompareSectionNav";
+import { CompareSidebar } from "./CompareSidebar";
 import { deriveSeqMax } from "./helpers/memoryScaling";
-import { ArchBreakdownSection } from "./sections/ArchBreakdownSection";
-import { AttentionMoeSection } from "./sections/AttentionMoeSection";
-import { ConfigDiffSection } from "./sections/ConfigDiffSection";
-import { ContextPositionalSection } from "./sections/ContextPositionalSection";
-import { FlopsSection } from "./sections/FlopsSection";
-import { FormulaSection } from "./sections/FormulaSection";
-import { MemoryScalingSection } from "./sections/MemoryScalingSection";
-import { SpecDiffSection } from "./sections/SpecDiffSection";
-import { VramSection } from "./sections/VramSection";
-import type { CalcInputs } from "./types";
+import type { CalcInputs, CompareCalcContext } from "./types";
 import styles from "./CompareHost.module.css";
-
-const SECTIONS: ReadonlyArray<CompareSectionDef> = [
-  { id: "specs", label: "Hyperparameters" },
-  { id: "config", label: "Config diff" },
-  { id: "architecture", label: "Parameters" },
-  { id: "attention", label: "Attention & MoE" },
-  { id: "context", label: "Context" },
-  { id: "vram", label: "Memory" },
-  { id: "flops", label: "FLOPs" },
-  { id: "scaling", label: "Scaling" },
-  { id: "formulas", label: "Formulas" },
-];
 
 const DEFAULT_SEQ = 2048;
 const SEQ_STEP = 64;
@@ -48,6 +35,7 @@ const SEQ_STEP = 64;
 export function CompareHost() {
   const a = useArchStore((s) => s.compareA);
   const b = useArchStore((s) => s.compareB);
+  const compareView = useArchStore((s) => s.compareView);
   const primaryModelId = useArchStore((s) => s.spec?.model_id ?? null);
   const { load, swap, a: statusA, b: statusB } = useCompareModels();
 
@@ -89,67 +77,98 @@ export function CompareHost() {
     [batch, seq, precision],
   );
 
+  const calcContext: CompareCalcContext = useMemo(
+    () => ({ calc, precision, seqMax, setBatch, setSeq, setPrecision }),
+    [calc, precision, seqMax],
+  );
+
   const handleSwap = () => {
     swap();
     setInputA(inputB);
     setInputB(inputA);
   };
 
+  // Load both columns at once — the landing's example-pair chips.
+  const handlePair = (idA: string, idB: string) => {
+    setInputA(idA);
+    setInputB(idB);
+    void load("a", idA);
+    void load("b", idB);
+  };
+
+  // Load whatever is currently typed in both fields — the landing's "Compare" button.
+  const handleCompare = () => {
+    void load("a", inputA);
+    void load("b", inputB);
+  };
+
+  // Cold start: until both columns are loaded, show the standalone landing hero
+  // (Google-Flights style) — full-width dual search, no sidebar. As soon as both
+  // models are present, the working layout below takes over.
+  if (!a || !b) {
+    return (
+      <CompareLanding
+        inputA={inputA}
+        inputB={inputB}
+        loadedA={a !== null}
+        loadedB={b !== null}
+        statusA={statusA}
+        statusB={statusB}
+        onChangeA={setInputA}
+        onChangeB={setInputB}
+        onSubmitA={(id) => void load("a", id)}
+        onSubmitB={(id) => void load("b", id)}
+        onSwap={handleSwap}
+        onCompare={handleCompare}
+        onPair={handlePair}
+      />
+    );
+  }
+
+  const View = compareViewRegistry.resolve(compareView);
+
   return (
     <div className={styles.page}>
-      <div className={styles.stickyTop}>
-        <div className={styles.header}>
-          <CompareSearchBar
-            label="Model A"
-            tone="a"
-            value={inputA}
-            loading={statusA.loading}
-            error={statusA.error}
-            onChange={setInputA}
-            onSubmit={(id) => void load("a", id)}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className={styles.swap}
-            onClick={handleSwap}
-            aria-label="Swap models"
-            title="Swap models"
-          >
-            ⇄
-          </Button>
-          <CompareSearchBar
-            label="Model B"
-            tone="b"
-            value={inputB}
-            loading={statusB.loading}
-            error={statusB.error}
-            onChange={setInputB}
-            onSubmit={(id) => void load("b", id)}
-          />
-        </div>
-        <CompareSectionNav sections={SECTIONS} />
+      <div className={styles.header}>
+        <CompareSearchBar
+          label="Model A"
+          tone="a"
+          value={inputA}
+          loading={statusA.loading}
+          error={statusA.error}
+          onChange={setInputA}
+          onSubmit={(id) => void load("a", id)}
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          className={styles.swap}
+          onClick={handleSwap}
+          aria-label="Swap models"
+          title="Swap models"
+        >
+          ⇄
+        </Button>
+        <CompareSearchBar
+          label="Model B"
+          tone="b"
+          value={inputB}
+          loading={statusB.loading}
+          error={statusB.error}
+          onChange={setInputB}
+          onSubmit={(id) => void load("b", id)}
+        />
       </div>
 
-      <div className={styles.sections}>
-        <SpecDiffSection a={a} b={b} />
-        <ConfigDiffSection a={a} b={b} />
-        <ArchBreakdownSection a={a} b={b} />
-        <AttentionMoeSection a={a} b={b} />
-        <ContextPositionalSection a={a} b={b} />
-        <VramSection
-          a={a}
-          b={b}
-          calc={calc}
-          precision={precision}
-          seqMax={seqMax}
-          setBatch={setBatch}
-          setSeq={setSeq}
-          setPrecision={setPrecision}
-        />
-        <FlopsSection a={a} b={b} calc={calc} />
-        <MemoryScalingSection a={a} b={b} calc={calc} />
-        <FormulaSection a={a} b={b} calc={calc} />
+      <div className={styles.body}>
+        <CompareSidebar />
+        <section className={styles.content}>
+          {View ? (
+            <View a={a} b={b} calc={calcContext} />
+          ) : (
+            <PlaceholderScreen title="Unknown view" message={`No view is registered for '${compareView}'.`} />
+          )}
+        </section>
       </div>
     </div>
   );

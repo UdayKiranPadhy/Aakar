@@ -36,19 +36,19 @@ export function LandingPage({ onSubmit }: Props) {
       <Section
         flip
         tone="red"
-        eyebrow="Levels"
-        title="Zoom from the whole model down to a single matmul"
+        eyebrow=""
+        title="Zoom in, see the Math"
         art={<ZoomLadder />}
       >
-        Four levels of depth — the root model, the backbone, one decoder block, and the operations
-        inside attention. Layer stacks stay compact; block internals open into forward-pass diagrams
+        Zoom inside the model architecture upto unit math — the actual operations and data flow.
+        Block internals open into forward-pass diagrams
         with residual paths.
       </Section>
 
       <Section
         tone="yellow"
-        eyebrow="Attention"
-        title="Q, K, V come together as a fan-in"
+        eyebrow=""
+        title="Is Attention all you need?"
         art={<AttentionFan />}
       >
         Attention views expose the score matrix, softmax, value mixing, and grouped-query head
@@ -58,12 +58,12 @@ export function LandingPage({ onSubmit }: Props) {
       <Section
         flip
         tone="green"
-        eyebrow="Scale"
-        title="Parameters have visual weight"
+        eyebrow=""
+        title="Journey of a token"
         art={<WeightMatrix />}
       >
-        Matrix-heavy modules show shape glyphs, memory, FLOPs, and child-parameter breakdowns in the
-        detail panel — so the size of a model is something you can see.
+        Follow a token's journey through the model, as it transforms from input to output.
+        See how it interacts with other tokens, and how its representation evolves across layers.
       </Section>
 
       <CoverageSection />
