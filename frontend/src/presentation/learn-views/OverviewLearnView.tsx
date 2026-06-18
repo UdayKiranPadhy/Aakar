@@ -1,8 +1,8 @@
 /**
  * Overview — the Learn landing dashboard. A hero, a condensed timeline strip,
- * and a set of preview sections (Concepts, Architecture Evolution, Learning
- * Paths, Papers, Blogs, Visualizations, Companies, Fun Facts) that each link
- * into their full section via the store's `setLearnView`. All content static.
+ * and a set of preview sections (Concepts, Architecture Evolution, Papers,
+ * Blogs, Fun Facts) that each link into their full section via the store's
+ * `setLearnView`. All content static.
  */
 
 import { useState } from "react";
@@ -12,13 +12,10 @@ import type { LearnView } from "../../domain/navigation";
 import { useArchStore } from "../../store/archStore";
 import { ARCHITECTURE_ERAS } from "../learn/content/architectures";
 import { BLOGS } from "../learn/content/blogs";
-import { COMPANIES } from "../learn/content/companies";
 import { CONCEPTS } from "../learn/content/concepts";
 import { FUN_FACTS } from "../learn/content/facts";
 import { PAPERS } from "../learn/content/papers";
-import { LEARNING_PATHS } from "../learn/content/paths";
 import { DECADE_ERAS } from "../learn/content/timeline";
-import { VIZ_TOOLS } from "../learn/content/visualizations";
 import { TopicGlyph } from "../learn/LearnGlyphs";
 import { CategoryChip, IconBadge, SectionHeader, ViewAllLink, categoryTone, toneClass } from "../learn/primitives";
 import styles from "./OverviewLearnView.module.css";
@@ -32,8 +29,6 @@ export function OverviewLearnView() {
   const archFlow = ARCHITECTURE_ERAS.slice(0, 6);
   const foundationPapers = PAPERS.filter((p) => p.tag === "Foundation").slice(0, 5);
   const blogs = BLOGS.slice(0, 4);
-  const vizTools = VIZ_TOOLS.slice(0, 4);
-  const companies = COMPANIES.slice(0, 5);
 
   return (
     <div className={styles.view}>
@@ -133,32 +128,15 @@ export function OverviewLearnView() {
         </section>
 
         <section className={styles.card}>
-          <SectionHeader
-            title="Learning Paths"
-            subtitle="Step-by-step guides to master AI"
-            action={<ViewAllLink onClick={() => go("paths")} />}
-          />
-          <div className={styles.pathList}>
-            {LEARNING_PATHS.map((p) => (
-              <button key={p.id} type="button" className={styles.pathRow} onClick={() => go("paths")}>
-                <IconBadge tone={p.tone} size="sm">
-                  <TopicGlyph topic={p.title} />
-                </IconBadge>
-                <span className={styles.pathText}>
-                  <span className={styles.pathTitle}>{p.title}</span>
-                  <span className={styles.pathBlurb}>{p.blurb}</span>
-                  <span className={styles.progressTrack}>
-                    <span className={clsx(styles.progressFill, toneClass(p.tone))} style={{ width: `${p.progress}%` }} />
-                  </span>
-                </span>
-                <span className={styles.pathPct}>
-                  {p.lessons} lessons
-                  <br />
-                  {p.progress}%
-                </span>
-              </button>
+          <SectionHeader title="Fun Facts" subtitle="Quick insights about AI" />
+          <ul className={styles.facts}>
+            {FUN_FACTS.map((f) => (
+              <li key={f.id} className={styles.factItem}>
+                <span className={clsx(styles.factDot, toneClass(f.accent))} aria-hidden="true" />
+                <span className={styles.factText}>{f.text}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       </div>
 
@@ -206,69 +184,14 @@ export function OverviewLearnView() {
         </div>
       </section>
 
-      {/* ── Three-up: Visualizations / Companies / Fun Facts ─────────── */}
-      <div className={styles.triple}>
-        <section className={styles.card}>
-          <SectionHeader
-            title="Interactive Visualizations"
-            subtitle="Learn by playing and experimenting"
-            action={<ViewAllLink label="View all tools" onClick={() => go("visualizations")} />}
-          />
-          <div className={styles.list}>
-            {vizTools.map((v) => (
-              <button key={v.id} type="button" className={styles.listRow} onClick={() => go("visualizations")}>
-                <IconBadge tone={v.tone} size="sm">
-                  <TopicGlyph topic={v.concept} />
-                </IconBadge>
-                <span className={styles.listText}>
-                  <span className={styles.listTitle}>{v.name}</span>
-                  <span className={styles.listSub}>{v.blurb}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.card}>
-          <SectionHeader
-            title="AI Companies"
-            subtitle="Explore leading AI organizations"
-            action={<ViewAllLink label="View all companies" onClick={() => go("companies")} />}
-          />
-          <div className={styles.list}>
-            {companies.map((c) => (
-              <button key={c.id} type="button" className={styles.listRow} onClick={() => go("companies")}>
-                <span className={clsx(styles.companyAvatar, toneClass(c.tone))}>{c.name.charAt(0)}</span>
-                <span className={styles.listText}>
-                  <span className={styles.listTitle}>{c.name}</span>
-                  <span className={styles.listSub}>Key models: {c.keyModels}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.card}>
-          <SectionHeader title="Fun Facts" subtitle="Quick insights about AI" />
-          <ul className={styles.facts}>
-            {FUN_FACTS.map((f) => (
-              <li key={f.id} className={styles.factItem}>
-                <span className={clsx(styles.factDot, toneClass(f.accent))} aria-hidden="true" />
-                <span className={styles.factText}>{f.text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
       {/* ── CTA ──────────────────────────────────────────────────────── */}
       <section className={styles.cta}>
         <div>
           <h2 className={styles.ctaTitle}>Stay curious. Keep learning.</h2>
           <p className={styles.ctaSub}>AI evolves every day. Keep exploring, building and shaping the future.</p>
         </div>
-        <button type="button" className={styles.ctaBtn} onClick={() => go("paths")}>
-          Explore Learning Paths →
+        <button type="button" className={styles.ctaBtn} onClick={() => go("concepts")}>
+          Explore Concepts →
         </button>
       </section>
     </div>

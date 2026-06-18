@@ -138,27 +138,6 @@ export type Blog = Readonly<{
   href?: string;
 }>;
 
-/* ── Learning paths ────────────────────────────────────────────────────── */
-
-export type PathModule = Readonly<{
-  title: string;
-  lessons: number;
-  topics: ReadonlyArray<string>;
-}>;
-
-export type LearningPath = Readonly<{
-  id: string;
-  title: string;
-  level: ContentLevel;
-  blurb: string;
-  lessons: number;
-  /** Placeholder completion percentage, 0–100. */
-  progress: number;
-  estHours: number;
-  tone: AccentTone;
-  modules: ReadonlyArray<PathModule>;
-}>;
-
 /* ── Architecture evolution ────────────────────────────────────────────── */
 
 export type ArchitectureEra = Readonly<{
@@ -185,40 +164,6 @@ export type Benchmark = Readonly<{
   metric: string;
   topModel: string;
   topScore: string;
-  tone: AccentTone;
-}>;
-
-/* ── Datasets ──────────────────────────────────────────────────────────── */
-
-export type Dataset = Readonly<{
-  id: string;
-  name: string;
-  modality: string;
-  size: string;
-  description: string;
-  usedBy: string;
-  tone: AccentTone;
-}>;
-
-/* ── AI companies ──────────────────────────────────────────────────────── */
-
-export type Company = Readonly<{
-  id: string;
-  name: string;
-  keyModels: string;
-  founded: number;
-  focus: string;
-  tone: AccentTone;
-}>;
-
-/* ── Interactive visualizations ────────────────────────────────────────── */
-
-export type VizTool = Readonly<{
-  id: string;
-  name: string;
-  blurb: string;
-  concept: string;
-  status: "Live" | "Coming soon";
   tone: AccentTone;
 }>;
 

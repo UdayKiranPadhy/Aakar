@@ -342,7 +342,7 @@ function ConceptViz({ concept }: { concept: Concept }) {
       </div>
       <p className={styles.vizCaption}>
         Illustrative: input tokens flow into the {concept.name.toLowerCase()} mechanism, which produces the next
-        representation. Interactive visualizers are in the Interactive Visualizations section.
+        representation.
       </p>
     </div>
   );

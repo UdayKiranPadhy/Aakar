@@ -78,49 +78,12 @@ const BlogsIcon = (p: IconProps) => (
   </Svg>
 );
 
-const PathsIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <circle cx="6" cy="19" r="2" />
-    <circle cx="18" cy="5" r="2" />
-    <path d="M8 19h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6" />
-  </Svg>
-);
-
 const BenchmarksIcon = (p: IconProps) => (
   <Svg {...p}>
     <line x1="4" y1="20" x2="20" y2="20" />
     <rect x="6" y="11" width="3" height="6" rx="0.5" />
     <rect x="10.5" y="7" width="3" height="10" rx="0.5" />
     <rect x="15" y="13" width="3" height="4" rx="0.5" />
-  </Svg>
-);
-
-const CompaniesIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M4 21V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v16" />
-    <path d="M13 9h6a1 1 0 0 1 1 1v11" />
-    <line x1="3" y1="21" x2="21" y2="21" />
-    <line x1="7" y1="8" x2="7" y2="8.01" />
-    <line x1="10" y1="8" x2="10" y2="8.01" />
-    <line x1="7" y1="12" x2="7" y2="12.01" />
-    <line x1="10" y1="12" x2="10" y2="12.01" />
-    <line x1="16.5" y1="13" x2="16.5" y2="13.01" />
-    <line x1="16.5" y1="17" x2="16.5" y2="17.01" />
-  </Svg>
-);
-
-const DatasetsIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <ellipse cx="12" cy="5.5" rx="7.5" ry="2.8" />
-    <path d="M4.5 5.5v6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6" />
-    <path d="M4.5 11.5v6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6" />
-  </Svg>
-);
-
-const VisualizationsIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M12 3l1.7 4.6L18.5 9.3l-4.8 1.7L12 15.6l-1.7-4.6L5.5 9.3l4.8-1.7z" />
-    <path d="M18 15l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z" />
   </Svg>
 );
 
@@ -146,11 +109,7 @@ const LEARN_ICONS: Partial<Record<LearnView, ComponentType<IconProps>>> = {
   architectures: ArchitecturesIcon,
   papers: PapersIcon,
   blogs: BlogsIcon,
-  paths: PathsIcon,
   benchmarks: BenchmarksIcon,
-  companies: CompaniesIcon,
-  datasets: DatasetsIcon,
-  visualizations: VisualizationsIcon,
   glossary: GlossaryIcon,
 };
 

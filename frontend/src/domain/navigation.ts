@@ -63,11 +63,7 @@ export type LearnView =
   | "architectures"
   | "papers"
   | "blogs"
-  | "paths"
   | "benchmarks"
-  | "companies"
-  | "datasets"
-  | "visualizations"
   | "glossary";
 
 /**
