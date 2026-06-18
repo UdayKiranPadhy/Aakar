@@ -112,6 +112,13 @@
   --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.06);
   --shadow-nav: 0 1px 3px rgba(0, 0, 0, 0.08);
 
+  /* ── Illustrations ─────────────────────────────────────────────────── */
+  /* The baked spot-illustration art (the error + loading <img> assets, some of
+   * them embedded raster) carries a light background that the page can't recolour
+   * from the outside. Light mode leaves it untouched; the dark block recolours it
+   * with an invert so the white field melts into the dark page instead of glaring. */
+  --illustration-filter: none;
+
   /* ── Spacing scale (4-px base) ─────────────────────────────────────── */
   --space-1: 4px;
   --space-2: 8px;
@@ -200,4 +207,9 @@
   --shadow-block: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-nav: 0 1px 3px rgba(0, 0, 0, 0.6);
+
+  /* Recolour the baked illustration art for dark: invert flips the light field
+   * to ~page-dark and the dark linework to off-white, while hue-rotate(180deg)
+   * spins the hues back so the brand colours stay roughly themselves. */
+  --illustration-filter: invert(0.9) hue-rotate(180deg);
 }

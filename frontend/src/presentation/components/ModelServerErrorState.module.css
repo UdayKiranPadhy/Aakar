@@ -14,6 +14,7 @@
   width: 100%;
   max-width: 1000px;
   height: auto;
+  filter: var(--illustration-filter);
 }
 
 /* Visually hidden, still read by screen readers (the artwork's text is raster). */

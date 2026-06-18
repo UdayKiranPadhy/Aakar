@@ -138,6 +138,7 @@
   display: block;
   width: 100%;
   height: auto;
+  filter: var(--illustration-filter);
 }
 
 /* Crisp DOM overlays masking the source illustration's faint floating UI.
