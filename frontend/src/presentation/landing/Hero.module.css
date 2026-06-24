@@ -13,7 +13,7 @@
 
 .inner {
   position: relative;
-  z-index: 3;
+  z-index: 4; /* above the shapes layer (z-index 3) so text is never covered */
   width: 100%;
   max-width: 600px;
 }
@@ -93,69 +93,94 @@
   z-index: 2;
   pointer-events: none;
 }
+/* Mirrors the lens.google banner: a TOP row of two cards flanking the headline
+ * (left half + right half, the right one pushed high) and a BOTTOM row of three
+ * spread across the foot (left / centre / right). Top has 2, bottom has 3 — that
+ * count mismatch plus the size/offset variance is what reads as scattered rather
+ * than symmetric. Sizes + tilts (floatA–E) all differ. */
 .card {
   position: absolute;
-  width: 340px;
 }
+/* Top-left half (≈ the dog). */
 .cardTL {
-  top: 6%;
-  left: 1.5%;
-  width: 340px;
+  top: 8%;
+  left: 2%;
+  width: 336px;
   animation: floatA 7s var(--ease-out) infinite;
 }
+/* Top-right half, pushed high (≈ the notebook). */
 .cardTR {
-  top: 4%;
-  right: 1.5%;
-  width: 360px;
+  top: 0%;
+  left: 54%;
+  width: 300px;
   animation: floatB 8.5s var(--ease-out) infinite;
 }
+/* Bottom-left, largest (≈ the woman). */
 .cardBL {
-  bottom: 6%;
-  left: 2%;
-  width: 360px;
+  bottom: 4%;
+  left: 0%;
+  width: 352px;
   animation: floatC 9s var(--ease-out) infinite;
 }
+/* Bottom-centre (≈ the note). */
+.cardBC {
+  bottom: 1%;
+  left: 39%;
+  width: 282px;
+  animation: floatE 8s var(--ease-out) infinite;
+}
+/* Bottom-right (≈ the flower). */
 .cardBR {
-  bottom: 4%;
-  right: 1.5%;
-  width: 340px;
+  bottom: 6%;
+  right: 0%;
+  width: 322px;
   animation: floatD 7.8s var(--ease-out) infinite;
 }
 
+/* Cards sit straight (upright) — only a gentle vertical drift, no rotation. */
 @keyframes floatA {
   0%,
   100% {
-    transform: translateY(0) rotate(-1.5deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-14px) rotate(1deg);
+    transform: translateY(-14px);
   }
 }
 @keyframes floatB {
   0%,
   100% {
-    transform: translateY(0) rotate(1.5deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(12px) rotate(-1deg);
+    transform: translateY(13px);
   }
 }
 @keyframes floatC {
   0%,
   100% {
-    transform: translateY(0) rotate(1deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-12px) rotate(-1.5deg);
+    transform: translateY(-12px);
   }
 }
 @keyframes floatD {
   0%,
   100% {
-    transform: translateY(0) rotate(-1deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(14px) rotate(1.5deg);
+    transform: translateY(15px);
+  }
+}
+@keyframes floatE {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-11px);
   }
 }
 

@@ -32,6 +32,14 @@
   --g-green-subtle: #e6f4ea;
   --g-purple-subtle: #f3e8fd;
 
+  /* Light "container" tones (Material -100/-200), more saturated than the
+   * -subtle (-50) tones above. Used for the lens.google-style collage shapes on
+   * the landing hero, matching the soft pastels Lens uses. */
+  --g-yellow-container: #feefc3;
+  --g-green-container: #ceead6;
+  --g-blue-container: #aecbfa;
+  --g-red-container: #fad2cf;
+
   /* ── Data-viz tones (token-journey rails + block-node cards) ─────────── */
   /* Canonical per-role colours shared by the Journey view and the block cards,
    * kept in one place here. `--viz-attention` aliases the accent on purpose.

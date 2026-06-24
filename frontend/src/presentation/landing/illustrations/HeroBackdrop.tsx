@@ -1,7 +1,8 @@
 /**
  * Decorative hero background — four soft Google-colour blobs that drift on
  * scroll (parallax via framer's `useScroll` bound to the scroll-root container)
- * plus a few sparkles. Parallax is disabled under reduced-motion.
+ * plus a few sparkles. Parallax is disabled under reduced-motion. (The crisp
+ * collage shapes are rendered per-card via CardShape, overhanging the corners.)
  */
 
 import { useContext } from "react";
@@ -30,6 +31,7 @@ export function HeroBackdrop() {
       <motion.span className={`${styles.blob} ${styles.blobRed}`} style={{ y: yUp }} />
       <motion.span className={`${styles.blob} ${styles.blobYellow}`} style={{ y: ySlow }} />
       <motion.span className={`${styles.blob} ${styles.blobGreen}`} style={{ y: yUp }} />
+
       <Sparkle className={styles.sparkHeroA} color="var(--g-yellow)" size={32} />
       <Sparkle className={styles.sparkHeroB} color="var(--g-blue)" size={24} />
       <Sparkle className={styles.sparkHeroC} color="var(--g-green)" size={20} variant="dot" />

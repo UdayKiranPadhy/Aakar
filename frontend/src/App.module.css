@@ -30,6 +30,9 @@
 @media (prefers-reduced-motion: no-preference) and (min-width: 880px) and (min-height: 680px) {
   .homeScroll {
     scroll-snap-type: y mandatory;
+    /* Ease into each snap point instead of jumping — the snap (and the
+     * traveling hero image that's scroll-linked to it) animates smoothly. */
+    scroll-behavior: smooth;
   }
 }
 

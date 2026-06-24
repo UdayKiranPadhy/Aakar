@@ -10,9 +10,9 @@ import { CtaSection } from "./CtaSection";
 import { Hero } from "./Hero";
 import { Section } from "./Section";
 import { AttentionFan } from "./illustrations/AttentionFan";
-import { ModuleTree } from "./illustrations/ModuleTree";
 import { WeightMatrix } from "./illustrations/WeightMatrix";
 import { ZoomLadder } from "./illustrations/ZoomLadder";
+import illo from "./illustrations/illustrations.module.css";
 
 type Props = {
   onSubmit: (modelId: string) => void;
@@ -23,11 +23,13 @@ export function LandingPage({ onSubmit }: Props) {
     <>
       <Hero />
 
+      {/* Illustration removed: the hero's bottom-left image (TravelingImage)
+       * scrolls in and lands in this section's empty slot. */}
       <Section
         tone="blue"
         eyebrow=""
         title="Find What's inside your model"
-        art={<ModuleTree />}
+        art={<div data-travel-target className={illo.travelTarget} aria-hidden="true" />}
       >
         See a model capability that's caught your eye? Or a model you want to use? 
         Paste its HuggingFace model id and watch the architecture unfold as a clickable diagram.

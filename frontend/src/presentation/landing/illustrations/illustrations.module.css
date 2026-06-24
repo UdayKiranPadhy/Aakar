@@ -60,6 +60,91 @@
   left: 18%;
 }
 
+/* ── Crisp pastel collage shapes (lens.google style) ───────────────────── */
+/* Soft squircles + organic blobs in Google "container" tones. Each shape is a
+ * child of its card and overhangs one corner (negative offsets), sitting on top
+ * of the illustration (z-index above the artCard). Because they're positioned
+ * relative to the card — not the viewport — they stay glued to the image at any
+ * window size. The cards (and therefore these shapes) hide below 1159px. */
+.deco {
+  position: absolute;
+  display: block;
+  z-index: 2; /* above the artCard (z-index 1) within the card */
+  pointer-events: none;
+}
+.decoSquircle {
+  border-radius: 30%;
+}
+.decoBlobA {
+  border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+}
+.decoBlobB {
+  border-radius: 63% 37% 38% 62% / 54% 47% 53% 46%;
+}
+/* Overhang offsets are relative to the parent card's corner. */
+.decoCream {
+  width: 112px;
+  height: 112px;
+  top: -28px;
+  right: -34px;
+  background: var(--g-yellow-container);
+  transform: rotate(14deg);
+}
+.decoMint {
+  width: 80px;
+  height: 80px;
+  top: 22px;
+  left: -44px;
+  background: var(--g-green-container);
+  transform: rotate(-8deg);
+}
+.decoBlue {
+  width: 126px;
+  height: 126px;
+  top: -32px;
+  right: -38px;
+  background: var(--g-blue-container);
+  transform: rotate(32deg);
+}
+.decoPink {
+  width: 114px;
+  height: 106px;
+  top: -30px;
+  right: -32px;
+  background: var(--g-red-container);
+  transform: rotate(9deg);
+}
+.decoGreen {
+  width: 118px;
+  height: 108px;
+  top: -30px;
+  left: -36px;
+  background: var(--g-green-container);
+  transform: rotate(-12deg);
+}
+
+/* The bottom-left image, lifted out of the collage so it can travel into the
+ * first feature section on scroll (see TravelingImage). Fixed → viewport-
+ * relative, so it escapes the hero's clip. Its top/left/width are set by framer
+ * (scroll-linked): collage spot → the section's empty illustration slot.
+ * Hidden below 1159px, where the collage hides. */
+.travelCard {
+  position: fixed;
+  z-index: 6;
+  pointer-events: none;
+}
+/* Reserves the (emptied) illustration slot in the target section so the image
+ * has a stable spot to land in; the SVG that used to live here is removed. */
+.travelTarget {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+}
+@media (max-width: 1159px) {
+  .travelCard {
+    display: none;
+  }
+}
+
 /* ── Diagram frame + svg defaults ──────────────────────────────────────── */
 .frame {
   position: relative;
