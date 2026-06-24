@@ -1,7 +1,7 @@
 /**
  * A single donut/ring chart drawn from proportional slices, with a legend below
- * and an optional center label. Pure + prop-driven; colours come from tokens
- * (so it adapts in dark mode). The caller renders two of these side by side for
+ * and an optional center label. Pure + prop-driven; colours come from design
+ * tokens. The caller renders two of these side by side for
  * an A-vs-B comparison. Renders nothing when there's no positive data.
  */
 

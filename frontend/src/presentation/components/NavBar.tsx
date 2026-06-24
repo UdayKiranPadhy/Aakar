@@ -15,7 +15,6 @@ import { clsx } from "clsx";
 import { useArchStore } from "../../store/archStore";
 import { ModelInputBar } from "./ModelInputBar";
 import { SectionTabs } from "./SectionTabs";
-import { ThemeToggle } from "./ThemeToggle";
 import { TopProgressBar } from "./TopProgressBar";
 import styles from "./NavBar.module.css";
 
@@ -63,9 +62,8 @@ export function NavBar({ onSubmit, hidden = false, compact = false }: Props) {
           <div className={styles.searchSlot}>
             <ModelInputBar onSubmit={onSubmit} focusSignal={searchFocusNonce} />
           </div>
-          <div className={clsx(styles.side, styles.sideEnd)}>
-            <ThemeToggle />
-          </div>
+          {/* Empty end spacer balances the brand so the search stays centred. */}
+          <div className={clsx(styles.side, styles.sideEnd)} />
         </div>
         {showTabs && (
           <div className={styles.row2}>

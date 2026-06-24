@@ -119,4 +119,34 @@ describe("DetailPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: "Close panel" }));
     expect(useArchStore.getState().detailOpen).toBe(false);
   });
+
+  it("surfaces role and category in a Classification section instead of a raw field dump", () => {
+    const classified: Spec = {
+      model_id: "m",
+      model_type: "llama",
+      config_summary: {},
+      graph: [
+        {
+          id: "model.layers.0.self_attn",
+          type: "some_unregistered_attention",
+          label: "Self attention",
+          module_path: "model.layers.0.self_attn",
+          role: "attention",
+          category: "attention",
+          params: {},
+        },
+      ],
+    };
+    useArchStore.setState({
+      spec: classified,
+      selectionPath: ["model.layers.0.self_attn"],
+      detailOpen: true,
+    });
+    render(<DetailPanel />);
+    expect(screen.getByText("Classification")).toBeInTheDocument();
+    expect(screen.getByText("role")).toBeInTheDocument();
+    expect(screen.getByText("category")).toBeInTheDocument();
+    // The debugging "Backend fields" dump has been removed.
+    expect(screen.queryByText("Backend fields")).not.toBeInTheDocument();
+  });
 });

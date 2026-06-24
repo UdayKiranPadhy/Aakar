@@ -22,7 +22,14 @@ import styles from "./OverviewLearnView.module.css";
 
 export function OverviewLearnView() {
   const setLearnView = useArchStore((s) => s.setLearnView);
+  const setConceptId = useArchStore((s) => s.setConceptId);
   const go = (v: LearnView) => setLearnView(v);
+  // Open a specific concept's page: switch to the Concepts section, then select
+  // it (setLearnView clears any prior concept, so the order matters).
+  const goConcept = (id: string) => {
+    setLearnView("concepts");
+    setConceptId(id);
+  };
   const [heroQuery, setHeroQuery] = useState("");
 
   const popularConcepts = CONCEPTS.slice(0, 8);
@@ -94,7 +101,7 @@ export function OverviewLearnView() {
           />
           <div className={styles.conceptGrid}>
             {popularConcepts.map((c) => (
-              <button key={c.id} type="button" className={styles.conceptTile} onClick={() => go("concepts")}>
+              <button key={c.id} type="button" className={styles.conceptTile} onClick={() => goConcept(c.id)}>
                 <IconBadge tone={categoryTone(c.category)} size="sm">
                   <TopicGlyph topic={`${c.category} ${c.name}`} />
                 </IconBadge>

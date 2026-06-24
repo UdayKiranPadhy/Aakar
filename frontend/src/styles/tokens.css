@@ -34,9 +34,9 @@
 
   /* ── Data-viz tones (token-journey rails + block-node cards) ─────────── */
   /* Canonical per-role colours shared by the Journey view and the block cards,
-   * so both palettes live here and adapt in dark mode. `--viz-attention`
-   * aliases the accent on purpose. Subtle fills are derived at the call site
-   * via color-mix(), so each role needs only one token here. */
+   * kept in one place here. `--viz-attention` aliases the accent on purpose.
+   * Subtle fills are derived at the call site via color-mix(), so each role
+   * needs only one token here. */
   --viz-io: #0891b2;
   --viz-embedding: #7c3aed;
   --viz-attention: var(--color-accent);
@@ -112,12 +112,10 @@
   --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.06);
   --shadow-nav: 0 1px 3px rgba(0, 0, 0, 0.08);
 
-  /* ── Illustrations ─────────────────────────────────────────────────── */
-  /* The baked spot-illustration art (the error + loading <img> assets, some of
-   * them embedded raster) carries a light background that the page can't recolour
-   * from the outside. Light mode leaves it untouched; the dark block recolours it
-   * with an invert so the white field melts into the dark page instead of glaring. */
-  --illustration-filter: none;
+  /* ── Landing backdrop (the empty Model-tab hero) ─────────────────────── */
+  /* Pure white, matching the scene illustration's white backdrop, so the image
+   * blends into the hero with no visible border (edges also feathered). */
+  --landing-veil: #ffffff;
 
   /* ── Spacing scale (4-px base) ─────────────────────────────────────── */
   --space-1: 4px;
@@ -142,74 +140,4 @@
   --reveal-duration-slow: 1.05s; /* SVG line-draw */
   --reveal-stagger: 0.07s;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* ── Dark theme ────────────────────────────────────────────────────────────
- * Soft dark-grey palette drawn from Google News / Material dark. Only colour
- * and shadow tokens are overridden — type, spacing, radii and motion are
- * theme-independent, and the syntax-highlight tokens alias the brand palette so
- * they track automatically (nothing code-specific to maintain). `--viz-attention`
- * also aliases the accent, so it isn't repeated here. Applied via the
- * `data-theme` attribute set by useTheme / the index.html boot script. */
-:root[data-theme="dark"] {
-  /* Accent — lifted to Material dark blue for contrast on dark surfaces. */
-  --color-accent: #8ab4f8;
-  --color-accent-hover: #aecbfa;
-  --color-accent-subtle: rgba(138, 180, 248, 0.16);
-  --color-on-accent: #202124;
-
-  /* Brand palette — the 300-level (brighter) tints read on dark. */
-  --g-blue: #669df6;
-  --g-blue-strong: #8ab4f8;
-  --g-red: #f28b82;
-  --g-yellow: #fdd663;
-  --g-yellow-ink: #fcc934;
-  --g-green: #81c995;
-  --g-purple: #c58af9;
-
-  /* Subtle brand fills — low-alpha tints of the dark hue over the surface. */
-  --g-blue-subtle: rgba(138, 180, 248, 0.15);
-  --g-red-subtle: rgba(242, 139, 130, 0.15);
-  --g-yellow-subtle: rgba(253, 214, 99, 0.15);
-  --g-green-subtle: rgba(129, 201, 149, 0.15);
-  --g-purple-subtle: rgba(197, 138, 249, 0.15);
-
-  /* Ink — Google grey 200 → 500, off-white rather than pure white. */
-  --color-ink: #e8eaed;
-  --color-ink-muted: #bdc1c6;
-  --color-ink-subtle: #9aa0a6;
-
-  /* Surfaces — page #202124, raised #28292c, hovered row #35363a. */
-  --color-bg: #202124;
-  --color-canvas: #28292c;
-  --color-canvas-hover: #35363a;
-
-  /* Borders — Google grey 700 / 600. */
-  --color-hairline: #3c4043;
-  --color-hairline-strong: #5f6368;
-  --color-edge: #80868b;
-
-  /* Status — dark amber banner; lighter red for legibility on dark. */
-  --color-amber-50: #332b12;
-  --color-amber-200: #5c4a1e;
-  --color-amber-900: #fdd663;
-  --color-red-600: #f28b82;
-
-  /* Data-viz tones — brightened / desaturated for the dark canvas. */
-  --viz-io: #4dd0e1;
-  --viz-embedding: #c58af9;
-  --viz-norm: #94a3b8;
-  --viz-mlp: #81c995;
-  --viz-residual: #fdd663;
-  --viz-matrix: #8c9eff;
-
-  /* Shadows — opaque enough to read against dark surfaces. */
-  --shadow-block: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-nav: 0 1px 3px rgba(0, 0, 0, 0.6);
-
-  /* Recolour the baked illustration art for dark: invert flips the light field
-   * to ~page-dark and the dark linework to off-white, while hue-rotate(180deg)
-   * spins the hues back so the brand colours stay roughly themselves. */
-  --illustration-filter: invert(0.9) hue-rotate(180deg);
 }

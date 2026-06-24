@@ -1,0 +1,128 @@
+/* Empty-state landing for the Model tab — a static, single-screen hero: centred
+ * copy on the left half, the illustration filling the right half's full height.
+ * The root paints a flat white veil that matches the illustration's own white
+ * backdrop, so the image blends with no visible border. No scroll. */
+.root {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--landing-veil);
+}
+
+/* Even split: copy gets half, the illustration gets exactly half (never more). */
+.hero {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+}
+
+/* ── Left column: centred copy + search ─────────────────────────────────── */
+.copy {
+  align-self: center;
+  justify-self: center;
+  max-width: 640px;
+  padding: clamp(24px, 4vw, 64px);
+  text-align: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+}
+
+.headline {
+  margin: 22px 0 0;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: clamp(36px, 4.4vw, 58px);
+  line-height: 1.07;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  color: var(--color-ink);
+}
+.lead {
+  margin: 18px auto 0;
+  max-width: 52ch;
+  font-family: var(--font-sans);
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+}
+
+.search {
+  margin: 30px auto 0;
+  display: flex;
+  justify-content: center;
+}
+.search > * {
+  margin: 0 auto;
+}
+
+/* ── Right column: illustration filling the half's full height ──────────── */
+.scene {
+  align-self: stretch;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Shown whole (contain) so nothing is cropped; the element is full height and
+ * the art's white field matches the page veil, so it reads as filling the half
+ * with no visible border. A faint edge feather hides any subtle seam. */
+.sceneImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* ── Responsive: stack (and allow scroll) on narrower viewports ─────────── */
+@media (max-width: 980px) {
+  .root {
+    overflow-y: auto;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100%;
+    align-content: center;
+  }
+  .copy {
+    order: 2;
+    padding: clamp(20px, 5vw, 40px);
+  }
+  .scene {
+    order: 1;
+    height: auto;
+  }
+  .sceneImg {
+    height: auto;
+    max-height: 56vh;
+  }
+}
+/* Below this the scene gets too cramped — drop it, keep a clean hero. */
+@media (max-width: 640px) {
+  .scene {
+    display: none;
+  }
+}

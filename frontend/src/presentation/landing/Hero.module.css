@@ -95,30 +95,30 @@
 }
 .card {
   position: absolute;
-  width: 280px;
+  width: 340px;
 }
 .cardTL {
-  top: 7%;
+  top: 6%;
   left: 1.5%;
-  width: 280px;
+  width: 340px;
   animation: floatA 7s var(--ease-out) infinite;
 }
 .cardTR {
-  top: 5%;
+  top: 4%;
   right: 1.5%;
-  width: 300px;
+  width: 360px;
   animation: floatB 8.5s var(--ease-out) infinite;
 }
 .cardBL {
-  bottom: 7%;
-  left: 2.5%;
-  width: 300px;
+  bottom: 6%;
+  left: 2%;
+  width: 360px;
   animation: floatC 9s var(--ease-out) infinite;
 }
 .cardBR {
-  bottom: 5%;
-  right: 2%;
-  width: 268px;
+  bottom: 4%;
+  right: 1.5%;
+  width: 340px;
   animation: floatD 7.8s var(--ease-out) infinite;
 }
 

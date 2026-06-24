@@ -1,6 +1,6 @@
 /**
  * Token-backed colour helpers for the Compare charts. Every colour is a CSS
- * `var(--token)` reference (never raw hex), so the charts adapt in dark mode
+ * `var(--token)` reference (never raw hex), so the charts stay token-driven
  * like the rest of the app. The A/B series follow the existing ModelCard tone
  * convention (A = accent blue, B = green).
  */

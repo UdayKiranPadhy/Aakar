@@ -28,7 +28,6 @@ import { findNodeByPath, type Level } from "../../domain/navigation";
 import type { Node as SpecNode } from "../../domain/spec";
 import { useNavigation } from "../../application/useNavigation";
 import { useSelection } from "../../application/useSelection";
-import { useResolvedTheme } from "../../application/useTheme";
 import { useArchStore } from "../../store/archStore";
 import { BlockFlowNode, type BlockFlowData } from "./BlockFlowNode";
 import {
@@ -367,19 +366,19 @@ type CanvasFlowProps = {
 };
 
 // React Flow's MiniMap paints SVG presentation attributes (not CSS), so its
-// colours can't be CSS variables — key them off the resolved theme instead.
-// Values mirror tokens.css; everything else on the canvas is themed via
-// `colorMode` + the edge/node CSS variables.
-const MINIMAP_PALETTE = {
-  light: { node: "#1a73e8", stroke: "#ffffff", mask: "rgba(229, 231, 235, 0.45)", bg: "#ffffff", border: "#e5e7eb" },
-  dark: { node: "#8ab4f8", stroke: "#202124", mask: "rgba(20, 21, 23, 0.55)", bg: "#28292c", border: "#3c4043" },
+// colours can't be CSS variables; these mirror the light tokens in tokens.css.
+const MINIMAP = {
+  node: "#1a73e8",
+  stroke: "#ffffff",
+  mask: "rgba(229, 231, 235, 0.45)",
+  bg: "#ffffff",
+  border: "#e5e7eb",
 } as const;
 
 function CanvasFlow({ baseNodes, edges, fitViewOptions, translateExtent }: CanvasFlowProps) {
   const [nodes, setNodes] = useState<ReactFlowNode[]>(() => baseNodes);
   const { fitView } = useReactFlow();
-  const theme = useResolvedTheme();
-  const miniMap = MINIMAP_PALETTE[theme];
+  const miniMap = MINIMAP;
 
   const spec = useArchStore((s) => s.spec);
   const opFlowPath = useArchStore((s) => s.opFlowPath);
@@ -411,7 +410,7 @@ function CanvasFlow({ baseNodes, edges, fitViewOptions, translateExtent }: Canva
       onNodesChange={onNodesChange}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
-      colorMode={theme}
+      colorMode="light"
       fitView
       fitViewOptions={fitViewOptions}
       proOptions={{ hideAttribution: true }}

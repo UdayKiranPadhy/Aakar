@@ -14,6 +14,7 @@ import { ModelNotFoundState } from "../components/ModelNotFoundState";
 import { ModelServerErrorState } from "../components/ModelServerErrorState";
 import { ModelUnsupportedState } from "../components/ModelUnsupportedState";
 import { PlaceholderScreen } from "../components/PlaceholderScreen";
+import { ModelLanding } from "./landing/ModelLanding";
 import { modelViewRegistry } from "./ModelViewRegistry";
 
 // Minimal spec used when we know the model_id but introspection failed.
@@ -24,9 +25,12 @@ function stubSpec(modelId: string): Spec {
 
 export function ModelViewHost({
   onRetryWithToken,
+  onSubmit,
 }: {
   /** Re-run a load with a just-entered HF token (used by the gated page). */
   onRetryWithToken?: (modelId: string, token: string) => void;
+  /** Load a model from the empty-state landing's in-page search / chips. */
+  onSubmit?: (modelId: string) => void;
 } = {}) {
   const spec = useArchStore((s) => s.spec);
   const error = useArchStore((s) => s.error);
@@ -68,7 +72,11 @@ export function ModelViewHost({
       return <ModelIntrospectionErrorState error={error} />;
     if (error?.kind === "server_error") return <ModelServerErrorState error={error} />;
     if (error) return <ErrorState error={error} />;
-    return (
+    // No model, no error: the landing hero. Falls back to the plain placeholder
+    // only if no loader was wired (the in-page search/chips need `onSubmit`).
+    return onSubmit ? (
+      <ModelLanding onSubmit={onSubmit} />
+    ) : (
       <PlaceholderScreen
         title="No model loaded"
         message="Enter a HuggingFace model id in the search bar above to explore its architecture."

@@ -1,14 +1,19 @@
-/* Full-bleed, centred scroll surface — replaces the sidebar + content body on a
- * Compare cold start. Fills the flex-row main area and scrolls internally. */
+/* Full-bleed, centred surface — replaces the sidebar + content body on a Compare
+ * cold start. Fills the flex-row main area and sits statically within the
+ * viewport below the nav: the hero is sized to fit, so nothing scrolls. */
 .landing {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 1;
   min-width: 0;
+  /* Clip horizontal overflow (the full-bleed banner), but allow vertical scroll
+   * as a safety valve: on cramped screens the hero may exceed the viewport, and
+   * scrolling a little is better than clipping the search card or the figure. */
+  overflow-x: hidden;
   overflow-y: auto;
   /* No horizontal padding — the illustration banner is full-bleed. */
-  padding: 0 0 var(--space-16);
+  padding: 0 0 var(--space-6);
 }
 
 /* Full-bleed illustration banner (Google-Flights style). The SVG's solid sky was
@@ -17,23 +22,46 @@
 .heroArt {
   display: block;
   width: 100%;
-  aspect-ratio: 1844 / 500;
+  /* Cap the width and let height follow a fixed aspect ratio rather than the
+   * viewport height. `cover` zooms with width, so a short full-bleed band can't
+   * span the scene's full vertical extent on wide screens — the peaks crop off
+   * the top, or (anchored low) the explorer's legs crop off the bottom. With a
+   * width-capped aspect-ratio the SAME slice (peaks → feet) shows at every width,
+   * so the whole figure stays framed. The cap also keeps the banner from growing
+   * unboundedly tall on ultra-wide displays; past it, the centred art's faded
+   * edges blend into the page. The short-viewport fallback below keeps it compact
+   * where a banner this tall wouldn't fit above the search card. */
+  max-width: 1440px;
+  margin-inline: auto;
+  aspect-ratio: 1440 / 320;
   object-fit: cover;
-  object-position: 50% 90%;
+  object-position: 50% 72%;
   /* Dissolve all four edges into the page so the scene blends rather than reading
-   * as a framed image. Fading the top also melts the peaks into the page (Google
-   * style) and hides faint leftover sky wisps that show on the dark background.
-   * Two gradients intersected: visible only where BOTH are opaque. */
+   * as a framed image. Gentle fades (≈7%) so they soften the edges without eating
+   * into the peaks or the figure. Two gradients intersected: visible only where
+   * BOTH are opaque. */
   -webkit-mask-image:
     linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%),
-    linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%);
+    linear-gradient(to bottom, transparent 0%, #000 7%, #000 93%, transparent 100%);
   mask-image:
     linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%),
-    linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%);
+    linear-gradient(to bottom, transparent 0%, #000 7%, #000 93%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
   pointer-events: none;
   user-select: none;
+}
+
+/* Short viewports (cramped laptops): a banner tall enough to frame the whole
+ * figure would push the search card off-screen, so fall back to a compact band
+ * framed on the peaks (the figure's lower body fades into the page). */
+@media (max-height: 820px) {
+  .heroArt {
+    aspect-ratio: auto;
+    max-width: none;
+    height: clamp(150px, 22vh, 220px);
+    object-position: 50% 55%;
+  }
 }
 
 .inner {
@@ -67,7 +95,7 @@
  * bottom margin leaves room for the button's protruding half before the chips. */
 .card {
   position: relative;
-  margin: clamp(28px, 4vw, 44px) auto calc(var(--space-10) + var(--space-2));
+  margin: clamp(16px, 3vw, 32px) auto var(--space-8);
   padding: clamp(16px, 2.4vw, 24px) clamp(16px, 2.4vw, 24px) clamp(24px, 3vw, 32px);
   border-radius: 16px;
   border: 1px solid var(--color-hairline);
@@ -146,14 +174,19 @@
   outline: none;
   box-shadow: 0 0 0 4px var(--color-accent-subtle);
 }
+/* Disabled: a solid muted fill rather than reduced opacity. `opacity` would make
+ * the whole pill semi-transparent and let the card's bottom border (which the
+ * pill is centred on) show straight through it. */
 .compare:disabled {
-  opacity: 0.5;
+  background: var(--color-hairline-strong);
+  color: var(--color-ink-subtle);
+  box-shadow: var(--shadow-block);
   cursor: not-allowed;
 }
 
 /* ── Example pairs (the "popular destinations" analogue) ─────────────────── */
 .examples {
-  margin-top: clamp(24px, 3vw, 36px);
+  margin-top: clamp(12px, 2vw, 20px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -211,10 +244,11 @@
 
 /* Stack the two fields on narrow widths; the swap rotates to sit between rows. */
 @media (max-width: 640px) {
-  /* A taller crop so the scene reads on narrow screens. */
+  /* A shorter band on narrow screens, where the stacked fields make the card
+   * taller and leave less room above it. */
   .heroArt {
-    aspect-ratio: 1844 / 820;
-    object-position: 50% 90%;
+    height: clamp(120px, 16vh, 180px);
+    object-position: 50% 58%;
   }
   .fields {
     grid-template-columns: 1fr;

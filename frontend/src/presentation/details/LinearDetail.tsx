@@ -7,7 +7,8 @@ import {
   formatShape,
 } from "../components/ui/format";
 import { useArchStore } from "../../store/archStore";
-import { BackendFieldsSection } from "./BackendFieldsSection";
+import { ClassificationSection } from "./ClassificationSection";
+import { FieldRow } from "./DetailSection";
 import { OperationsSection } from "./OperationsSection";
 import { SourceViewer } from "./SourceViewer";
 import styles from "./GenericDetailPanel.module.css";
@@ -72,15 +73,27 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
           </div>
         </section>
 
-        <BackendFieldsSection node={node} />
+        <ClassificationSection node={node} />
 
         {/* Configuration Section */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Parameters</h3>
           <dl className={styles.kvGrid}>
-            {inFeatures && <Row k="Input Features (in_features)" v={inFeatures.toLocaleString()} />}
-            {outFeatures && <Row k="Output Features (out_features)" v={outFeatures.toLocaleString()} />}
-            <Row k="Has Bias" v={hasBias ? "Yes" : "No"} />
+            {inFeatures && (
+              <FieldRow
+                k="Input Features (in_features)"
+                field="in_features"
+                v={inFeatures.toLocaleString()}
+              />
+            )}
+            {outFeatures && (
+              <FieldRow
+                k="Output Features (out_features)"
+                field="out_features"
+                v={outFeatures.toLocaleString()}
+              />
+            )}
+            <FieldRow k="Has Bias" field="has_bias" v={hasBias ? "Yes" : "No"} />
           </dl>
         </section>
 
@@ -88,10 +101,10 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Shapes</h3>
           <dl className={styles.kvGrid}>
-            {node.input_shape && <Row k="input" v={node.input_shape} />}
-            {node.output_shape && <Row k="output" v={node.output_shape} />}
-            {node.weight_shape && <Row k="weight" v={formatShape(node.weight_shape) ?? ""} />}
-            {node.bias_shape && <Row k="bias" v={formatShape(node.bias_shape) ?? ""} />}
+            {node.input_shape && <FieldRow k="input" v={node.input_shape} />}
+            {node.output_shape && <FieldRow k="output" v={node.output_shape} />}
+            {node.weight_shape && <FieldRow k="weight" v={formatShape(node.weight_shape) ?? ""} />}
+            {node.bias_shape && <FieldRow k="bias" v={formatShape(node.bias_shape) ?? ""} />}
           </dl>
         </section>
 
@@ -155,14 +168,5 @@ export function LinearDetail({ node, onExpand, onClose }: DetailPanelProps) {
         </footer>
       )}
     </div>
-  );
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <>
-      <dt className={styles.kvKey}>{k}</dt>
-      <dd className={styles.kvValue}>{v}</dd>
-    </>
   );
 }

@@ -12,8 +12,8 @@ export const inkMuted = "var(--color-ink-muted)";
 export const inkSubtle = "var(--color-ink-subtle)";
 export const hair = "var(--color-hairline-strong)";
 export const surface = "var(--color-canvas)";
-// Card / box fills in the illustrations — the page surface, so it flips to the
-// dark surface in dark mode. (Name is historical; no longer literally white.)
+// Card / box fills in the illustrations — the page surface. (Name is historical;
+// no longer literally white.)
 export const white = "var(--color-bg)";
 
 export const blue = "var(--g-blue)";

@@ -33,6 +33,7 @@ const SIDEBAR_MAX = 460;
 export function ModelSidebar() {
   const modelView = useArchStore((s) => s.modelView);
   const setModelView = useArchStore((s) => s.setModelView);
+  const clearModel = useArchStore((s) => s.clearModel);
   const collapsed = useArchStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useArchStore((s) => s.toggleSidebar);
   const width = useArchStore((s) => s.sidebarWidth);
@@ -49,6 +50,16 @@ export function ModelSidebar() {
       )}
       style={collapsed ? undefined : { width }}
     >
+      <button
+        type="button"
+        className={styles.newModelBtn}
+        onClick={() => clearModel()}
+        title="New model — back to search"
+      >
+        <NewModelIcon className={styles.newModelIcon} />
+        <span className={styles.navLabel}>New model</span>
+      </button>
+
       <nav className={styles.nav} aria-label="Model views">
         {views.map(({ key, label }) => (
           <button
@@ -90,6 +101,26 @@ export function ModelSidebar() {
         />
       )}
     </aside>
+  );
+}
+
+function NewModelIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <line x1="20" y1="20" x2="16.65" y2="16.65" />
+      <line x1="11" y1="8" x2="11" y2="14" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
   );
 }
 

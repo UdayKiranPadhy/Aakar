@@ -199,6 +199,16 @@ describe("archStore", () => {
       expect(useArchStore.getState().modelView).toBe("config");
     });
 
+    it("setConceptId opens a concept page; setLearnView clears it on section change", () => {
+      useArchStore.getState().setLearnView("concepts");
+      useArchStore.getState().setConceptId("attention");
+      expect(useArchStore.getState().conceptId).toBe("attention");
+
+      // Leaving the Concepts section drops the open concept (back to the index).
+      useArchStore.getState().setLearnView("timeline");
+      expect(useArchStore.getState().conceptId).toBeNull();
+    });
+
     it("toggleSidebar flips collapse, or sets it explicitly", () => {
       useArchStore.setState({ sidebarCollapsed: false });
       useArchStore.getState().toggleSidebar();
@@ -270,17 +280,4 @@ describe("archStore", () => {
     });
   });
 
-  describe("setThemePreference", () => {
-    it("updates the preference and persists it to localStorage", () => {
-      useArchStore.getState().setThemePreference("dark");
-      expect(useArchStore.getState().themePreference).toBe("dark");
-      expect(localStorage.getItem("aakar.theme")).toBe("dark");
-    });
-
-    it("is preserved across reset (like the HF token)", () => {
-      useArchStore.getState().setThemePreference("light");
-      useArchStore.getState().reset();
-      expect(useArchStore.getState().themePreference).toBe("light");
-    });
-  });
 });

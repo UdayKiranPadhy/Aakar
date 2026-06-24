@@ -19,7 +19,8 @@ import {
 } from "../components/ui/format";
 import { useArchStore } from "../../store/archStore";
 import type { Spec } from "../../domain/spec";
-import { BackendFieldsSection } from "./BackendFieldsSection";
+import { ClassificationSection } from "./ClassificationSection";
+import { FieldKey, FieldRow, Section } from "./DetailSection";
 import { explainRole } from "./explanations";
 import { OperationsSection } from "./OperationsSection";
 import styles from "./GenericDetailPanel.module.css";
@@ -53,7 +54,7 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
         <RoleBlurb role={node.role} />
         {isRoot && spec && <ModelInfoSection spec={spec} />}
         <SourceSection node={node} />
-        <BackendFieldsSection node={node} />
+        <ClassificationSection node={node} />
         <TensorPathSection node={node} />
         <OperationsSection operations={node.operations} />
         <ParamsSection params={node.params} />
@@ -100,10 +101,12 @@ function SourceSection({ node }: { node: DetailPanelProps["node"] }) {
   return (
     <Section title="Source">
       <dl className={styles.kvGrid}>
-        {node.module_path && <Row k="path" v={node.module_path} />}
+        {node.module_path && <FieldRow k="path" v={node.module_path} />}
         {node.module_class && (
           <>
-            <dt className={styles.kvKey}>class</dt>
+            <dt className={styles.kvKey}>
+              <FieldKey label="class" />
+            </dt>
             <dd className={styles.kvValue}>
               {node.source_url ? (
                 <a
@@ -142,7 +145,7 @@ function TensorPathSection({ node }: { node: DetailPanelProps["node"] }) {
       {intermediates.length > 0 && (
         <dl className={styles.kvGrid}>
           {intermediates.map(([k, v]) => (
-            <Row key={k} k={k} v={v} />
+            <FieldRow key={k} k={k} v={v} />
           ))}
         </dl>
       )}
@@ -175,7 +178,7 @@ function ModelInfoSection({ spec }: { spec: Spec }) {
     <Section title="Model">
       <dl className={styles.kvGrid}>
         {rows.map(([k, v]) => (
-          <Row key={k} k={k} v={v} />
+          <FieldRow key={k} k={k} v={v} />
         ))}
       </dl>
     </Section>
@@ -193,7 +196,7 @@ function ParamsSection({
     <Section title="Configuration">
       <dl className={styles.kvGrid}>
         {entries.map(([k, v]) => (
-          <Row key={k} k={k} v={String(v)} />
+          <FieldRow key={k} k={k} v={String(v)} />
         ))}
       </dl>
     </Section>
@@ -246,10 +249,10 @@ function ShapesSection({
   return (
     <Section title="Shapes">
       <dl className={styles.kvGrid}>
-        {input && <Row k="input" v={input} />}
-        {output && <Row k="output" v={output} />}
-        {w && <Row k="weight" v={w} />}
-        {b && <Row k="bias" v={b} />}
+        {input && <FieldRow k="input" v={input} />}
+        {output && <FieldRow k="output" v={output} />}
+        {w && <FieldRow k="weight" v={w} />}
+        {b && <FieldRow k="bias" v={b} />}
       </dl>
     </Section>
   );
@@ -293,7 +296,7 @@ function BuffersSection({
     <Section title="Buffers">
       <dl className={styles.kvGrid}>
         {entries.map(([name, shape]) => (
-          <Row key={name} k={name} v={formatShape(shape) ?? "[]"} />
+          <FieldRow key={name} k={name} v={formatShape(shape) ?? "[]"} />
         ))}
       </dl>
     </Section>
@@ -327,20 +330,3 @@ function SubmoduleBreakdownSection({ node }: { node: DetailPanelProps["node"] })
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <>
-      <dt className={styles.kvKey}>{k}</dt>
-      <dd className={styles.kvValue}>{v}</dd>
-    </>
-  );
-}

@@ -6,20 +6,55 @@
   overflow: hidden;
 }
 
-/* Dual-model search header — sits above the sidebar + content row. */
+/* Dual-model search header — sits above the sidebar + content row. A small
+ * utility row (Clear selection) sits above the dual search. */
 .header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-8);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-hairline);
+}
+.headerTools {
+  display: flex;
+  justify-content: flex-end;
+}
+.searchRow {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: end;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-8) var(--space-3);
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-hairline);
 }
 .swap {
   margin-bottom: 1px;
   font-size: 16px;
   line-height: 1;
+}
+
+/* "Clear selection" — drops both models and returns to the Compare landing. */
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+.clearBtn:hover {
+  color: var(--color-ink);
+  background: var(--color-canvas);
+}
+.clearBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
 }
 
 /* Sidebar + content, mirroring the model dashboard's .dashboard row. */

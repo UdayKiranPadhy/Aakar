@@ -1,0 +1,49 @@
+/* Inline definition trigger — dotted underline signals "hover/focus for more". */
+.trigger {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--color-hairline-strong);
+  text-underline-offset: 2px;
+  cursor: help;
+  outline: none;
+}
+.trigger:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The floating bubble — a surface card so it reads in both light and dark
+ * themes without inverting. Rendered in a body portal (position: fixed). */
+.bubble {
+  position: fixed;
+  z-index: 9999;
+  padding: 8px 10px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: var(--weight-regular);
+  line-height: 1.45;
+  letter-spacing: normal;
+  text-transform: none;
+  /* Never steal the hover that opened it. */
+  pointer-events: none;
+  animation: tooltipIn var(--duration-fast) var(--ease-out);
+}
+
+/* When flipped above the trigger, anchor the bubble's bottom edge to `top`. */
+.above {
+  transform: translateY(-100%);
+}
+
+@keyframes tooltipIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -20,6 +20,51 @@
   transition: none;
 }
 
+/* "New model" — clears the loaded model and returns to the Model landing's
+ * search. Pinned at the top of the rail so it stays reachable even when the
+ * nav's search has collapsed away on scroll. */
+.newModelBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 38px;
+  margin: var(--space-2) var(--space-2) 0;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+.newModelBtn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+.newModelBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+.newModelIcon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+/* Collapsed rail: centre the lone icon in the 40px column. */
+.collapsed .newModelBtn {
+  justify-content: center;
+  gap: 0;
+  margin-inline: var(--space-1);
+  padding: 0;
+}
+
 .nav {
   display: flex;
   flex-direction: column;

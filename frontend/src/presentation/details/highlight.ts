@@ -3,8 +3,8 @@
  *
  * Prism tokenises the source into `<span class="token …">` markup; the actual
  * colours live as `--syntax-*` CSS variables in tokens.css (mapped onto the
- * app's palette). So highlighting tracks the theme like everything else —
- * including any future dark mode — with nothing code-specific to maintain.
+ * app's palette), so highlighting stays token-driven like everything else,
+ * with nothing code-specific to maintain.
  *
  * Source slices come from torch / transformers, i.e. Python, so Python is the
  * default and the only grammar we register. We honour the snippet's `language`

@@ -49,7 +49,7 @@
 
 /* Prism token colours. The class names (`token`, `keyword`, …) are global —
  * Prism emits them — so they're scoped under `.pre` with :global and coloured
- * from the --syntax-* design tokens (which a future dark theme overrides). */
+ * from the --syntax-* design tokens. */
 .pre :global(.token.comment),
 .pre :global(.token.prolog),
 .pre :global(.token.doctype),

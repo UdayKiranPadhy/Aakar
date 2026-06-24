@@ -12,7 +12,7 @@
  *   home      /
  *   model     /model?id=<modelId>[&view=<view>][&path=<a/b/c>]
  *   compare   /compare[?a=<idA>][&b=<idB>][&view=<view>]
- *   learn     /learn[?view=<view>]
+ *   learn     /learn[?view=<view>][&concept=<conceptId>]
  *
  * HuggingFace ids contain a slash (e.g. `meta-llama/Llama-3-8B`); carrying the
  * id in a query param (URL-encoded by `URLSearchParams`) sidesteps any
@@ -36,7 +36,12 @@ export type RouteState =
       readonly b?: string;
       readonly view?: string;
     }
-  | { readonly mode: "learn"; readonly view?: string };
+  | {
+      readonly mode: "learn";
+      readonly view?: string;
+      /** A single concept opened on its own page (only meaningful when view=concepts). */
+      readonly concept?: string;
+    };
 
 /** Joins node ids in the drill `path` param. Matches `outlinePathKey`. */
 const PATH_SEP = "/";
@@ -49,6 +54,7 @@ export function routeToPath(state: RouteState): string {
     case "learn": {
       const q = new URLSearchParams();
       if (state.view) q.set("view", state.view);
+      if (state.concept) q.set("concept", state.concept);
       const search = q.toString();
       return search ? `/learn?${search}` : "/learn";
     }
@@ -100,7 +106,11 @@ export function pathToRoute(pathname: string, search: string): RouteState {
         view: q.get("view")?.trim() || undefined,
       };
     case "learn":
-      return { mode: "learn", view: q.get("view")?.trim() || undefined };
+      return {
+        mode: "learn",
+        view: q.get("view")?.trim() || undefined,
+        concept: q.get("concept")?.trim() || undefined,
+      };
     default:
       return { mode: "home" };
   }

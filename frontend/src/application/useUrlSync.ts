@@ -64,6 +64,8 @@ function buildUrl(s: Store): string {
       return routeToPath({
         mode: "learn",
         view: s.learnView !== DEFAULT_VIEW ? s.learnView : undefined,
+        // The opened concept only belongs to the Concepts section.
+        concept: s.learnView === "concepts" ? s.conceptId ?? undefined : undefined,
       });
     default:
       return routeToPath({ mode: "home" });
@@ -97,6 +99,14 @@ export function useUrlSync({ loadModel, toModelView, toCompareView, toLearnView 
         if (s.appMode !== "learn") s.setAppMode("learn");
         const view = toLearnView(route.view);
         if (s.learnView !== view) s.setLearnView(view);
+        // Reconcile the opened concept explicitly: back/forward within the
+        // Concepts section changes only `?concept=`, leaving learnView (and so
+        // the setLearnView guard above) untouched. The concept is a string here;
+        // ConceptsLearnView validates it against the content and self-heals an
+        // unknown id, mirroring how `?view=` stays unvalidated in this layer.
+        const after = useArchStore.getState();
+        const concept = view === "concepts" ? route.concept ?? null : null;
+        if (after.conceptId !== concept) after.setConceptId(concept);
         break;
       }
       case "model": {

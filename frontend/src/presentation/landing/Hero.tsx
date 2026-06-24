@@ -1,8 +1,9 @@
 /**
  * Hero panel (lens.google style): a centred headline with a cycling word + the
- * reused search pill, with the four architecture diagrams floating as small
- * cards in the corners (paired with the soft colour blobs behind them). Reveals
- * on mount; the cards drift via CSS float.
+ * reused search pill, with four bold illustrations floating as cards in the
+ * corners — two of the architecture (neural network, transformer block) and two
+ * of the "see inside" idea (an eye, a magnifier over a network), paired with the
+ * soft colour blobs behind them. Reveals on mount; the cards drift via CSS float.
  */
 
 import { motion } from "framer-motion";
@@ -11,36 +12,45 @@ import { clsx } from "clsx";
 import { useArchStore } from "../../store/archStore";
 import { CyclingWord } from "./CyclingWord";
 import { HeroBackdrop } from "./illustrations/HeroBackdrop";
-import { AttentionFan } from "./illustrations/AttentionFan";
-import { ModuleTree } from "./illustrations/ModuleTree";
-import { WeightMatrix } from "./illustrations/WeightMatrix";
-import { ZoomLadder } from "./illustrations/ZoomLadder";
+import { NeuralNetwork } from "./illustrations/NeuralNetwork";
+import { TransformerBlock } from "./illustrations/TransformerBlock";
+import { LensEye } from "./illustrations/LensEye";
+import { LensNetwork } from "./illustrations/LensNetwork";
 import { fadeUp, RevealDisabledContext, staggerContainer } from "./motion";
 import styles from "./Hero.module.css";
 
 const CYCLE = ["Llama", "Qwen", "Mistral", "Gemma", "transformer"] as const;
 
 export function Hero() {
+  const setAppMode = useArchStore((s) => s.setAppMode);
   const requestSearchFocus = useArchStore((s) => s.requestSearchFocus);
+
+  // "Enter Model" leaves the landing for the Model tab (→ /model), then requests
+  // focus on its search. The nav (and its primary search field) only mounts once
+  // we're off home, so the mount-time focus effect fires with the bumped nonce.
+  const handleEnter = () => {
+    setAppMode("model");
+    requestSearchFocus();
+  };
 
   return (
     <section className={styles.hero}>
       <HeroBackdrop />
 
-      {/* Floating diagram cards in the corners (decorative, rendered static). */}
+      {/* Floating illustration cards in the corners (decorative, rendered static). */}
       <div className={styles.cards} aria-hidden="true">
         <RevealDisabledContext.Provider value={true}>
           <div className={clsx(styles.card, styles.cardTL)}>
-            <ModuleTree />
+            <NeuralNetwork />
           </div>
           <div className={clsx(styles.card, styles.cardTR)}>
-            <ZoomLadder />
+            <TransformerBlock />
           </div>
           <div className={clsx(styles.card, styles.cardBL)}>
-            <AttentionFan />
+            <LensEye />
           </div>
           <div className={clsx(styles.card, styles.cardBR)}>
-            <WeightMatrix />
+            <LensNetwork />
           </div>
         </RevealDisabledContext.Provider>
       </div>
@@ -62,7 +72,7 @@ export function Hero() {
           Enter the model id, to know what's inside.
         </motion.p>
         <motion.div className={styles.cta} variants={fadeUp}>
-          <button type="button" className={styles.enterButton} onClick={requestSearchFocus}>
+          <button type="button" className={styles.enterButton} onClick={handleEnter}>
             Enter Model
           </button>
         </motion.div>

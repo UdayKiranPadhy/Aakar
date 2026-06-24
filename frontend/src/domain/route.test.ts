@@ -15,6 +15,12 @@ describe("routeToPath", () => {
     expect(routeToPath({ mode: "learn" })).toBe("/learn");
   });
 
+  it("carries the opened concept in a learn query param", () => {
+    expect(routeToPath({ mode: "learn", view: "concepts", concept: "attention" })).toBe(
+      "/learn?view=concepts&concept=attention",
+    );
+  });
+
   it("puts the model id in a query param", () => {
     expect(routeToPath({ mode: "model", modelId: "gpt2" })).toBe("/model?id=gpt2");
   });
@@ -74,6 +80,14 @@ describe("pathToRoute", () => {
     });
   });
 
+  it("parses the opened concept on a learn URL", () => {
+    expect(pathToRoute("/learn", "?view=concepts&concept=attention")).toEqual({
+      mode: "learn",
+      view: "concepts",
+      concept: "attention",
+    });
+  });
+
   it("is tolerant of a trailing slash and mixed case in the segment", () => {
     expect(pathToRoute("/Compare/", "?a=gpt2")).toEqual({
       mode: "compare",
@@ -103,6 +117,7 @@ describe("round trip", () => {
     { mode: "compare", a: "gpt2", b: "meta-llama/Llama-3-8B", view: "tokens" },
     { mode: "compare", a: "gpt2" },
     { mode: "learn", view: "timeline" },
+    { mode: "learn", view: "concepts", concept: "attention" },
   ];
 
   // `toEqual` ignores the `undefined` extras `pathToRoute` fills in (view/path/a/b).

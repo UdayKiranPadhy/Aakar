@@ -25,7 +25,6 @@ import {
   levelFromExpansion,
 } from "../domain/navigation";
 import type { Node, Spec } from "../domain/spec";
-import type { ThemePreference } from "../domain/theme";
 
 // Optional HF read token for gated models. Persisted to localStorage only when
 // the user opts in ("remember"); otherwise it lives in memory for the session.
@@ -42,29 +41,6 @@ function persistToken(token: string | null, remember: boolean): void {
   try {
     if (remember && token) localStorage.setItem(HF_TOKEN_KEY, token);
     else localStorage.removeItem(HF_TOKEN_KEY);
-  } catch {
-    /* storage unavailable — keep the in-memory value only */
-  }
-}
-
-// Colour-theme preference. Persisted so a returning visitor keeps their choice;
-// defaults to "system" (follow the OS) on a first visit. Same storage guard as
-// the HF token. The boot script in index.html reads this same key to set the
-// theme before first paint (avoiding a flash); the store and that script must
-// stay in agreement on the key.
-const THEME_KEY = "aakar.theme";
-function readStoredTheme(): ThemePreference {
-  try {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") return stored;
-  } catch {
-    /* storage unavailable — fall through to the default */
-  }
-  return "system";
-}
-function persistTheme(preference: ThemePreference): void {
-  try {
-    localStorage.setItem(THEME_KEY, preference);
   } catch {
     /* storage unavailable — keep the in-memory value only */
   }
@@ -109,6 +85,12 @@ type State = {
   compareView: CompareView;
   /** Within the Learn page, which section is active (left LearnSidebar). */
   learnView: LearnView;
+  /**
+   * The concept opened on its own page within the Concepts section, or null for
+   * the card grid. Lives here (not as local view state) so it rides in the URL
+   * (`/learn?view=concepts&concept=<id>`) and is shareable / back-forward aware.
+   */
+  conceptId: string | null;
   sidebarCollapsed: boolean;
   /** Pixel widths of the resizable left/right rails (ignored while collapsed). */
   sidebarWidth: number;
@@ -130,8 +112,6 @@ type State = {
    * shows its explanation. Takes precedence over the path-based selection.
    */
   selectedFlowNode: Node | null;
-  /** Colour-theme preference; "system" follows the OS. Resolved in useTheme. */
-  themePreference: ThemePreference;
 };
 
 type Actions = {
@@ -155,6 +135,8 @@ type Actions = {
   setModelView(view: ModelView): void;
   setCompareView(view: CompareView): void;
   setLearnView(view: LearnView): void;
+  /** Open a concept on its own page, or pass null to return to the grid. */
+  setConceptId(id: string | null): void;
   toggleSidebar(collapsed?: boolean): void;
   setSidebarWidth(width: number): void;
   setDetailWidth(width: number): void;
@@ -168,8 +150,10 @@ type Actions = {
   setOpHideShapeOps(hide: boolean): void;
   /** Select a synthetic node (op/semantic glyph) to explain in the detail panel. */
   selectFlowNode(node: Node): void;
-  /** Set the colour-theme preference; persists it to localStorage. */
-  setThemePreference(preference: ThemePreference): void;
+  /** Clear both Compare columns → back to the Compare landing (`/compare`). */
+  clearCompare(): void;
+  /** Clear the loaded model → back to the Model landing (`/model`). */
+  clearModel(): void;
   reset(): void;
 };
 
@@ -192,6 +176,7 @@ const initialState: State = {
   modelView: "overview",
   compareView: "overview",
   learnView: "overview",
+  conceptId: null,
   sidebarCollapsed: false,
   sidebarWidth: 248,
   detailWidth: 320,
@@ -200,7 +185,6 @@ const initialState: State = {
   opFlowPath: null,
   opHideShapeOps: true,
   selectedFlowNode: null,
-  themePreference: readStoredTheme(),
 };
 
 export const useArchStore = create<State & Actions>()((set) => ({
@@ -285,7 +269,11 @@ export const useArchStore = create<State & Actions>()((set) => ({
 
   setCompareView: (compareView) => set({ compareView }),
 
-  setLearnView: (learnView) => set({ learnView }),
+  // Switching Learn sections drops any open concept: the sidebar's "Concepts"
+  // entry is the library index, not whichever concept you last had open.
+  setLearnView: (learnView) => set({ learnView, conceptId: null }),
+
+  setConceptId: (conceptId) => set({ conceptId }),
 
   toggleSidebar: (collapsed) =>
     set((s) => ({ sidebarCollapsed: collapsed ?? !s.sidebarCollapsed })),
@@ -311,10 +299,33 @@ export const useArchStore = create<State & Actions>()((set) => ({
   selectFlowNode: (node) =>
     set({ selectedFlowNode: node, detailOpen: true, detailCollapsed: false }),
 
-  setThemePreference: (preference) => {
-    persistTheme(preference);
-    set({ themePreference: preference });
-  },
+  // Drop both columns (and their in-flight ids) so CompareHost falls back to the
+  // landing; resetting the view keeps the resulting URL a clean `/compare`.
+  clearCompare: () =>
+    set({
+      compareA: null,
+      compareB: null,
+      requestedCompareA: null,
+      requestedCompareB: null,
+      compareView: "overview",
+    }),
+
+  // Drop the loaded model so ModelViewHost falls back to its landing. Mirrors
+  // reset()'s preserve-list (Compare surface + cross-cutting prefs) but stays on
+  // the Model tab and also clears the search text for a fresh start. The empty
+  // model id collapses the URL back to `/model`.
+  clearModel: () =>
+    set((s) => ({
+      ...initialState,
+      appMode: "model",
+      compareA: s.compareA,
+      compareB: s.compareB,
+      requestedCompareA: s.requestedCompareA,
+      requestedCompareB: s.requestedCompareB,
+      sidebarWidth: s.sidebarWidth,
+      detailWidth: s.detailWidth,
+      hfToken: s.hfToken,
+    })),
 
   reset: () =>
     set((s) => ({
@@ -330,6 +341,5 @@ export const useArchStore = create<State & Actions>()((set) => ({
       sidebarWidth: s.sidebarWidth,
       detailWidth: s.detailWidth,
       hfToken: s.hfToken,
-      themePreference: s.themePreference,
     })),
 }));

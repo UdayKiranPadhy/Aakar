@@ -37,6 +37,7 @@ export function CompareHost() {
   const b = useArchStore((s) => s.compareB);
   const compareView = useArchStore((s) => s.compareView);
   const primaryModelId = useArchStore((s) => s.spec?.model_id ?? null);
+  const clearCompare = useArchStore((s) => s.clearCompare);
   const { load, swap, a: statusA, b: statusB } = useCompareModels();
 
   const [inputA, setInputA] = useState(a?.model_id ?? "");
@@ -102,6 +103,14 @@ export function CompareHost() {
     void load("b", inputB);
   };
 
+  // Drop both models → back to the cold-start landing (/compare). Also clears the
+  // local field text so the landing's searches start empty.
+  const handleClear = () => {
+    clearCompare();
+    setInputA("");
+    setInputB("");
+  };
+
   // Cold start: until both columns are loaded, show the standalone landing hero
   // (Google-Flights style) — full-width dual search, no sidebar. As soon as both
   // models are present, the working layout below takes over.
@@ -116,8 +125,12 @@ export function CompareHost() {
         statusB={statusB}
         onChangeA={setInputA}
         onChangeB={setInputB}
-        onSubmitA={(id) => void load("a", id)}
-        onSubmitB={(id) => void load("b", id)}
+        // Submitting a field (Enter / picking a suggestion) only commits the id
+        // into its input — it does NOT load. The comparison starts solely when
+        // the user clicks Compare (onCompare), never automatically once both
+        // ids are valid. (The example-pair chips remain a one-click compare.)
+        onSubmitA={setInputA}
+        onSubmitB={setInputB}
         onSwap={handleSwap}
         onCompare={handleCompare}
         onPair={handlePair}
@@ -130,34 +143,42 @@ export function CompareHost() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <CompareSearchBar
-          label="Model A"
-          tone="a"
-          value={inputA}
-          loading={statusA.loading}
-          error={statusA.error}
-          onChange={setInputA}
-          onSubmit={(id) => void load("a", id)}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          className={styles.swap}
-          onClick={handleSwap}
-          aria-label="Swap models"
-          title="Swap models"
-        >
-          ⇄
-        </Button>
-        <CompareSearchBar
-          label="Model B"
-          tone="b"
-          value={inputB}
-          loading={statusB.loading}
-          error={statusB.error}
-          onChange={setInputB}
-          onSubmit={(id) => void load("b", id)}
-        />
+        <div className={styles.headerTools}>
+          <button type="button" className={styles.clearBtn} onClick={handleClear}>
+            <ClearIcon />
+            Clear selection
+          </button>
+        </div>
+        <div className={styles.searchRow}>
+          <CompareSearchBar
+            label="Model A"
+            tone="a"
+            value={inputA}
+            loading={statusA.loading}
+            error={statusA.error}
+            onChange={setInputA}
+            onSubmit={(id) => void load("a", id)}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className={styles.swap}
+            onClick={handleSwap}
+            aria-label="Swap models"
+            title="Swap models"
+          >
+            ⇄
+          </Button>
+          <CompareSearchBar
+            label="Model B"
+            tone="b"
+            value={inputB}
+            loading={statusB.loading}
+            error={statusB.error}
+            onChange={setInputB}
+            onSubmit={(id) => void load("b", id)}
+          />
+        </div>
       </div>
 
       <div className={styles.body}>
@@ -171,5 +192,24 @@ export function CompareHost() {
         </section>
       </div>
     </div>
+  );
+}
+
+function ClearIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
   );
 }

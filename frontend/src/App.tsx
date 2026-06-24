@@ -112,7 +112,9 @@ export function App() {
 
   return (
     <div className={styles.root}>
-      <NavBar onSubmit={loadModel} compact={navCompact} />
+      {/* Home is a full-bleed landing with no chrome; the nav (brand, search,
+          section tabs) appears only once you enter a section. */}
+      {appMode !== "home" && <NavBar onSubmit={loadModel} compact={navCompact} />}
 
       <main className={styles.main}>
         {/* Catch-all: a crash in any mode degrades to a friendly page while the
@@ -139,7 +141,7 @@ export function App() {
                 {/* Inner boundary: a malformed field in one model view can't blank
                     the dashboard. Remounts per model+view so navigating recovers. */}
                 <ErrorBoundary key={`${modelId ?? "none"}:${modelView}`}>
-                  <ModelViewHost onRetryWithToken={loadModel} />
+                  <ModelViewHost onSubmit={loadModel} onRetryWithToken={loadModel} />
                 </ErrorBoundary>
               </section>
             </div>

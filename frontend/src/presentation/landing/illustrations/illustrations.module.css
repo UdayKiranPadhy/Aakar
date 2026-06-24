@@ -78,6 +78,20 @@
   overflow: visible;
 }
 
+/* ── Illustration card (hero) ──────────────────────────────────────────── */
+/* Rounded, shadowed floating card holding a bold Google-colour illustration.
+ * Light padding so the artwork has room to breathe. */
+.artCard {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-radius: 24px;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-panel);
+  padding: 16px;
+  overflow: hidden;
+}
+
 .glyph {
   position: absolute;
   right: -10px;

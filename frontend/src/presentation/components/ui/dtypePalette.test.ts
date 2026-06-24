@@ -4,7 +4,7 @@ import type { ModelInfo } from "../../../domain/modelInfo";
 import { dtypeColor, dtypeEntries } from "./dtypePalette";
 
 describe("dtypeColor", () => {
-  it("maps known dtypes to design tokens (so the bar/donut adapt in dark mode)", () => {
+  it("maps known dtypes to design tokens", () => {
     expect(dtypeColor("BF16")).toBe("var(--g-blue)");
     expect(dtypeColor("bf16")).toBe("var(--g-blue)"); // case-insensitive
     expect(dtypeColor("F32")).toBe("var(--g-red)");

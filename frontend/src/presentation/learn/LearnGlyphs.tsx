@@ -153,3 +153,22 @@ export function TopicGlyph({ topic, ...props }: IconProps & { topic: string }) {
   const Glyph = RULES.find(([re]) => re.test(topic))?.[1] ?? SparkleGlyph;
   return <Glyph {...props} />;
 }
+
+/** Bookmark ribbon — outline when empty, filled when bookmarked. */
+export function BookmarkGlyph({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z" />
+    </svg>
+  );
+}
