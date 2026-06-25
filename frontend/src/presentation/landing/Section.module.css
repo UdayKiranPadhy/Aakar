@@ -8,20 +8,23 @@
   scroll-snap-stop: always;
 }
 
-/* Soft colour wash anchored at the top of each panel, fading to white by ~a
- * third down — so the diagram and its now-bold decorative shapes sit on white
- * and read clearly (lens.google keeps these shapes on a white page). */
+/* Soft colour wash that eases in from white at the very top of each panel,
+ * peaks just below it, then fades back to white by ~a third down — so the
+ * diagram and its now-bold decorative shapes sit on white and read clearly
+ * (lens.google keeps these shapes on a white page). Crucially, BOTH the top
+ * and bottom edges resolve to `--color-bg`, so adjacent panels meet
+ * white-to-white at the scroll seam and blend with no hard colour line. */
 .band_blue {
-  background: linear-gradient(180deg, var(--g-blue-subtle) 0%, var(--color-bg) 34%);
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-blue-subtle) 9%, var(--color-bg) 38%);
 }
 .band_red {
-  background: linear-gradient(180deg, var(--g-red-subtle) 0%, var(--color-bg) 34%);
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-red-subtle) 9%, var(--color-bg) 38%);
 }
 .band_yellow {
-  background: linear-gradient(180deg, var(--g-yellow-subtle) 0%, var(--color-bg) 34%);
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-yellow-subtle) 9%, var(--color-bg) 38%);
 }
 .band_green {
-  background: linear-gradient(180deg, var(--g-green-subtle) 0%, var(--color-bg) 34%);
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-green-subtle) 9%, var(--color-bg) 38%);
 }
 
 .split {
