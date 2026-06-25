@@ -12,6 +12,7 @@ import { Section } from "./Section";
 import { AttentionFan } from "./illustrations/AttentionFan";
 import { WeightMatrix } from "./illustrations/WeightMatrix";
 import { ZoomLadder } from "./illustrations/ZoomLadder";
+import { EyeGlyph, RouteGlyph, SearchGlyph, ZoomGlyph } from "./illustrations/sealGlyphs";
 import illo from "./illustrations/illustrations.module.css";
 
 type Props = {
@@ -29,6 +30,7 @@ export function LandingPage({ onSubmit }: Props) {
         tone="blue"
         eyebrow=""
         title="Find What's inside your model"
+        badge={<SearchGlyph />}
         art={<div data-travel-target className={illo.travelTarget} aria-hidden="true" />}
       >
         See a model capability that's caught your eye? Or a model you want to use? 
@@ -40,6 +42,7 @@ export function LandingPage({ onSubmit }: Props) {
         tone="red"
         eyebrow=""
         title="Zoom in, see the Math"
+        badge={<ZoomGlyph />}
         art={<ZoomLadder />}
       >
         Zoom inside the model architecture upto unit math — the actual operations and data flow.
@@ -51,6 +54,7 @@ export function LandingPage({ onSubmit }: Props) {
         tone="yellow"
         eyebrow=""
         title="Is Attention all you need?"
+        badge={<EyeGlyph />}
         art={<AttentionFan />}
       >
         Attention views expose the score matrix, softmax, value mixing, and grouped-query head
@@ -62,6 +66,7 @@ export function LandingPage({ onSubmit }: Props) {
         tone="green"
         eyebrow=""
         title="Journey of a token"
+        badge={<RouteGlyph />}
         art={<WeightMatrix />}
       >
         Follow a token's journey through the model, as it transforms from input to output.

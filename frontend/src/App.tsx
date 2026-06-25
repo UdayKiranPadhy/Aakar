@@ -34,6 +34,7 @@ import { useHideOnScroll } from "./presentation/components/useHideOnScroll";
 import { ModelViewHost } from "./presentation/model-views/ModelViewHost";
 import { LandingPage } from "./presentation/landing/LandingPage";
 import { ScrollRootContext } from "./presentation/landing/ScrollRootContext";
+import { useSlowSnapScroll } from "./presentation/landing/useSlowSnapScroll";
 import styles from "./App.module.css";
 
 const DEFAULT_API_URL = "http://localhost:8000";
@@ -95,6 +96,10 @@ export function App() {
     scrollRootRef.current = el;
     setScrollEl(el);
   }, []);
+
+  // Slow, eased panel-to-panel scrolling on the landing (CSS snap is too fast and
+  // its duration isn't tunable). No-op off the landing (scrollEl is null).
+  useSlowSnapScroll(scrollEl);
 
   // Model dashboard: collapse just the nav's top row (brand + search) on
   // scroll-down, keeping the section tabs pinned. The real scroller is each

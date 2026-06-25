@@ -29,10 +29,10 @@
  * to fit, and never under reduced-motion (where snapping fights the user). */
 @media (prefers-reduced-motion: no-preference) and (min-width: 880px) and (min-height: 680px) {
   .homeScroll {
+    /* Snap is a fallback; useSlowSnapScroll takes over wheel/keyboard and
+     * animates between panels over a tunable, slower duration (and switches this
+     * to `none` inline while it's driving, so the two don't fight). */
     scroll-snap-type: y mandatory;
-    /* Ease into each snap point instead of jumping — the snap (and the
-     * traveling hero image that's scroll-linked to it) animates smoothly. */
-    scroll-behavior: smooth;
   }
 }
 

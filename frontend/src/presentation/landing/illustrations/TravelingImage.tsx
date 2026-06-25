@@ -20,7 +20,6 @@ import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion
 
 import { ScrollRootContext } from "../ScrollRootContext";
 import { NextTokenBars } from "./NextTokenBars";
-import { CardShape } from "./CardShape";
 import styles from "./illustrations.module.css";
 
 const START_W = 352;
@@ -77,7 +76,6 @@ export function TravelingImage() {
   return (
     <motion.div className={styles.travelCard} style={{ top, left, width }} aria-hidden="true">
       <NextTokenBars />
-      <CardShape variant="blue" />
     </motion.div>
   );
 }

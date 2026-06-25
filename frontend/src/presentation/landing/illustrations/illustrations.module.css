@@ -123,6 +123,29 @@
   transform: rotate(-12deg);
 }
 
+/* ── Scalloped seal badge (lens.google style) ──────────────────────────── */
+/* Vivid accent disc with a white glyph; positioning + reveal live with the
+ * caller (Section.module.css `.seal`). */
+.sealWrap {
+  position: relative;
+  display: inline-block;
+}
+.sealDisc {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.12));
+}
+.sealIcon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
 /* The bottom-left image, lifted out of the collage so it can travel into the
  * first feature section on scroll (see TravelingImage). Fixed → viewport-
  * relative, so it escapes the hero's clip. Its top/left/width are set by framer

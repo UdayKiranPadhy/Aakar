@@ -115,11 +115,14 @@
   width: 300px;
   animation: floatB 8.5s var(--ease-out) infinite;
 }
-/* Bottom-left, largest (≈ the woman). */
+/* Bottom-left: now holds only the decorative shape (its image lives in the
+ * scroll-travelling TravelingImage). Sized to match that image so the shape
+ * overhangs the same corner it always did. */
 .cardBL {
   bottom: 4%;
   left: 0%;
   width: 352px;
+  aspect-ratio: 352 / 272;
   animation: floatC 9s var(--ease-out) infinite;
 }
 /* Bottom-centre (≈ the note). */

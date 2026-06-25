@@ -53,8 +53,11 @@ export function Hero() {
             <TransformerBlock />
             <CardShape variant="mint" />
           </div>
-          {/* Bottom row. The bottom-left slot is rendered separately by
-           * TravelingImage (below) so it can scroll into the next section. */}
+          {/* Bottom row. The bottom-left's decorative shape stays here in the
+           * hero; only its image travels into the next section (TravelingImage). */}
+          <div className={clsx(styles.card, styles.cardBL)}>
+            <CardShape variant="blue" />
+          </div>
           <div className={clsx(styles.card, styles.cardBC)}>
             <Tokenization />
             <CardShape variant="pink" />

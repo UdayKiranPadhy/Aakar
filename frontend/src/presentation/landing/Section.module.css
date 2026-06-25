@@ -8,18 +8,20 @@
   scroll-snap-stop: always;
 }
 
-/* Full-bleed band tint per section, fading back to white at top + bottom. */
+/* Soft colour wash anchored at the top of each panel, fading to white by ~a
+ * third down — so the diagram and its now-bold decorative shapes sit on white
+ * and read clearly (lens.google keeps these shapes on a white page). */
 .band_blue {
-  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-blue-subtle) 55%, var(--color-bg) 100%);
+  background: linear-gradient(180deg, var(--g-blue-subtle) 0%, var(--color-bg) 34%);
 }
 .band_red {
-  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-red-subtle) 55%, var(--color-bg) 100%);
+  background: linear-gradient(180deg, var(--g-red-subtle) 0%, var(--color-bg) 34%);
 }
 .band_yellow {
-  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-yellow-subtle) 55%, var(--color-bg) 100%);
+  background: linear-gradient(180deg, var(--g-yellow-subtle) 0%, var(--color-bg) 34%);
 }
 .band_green {
-  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-green-subtle) 55%, var(--color-bg) 100%);
+  background: linear-gradient(180deg, var(--g-green-subtle) 0%, var(--color-bg) 34%);
 }
 
 .split {
@@ -99,51 +101,157 @@
   opacity: 1;
 }
 
-/* Decorative rounded squares drifting behind the diagram card (lens.google
- * style). Sit below the frame (z-index) and peek out from opposite corners. */
+/* Bold pastel shapes behind the diagram (lens.google style). The OUTER `.shape`
+ * is a transform/opacity wrapper owning the scroll-in slide (driven by `.glided`
+ * on `.art`); the INNER `.shapeFill` carries the colour + the continuous float —
+ * split so the one-shot slide and the looping float don't fight over transform.
+ * Colour arrives via inline `color`; fills paint with `currentColor` so the
+ * pill-pair's pseudo-element lobes pick it up too. */
 .shape {
   position: absolute;
   z-index: 0;
-  border-radius: 28px;
-  opacity: 0.16;
   pointer-events: none;
-  will-change: transform;
+  opacity: 0;
+  transition:
+    transform 0.95s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s ease;
+  will-change: transform, opacity;
 }
+.shapeFill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+}
+/* Shape forms — the lens.google vocabulary. */
+.formSquircle {
+  border-radius: 38%;
+}
+.formCircle {
+  border-radius: 50%;
+}
+.formBlobA {
+  border-radius: 56% 44% 47% 53% / 38% 41% 59% 62%;
+}
+.formBlobB {
+  border-radius: 40% 60% 64% 36% / 62% 38% 62% 38%;
+}
+.formPillPair {
+  position: relative;
+  background: transparent;
+}
+.formPillPair::before,
+.formPillPair::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 44%;
+  border-radius: 999px;
+  background: currentColor;
+}
+.formPillPair::before {
+  left: 0;
+}
+.formPillPair::after {
+  right: 0;
+}
+
+/* Large, hugging the panel's OUTER edge (away from the copy), one high + one
+ * low. Flip panels (diagram on the left) mirror them to the left edge. */
 .shapeA {
-  width: clamp(92px, 14vw, 168px);
+  width: clamp(150px, 21vw, 260px);
   aspect-ratio: 1;
-  top: -26px;
-  left: -34px;
-  animation: floatA 7s var(--ease-out) infinite;
+  top: -48px;
+  right: -66px;
+  transform: translate(64px, -28px) rotate(-8deg) scale(0.8);
 }
 .shapeB {
-  width: clamp(72px, 11vw, 132px);
+  width: clamp(112px, 16vw, 196px);
   aspect-ratio: 1;
-  right: -30px;
-  bottom: -30px;
+  right: -42px;
+  bottom: -52px;
+  transform: translate(58px, 38px) rotate(9deg) scale(0.8);
+  transition-delay: 0.12s;
+}
+.flip .shapeA {
+  right: auto;
+  left: -66px;
+  transform: translate(-64px, -28px) rotate(8deg) scale(0.8);
+}
+.flip .shapeB {
+  right: auto;
+  left: -42px;
+  transform: translate(-58px, 38px) rotate(-9deg) scale(0.8);
+}
+/* Section in view: shapes slide/settle into place, then the inner float runs. */
+.glided .shape {
+  opacity: 1;
+  transform: translate(0, 0) rotate(0deg) scale(1);
+}
+
+/* Vivid scalloped seal: a foreground accent overhanging the diagram's top-right
+ * that pops in (with a slight overshoot) just after the background shapes have
+ * slid in. */
+.seal {
+  position: absolute;
+  z-index: 3;
+  top: -28px;
+  left: -18px;
+  opacity: 0;
+  transform: scale(0.3) rotate(-22deg);
+  transition:
+    transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.4s ease;
+  transition-delay: 0.26s;
+  will-change: transform, opacity;
+}
+/* Shapes hug the outer edge; the seal sits opposite, toward the copy. */
+.flip .seal {
+  left: auto;
+  right: -18px;
+}
+.glided .seal {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+.floatA {
+  animation: floatA 7s var(--ease-out) infinite;
+}
+.floatB {
   animation: floatB 9s var(--ease-out) infinite;
 }
+/* Idle float with a slight lens.google-style resting tilt (shapes never sit
+ * perfectly upright). The wrapper settles to identity on reveal; this inner
+ * transform composes on top. */
 @keyframes floatA {
   0%,
   100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0) rotate(-6deg);
   }
   50% {
-    transform: translateY(-14px) rotate(3deg);
+    transform: translateY(-14px) rotate(-3deg);
   }
 }
 @keyframes floatB {
   0%,
   100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0) rotate(7deg);
   }
   50% {
-    transform: translateY(12px) rotate(-3deg);
+    transform: translateY(12px) rotate(4deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .shapeA,
-  .shapeB {
+  /* No slide-in, no float, no pop — everything appears in place with the card. */
+  .shape,
+  .seal {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+  .floatA,
+  .floatB {
     animation: none;
   }
 }
