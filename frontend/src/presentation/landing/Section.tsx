@@ -25,10 +25,10 @@ const SHAPE_COLOR: Record<Tone, string> = {
   green: "var(--g-green-container)",
 };
 const SHAPE_FORMS: Record<Tone, readonly [string, string]> = {
-  blue: [styles.formSquircle, styles.formSquircle],
-  red: [styles.formSquircle, styles.formPillPair],
-  yellow: [styles.formSquircle, styles.formCircle],
-  green: [styles.formBlobA, styles.formBlobB],
+  blue: [styles.formSquircle!, styles.formSquircle!],
+  red: [styles.formSquircle!, styles.formPillPair!],
+  yellow: [styles.formSquircle!, styles.formCircle!],
+  green: [styles.formBlobA!, styles.formBlobB!],
 };
 // Vivid seal-badge fill per section. Yellow uses the darker `-ink` amber so the
 // white glyph stays legible (plain --g-yellow is too light — see tokens.css).

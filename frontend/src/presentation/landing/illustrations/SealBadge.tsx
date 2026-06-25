@@ -20,9 +20,9 @@ function scallopPath(cx: number, cy: number, r: number, bumps: number): string {
     return [cx + r * Math.cos(a), cy + r * Math.sin(a)] as const;
   });
   const rr = r * Math.sin(Math.PI / bumps); // semicircle radius = half the chord
-  let d = `M ${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
+  let d = `M ${pts[0]![0].toFixed(2)} ${pts[0]![1].toFixed(2)}`;
   for (let i = 1; i <= bumps; i++) {
-    const [x, y] = pts[i % bumps];
+    const [x, y] = pts[i % bumps]!;
     d += ` A ${rr.toFixed(2)} ${rr.toFixed(2)} 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)}`;
   }
   return `${d} Z`;
