@@ -16,6 +16,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { useModelInfo } from "../../../application/useModelInfo";
+import { useReportCardLoading } from "../../../application/useReportCardLoading";
 import type { ModelView } from "../../../domain/navigation";
 import type { HubSibling, ModelInfo } from "../../../domain/modelInfo";
 import type { Spec } from "../../../domain/spec";
@@ -58,6 +59,8 @@ import {
 
 export function OverviewView({ spec }: ModelViewProps) {
   const { info, readme, loading, error } = useModelInfo(spec.model_id);
+  // Surface the Hub fetch to the sidebar so the Overview tab shows a spinner.
+  useReportCardLoading(loading);
   const setModelView = useArchStore((s) => s.setModelView);
   const setAppMode = useArchStore((s) => s.setAppMode);
   const [readmeOpen, setReadmeOpen] = useState(false);

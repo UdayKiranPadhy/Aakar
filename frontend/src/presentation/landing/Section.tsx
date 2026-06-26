@@ -13,7 +13,7 @@ import { useInView } from "./useInView";
 import { SealBadge } from "./illustrations/SealBadge";
 import styles from "./Section.module.css";
 
-type Tone = "blue" | "red" | "yellow" | "green";
+type Tone = "blue" | "red" | "yellow" | "green" | "purple";
 
 // Soft pastel shapes behind each diagram (lens.google style). Lens keeps the
 // decorative shapes in the section's OWN family tone (blue panel → blue shapes)
@@ -23,12 +23,14 @@ const SHAPE_COLOR: Record<Tone, string> = {
   red: "var(--g-red-container)",
   yellow: "var(--g-yellow-container)",
   green: "var(--g-green-container)",
+  purple: "var(--g-purple-container)",
 };
 const SHAPE_FORMS: Record<Tone, readonly [string, string]> = {
   blue: [styles.formSquircle!, styles.formSquircle!],
   red: [styles.formSquircle!, styles.formPillPair!],
   yellow: [styles.formSquircle!, styles.formCircle!],
   green: [styles.formBlobA!, styles.formBlobB!],
+  purple: [styles.formCircle!, styles.formBlobA!],
 };
 // Vivid seal-badge fill per section. Yellow uses the darker `-ink` amber so the
 // white glyph stays legible (plain --g-yellow is too light — see tokens.css).
@@ -37,6 +39,7 @@ const SEAL_COLOR: Record<Tone, string> = {
   red: "var(--g-red)",
   yellow: "var(--g-yellow-ink)",
   green: "var(--g-green)",
+  purple: "var(--g-purple)",
 };
 
 type Props = {
@@ -52,9 +55,25 @@ type Props = {
   flip?: boolean;
   /** Optional lens-style glyph shown in a vivid scalloped seal badge. */
   badge?: ReactNode;
+  /** Optional primary CTA under the body (e.g. "Compare models"); fires `onAction`.
+   *  Used by destination sections (Compare, Learn) to enter that surface — copy
+   *  sections leave both unset and render no button. */
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
-export function Section({ id, eyebrow, title, tone, children, art, flip, badge }: Props) {
+export function Section({
+  id,
+  eyebrow,
+  title,
+  tone,
+  children,
+  art,
+  flip,
+  badge,
+  actionLabel,
+  onAction,
+}: Props) {
   const reveal = useRevealProps(0.35);
   const [setArtRef, artInView] = useInView(0.3);
   return (
@@ -70,6 +89,21 @@ export function Section({ id, eyebrow, title, tone, children, art, flip, badge }
           <motion.div className={styles.body} variants={fadeUp}>
             {children}
           </motion.div>
+          {actionLabel && onAction && (
+            <motion.div className={styles.actionRow} variants={fadeUp}>
+              <button
+                type="button"
+                className={styles.cta}
+                style={{ backgroundColor: SEAL_COLOR[tone] }}
+                onClick={onAction}
+              >
+                {actionLabel}
+                <span aria-hidden="true" className={styles.ctaArrow}>
+                  →
+                </span>
+              </button>
+            </motion.div>
+          )}
         </motion.div>
         {/* Reveal when the card scrolls into view (an IntersectionObserver
          * toggles `.glided`): the card fades in and the decorative shapes slide

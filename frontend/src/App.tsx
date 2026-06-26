@@ -2,7 +2,7 @@
  * App composition root.
  *
  * Layout is a SaaS-style dashboard:
- *   - NavBar (brand + pill search, then app-level tabs: Model / Compare / Learn)
+ *   - NavBar (brand, then app-level tabs: Model / Compare / Learn)
  *   - main area, branched on `appMode`:
  *       home    → the scrolling landing page
  *       model   → ModelSidebar (left) + the active model-view (content)
@@ -30,7 +30,6 @@ import { ErrorBoundary } from "./presentation/components/ErrorBoundary";
 import { ModelSidebar } from "./presentation/components/ModelSidebar";
 import { NavBar } from "./presentation/components/NavBar";
 import { LearnHost } from "./presentation/learn/LearnHost";
-import { useHideOnScroll } from "./presentation/components/useHideOnScroll";
 import { ModelViewHost } from "./presentation/model-views/ModelViewHost";
 import { LandingPage } from "./presentation/landing/LandingPage";
 import { ScrollRootContext } from "./presentation/landing/ScrollRootContext";
@@ -70,6 +69,8 @@ export function App() {
   const appMode = useArchStore((s) => s.appMode);
   const modelView = useArchStore((s) => s.modelView);
   const hasSpec = useArchStore((s) => s.spec !== null);
+  const loading = useArchStore((s) => s.loading);
+  const requestedModelId = useArchStore((s) => s.requestedModelId);
   const error = useArchStore((s) => s.error);
   // Identity of whatever is loaded — used to key the model-view error boundary
   // so loading a different model clears any caught render crash. Falls back to the
@@ -79,10 +80,13 @@ export function App() {
   const modelId = useArchStore(
     (s) => s.spec?.model_id ?? s.error?.modelId ?? s.requestedModelId ?? null,
   );
-  // Show the sidebar for partial failures where the model id is known and at
-  // least the Overview + Research tabs can still fetch from the HF Hub.
+  // Show the sidebar as soon as a load starts (so the tabs — with per-tab
+  // spinners on the spec-dependent ones — are visible during introspection),
+  // once a spec is loaded, and for partial failures where the model id is known
+  // and at least the card-first tabs can still fetch from the HF Hub.
   const showSidebar =
     hasSpec ||
+    (loading && !!requestedModelId) ||
     ((error?.kind === "unsupported" || error?.kind === "gated") && !!error.modelId);
 
   // Capture the landing page's scroll container. Kept in a ref (handed to
@@ -101,25 +105,11 @@ export function App() {
   // its duration isn't tunable). No-op off the landing (scrollEl is null).
   useSlowSnapScroll(scrollEl);
 
-  // Model dashboard: collapse just the nav's top row (brand + search) on
-  // scroll-down, keeping the section tabs pinned. The real scroller is each
-  // view's own `.view` element (which remounts per view), so we listen on the
-  // stable `.content` wrapper in the capture phase and re-arm on view change.
-  const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
-  const setContentRef = useCallback((el: HTMLElement | null) => setContentEl(el), []);
-  // `[data-scroll-ignore]` opts the detail panel dock out: scrolling that side
-  // panel must not compact the nav (it isn't the view's main content scroll).
-  const navCompact = useHideOnScroll(contentEl, {
-    capture: true,
-    resetKey: modelView,
-    ignoreSelector: "[data-scroll-ignore]",
-  });
-
   return (
     <div className={styles.root}>
-      {/* Home is a full-bleed landing with no chrome; the nav (brand, search,
-          section tabs) appears only once you enter a section. */}
-      {appMode !== "home" && <NavBar onSubmit={loadModel} compact={navCompact} />}
+      {/* Home is a full-bleed landing with no chrome; the nav (brand, section
+          tabs) appears only once you enter a section. */}
+      {appMode !== "home" && <NavBar />}
 
       <main className={styles.main}>
         {/* Catch-all: a crash in any mode degrades to a friendly page while the
@@ -142,7 +132,7 @@ export function App() {
           {appMode === "model" && (
             <div className={styles.dashboard}>
               {showSidebar && <ModelSidebar />}
-              <section ref={setContentRef} className={styles.content}>
+              <section className={styles.content}>
                 {/* Inner boundary: a malformed field in one model view can't blank
                     the dashboard. Remounts per model+view so navigating recovers. */}
                 <ErrorBoundary key={`${modelId ?? "none"}:${modelView}`}>

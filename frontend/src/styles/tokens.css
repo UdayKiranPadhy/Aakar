@@ -39,6 +39,7 @@
   --g-green-container: #ceead6;
   --g-blue-container: #aecbfa;
   --g-red-container: #fad2cf;
+  --g-purple-container: #d7aefb;
 
   /* ── Data-viz tones (token-journey rails + block-node cards) ─────────── */
   /* Canonical per-role colours shared by the Journey view and the block cards,

@@ -39,14 +39,14 @@ export function ModelViewHost({
   const modelView = useArchStore((s) => s.modelView);
   const requestedModelId = useArchStore((s) => s.requestedModelId);
 
-  // Mid-fetch the store is reset (spec + error both null). Card-first: Overview and
-  // Research need only the model id — they fetch Hub metadata independently of
-  // introspection — so render them from a stub the instant the load starts. The model
-  // card then paints in ~a Hub round-trip instead of waiting on the full (slow)
-  // introspection; the architecture-dependent cards fill in once the real spec lands.
-  // Every other view needs the tree, so it keeps the loading illustration.
+  // Mid-fetch the store is reset (spec + error both null). Card-first views
+  // (`needsSpec: false` — Overview, Research) need only the model id: they fetch
+  // Hub metadata independently of introspection, so render them from a stub the
+  // instant the load starts. The model card then paints in ~a Hub round-trip
+  // instead of waiting on the full (slow) introspection; the spec-dependent views
+  // fill in once the real spec lands and keep the loading illustration until then.
   if (loading) {
-    if (requestedModelId && (modelView === "overview" || modelView === "research")) {
+    if (requestedModelId && modelViewRegistry.meta(modelView)?.needsSpec === false) {
       const View = modelViewRegistry.resolve(modelView);
       if (View) return <View spec={stubSpec(requestedModelId)} />;
     }
@@ -56,10 +56,10 @@ export function ModelViewHost({
   if (!spec) {
     if (error?.kind === "not_found") return <ModelNotFoundState error={error} />;
 
-    // For unsupported/gated errors we still know the model_id, so Overview and
-    // Research can fetch from the HF Hub independently of introspection.
+    // For unsupported/gated errors we still know the model_id, so the card-first
+    // views can fetch from the HF Hub independently of introspection.
     if ((error?.kind === "unsupported" || error?.kind === "gated") && error.modelId) {
-      if (modelView === "overview" || modelView === "research") {
+      if (modelViewRegistry.meta(modelView)?.needsSpec === false) {
         const View = modelViewRegistry.resolve(modelView);
         if (View) return <View spec={stubSpec(error.modelId)} />;
       }

@@ -5,6 +5,7 @@
  * its linked GitHub repo. Shows whatever each source returns.
  */
 
+import { useReportCardLoading } from "../../../application/useReportCardLoading";
 import { useResearch } from "../../../application/useResearch";
 import type { ModelViewProps } from "../ModelViewRegistry";
 import { ViewEmpty, ViewError, ViewLoading, ViewSection } from "../shared/primitives";
@@ -14,6 +15,8 @@ import styles from "./ResearchView.module.css";
 
 export function ResearchView({ spec }: ModelViewProps) {
   const { papers, repo, loading, error } = useResearch(spec.model_id);
+  // Surface the research fetch to the sidebar so the Research tab shows a spinner.
+  useReportCardLoading(loading);
 
   if (loading) {
     return (

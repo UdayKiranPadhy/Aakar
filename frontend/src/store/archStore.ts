@@ -74,6 +74,14 @@ type State = {
   requestedCompareA: string | null;
   requestedCompareB: string | null;
   loading: boolean;
+  /**
+   * Whether the currently-open card-first view (Overview / Research) is still
+   * fetching its own data (HF Hub metadata, research context) — a separate call
+   * from the architecture introspection tracked by `loading`. Only the active
+   * view is mounted, so this reflects exactly the tab the user is on; the sidebar
+   * uses it to spin that tab, mirroring how spec-dependent tabs spin on `loading`.
+   */
+  cardLoading: boolean;
   error: LoadError | null;
   selectionPath: SelectionPath;
   expansionPath: ExpansionPath;
@@ -125,6 +133,8 @@ type Actions = {
   /** Record the id whose compare-slot load is starting (keeps `?a=`/`?b=` stable). */
   setCompareRequested(slot: CompareSlot, modelId: string | null): void;
   setLoading(loading: boolean): void;
+  /** Report whether the open card-first view's own data fetch is in flight. */
+  setCardLoading(cardLoading: boolean): void;
   setError(error: LoadError | null): void;
   selectNode(id: string): void;
   expandNode(id: string): void;
@@ -167,6 +177,7 @@ const initialState: State = {
   requestedCompareA: null,
   requestedCompareB: null,
   loading: false,
+  cardLoading: false,
   error: null,
   selectionPath: [],
   expansionPath: [],
@@ -205,6 +216,8 @@ export const useArchStore = create<State & Actions>()((set) => ({
     set(slot === "a" ? { requestedCompareA: modelId } : { requestedCompareB: modelId }),
 
   setLoading: (loading) => set({ loading }),
+
+  setCardLoading: (cardLoading) => set({ cardLoading }),
 
   setError: (error) => set({ error, loading: false }),
 

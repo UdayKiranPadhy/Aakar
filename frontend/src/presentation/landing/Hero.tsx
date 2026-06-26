@@ -29,8 +29,8 @@ export function Hero() {
   const requestSearchFocus = useArchStore((s) => s.requestSearchFocus);
 
   // "Enter Model" leaves the landing for the Model tab (→ /model), then requests
-  // focus on its search. The nav (and its primary search field) only mounts once
-  // we're off home, so the mount-time focus effect fires with the bumped nonce.
+  // focus on its search. The Model tab's landing (and its search field) mounts
+  // once we're off home, so its mount-time focus effect fires with the bumped nonce.
   const handleEnter = () => {
     setAppMode("model");
     requestSearchFocus();

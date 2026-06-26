@@ -1,75 +1,52 @@
 /**
- * Two-row top navigation, modelled on news.google.com.
+ * Single-row top navigation: brand (left) + the SectionTabs centred in the
+ * middle (Model / Compare / Learn). One visual unit with a hairline border
+ * below.
  *
- * Row 1 — brand (left) + pill search (centered). Empty side spacers keep the
- * search centred on the page regardless of the brand's width.
- * Row 2 — SectionTabs (visualizer view only).
- *
- * The whole nav is a single visual unit (one hairline border below). The inner
- * `Brand` sub-component is private to this file; if it grows a second caller,
- * extract it.
+ * The inner `Brand` sub-component is private to this file; if it grows a second
+ * caller, extract it.
  */
 
 import { clsx } from "clsx";
 
 import { useArchStore } from "../../store/archStore";
-import { ModelInputBar } from "./ModelInputBar";
 import { SectionTabs } from "./SectionTabs";
 import { TopProgressBar } from "./TopProgressBar";
 import styles from "./NavBar.module.css";
 
 type Props = {
-  onSubmit: (modelId: string) => void;
   /** Headroom pattern: when true the whole nav slides up out of view (home). */
   hidden?: boolean;
-  /** Partial headroom (model dashboard): collapse the top row (brand + search)
-   *  on scroll-down, leaving the section tabs pinned. */
-  compact?: boolean;
 };
 
-export function NavBar({ onSubmit, hidden = false, compact = false }: Props) {
+export function NavBar({ hidden = false }: Props) {
   const setAppMode = useArchStore((s) => s.setAppMode);
   const appMode = useArchStore((s) => s.appMode);
   const loading = useArchStore((s) => s.loading);
-  // The landing "Enter Model" CTA focuses this (the primary) search field.
-  const searchFocusNonce = useArchStore((s) => s.searchFocusNonce);
 
-  // The tab row (section tabs + quick-model chips) is only useful once you've
-  // left the landing page. The home view shows just the top bar, and the nav
-  // overlays the scrolling page there so hiding/showing it never shifts the
-  // snap geometry.
+  // The section tabs are only useful once you've left the landing page. The home
+  // view shows just the brand, and the nav overlays the scrolling page there so
+  // hiding/showing it never shifts the snap geometry.
   const showTabs = appMode !== "home";
   const overlay = appMode === "home";
-  // Only collapse the top row when the tab row remains to pin — otherwise there
-  // would be nothing left of the nav.
-  const collapsed = compact && showTabs;
 
   return (
     <div
       className={clsx(
         styles.wrapper,
-        !showTabs && styles.wrapperSingle,
         overlay && styles.wrapperOverlay,
         hidden && styles.wrapperHidden,
-        collapsed && styles.wrapperCompact,
       )}
     >
       <header className={styles.header}>
-        <div className={clsx(styles.row1, collapsed && styles.row1Collapsed)}>
-          <div className={styles.side}>
-            <Brand onClick={() => setAppMode("home")} />
-          </div>
-          <div className={styles.searchSlot}>
-            <ModelInputBar onSubmit={onSubmit} focusSignal={searchFocusNonce} />
-          </div>
-          {/* Empty end spacer balances the brand so the search stays centred. */}
-          <div className={clsx(styles.side, styles.sideEnd)} />
+        <div className={styles.row}>
+          <Brand onClick={() => setAppMode("home")} />
+          {showTabs && (
+            <div className={styles.tabsSlot}>
+              <SectionTabs />
+            </div>
+          )}
         </div>
-        {showTabs && (
-          <div className={styles.row2}>
-            <SectionTabs />
-          </div>
-        )}
         {loading && <TopProgressBar />}
       </header>
     </div>

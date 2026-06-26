@@ -4,10 +4,11 @@
  * search. Right half: the supplied illustration, filling the half's full height
  * and blending into the white page.
  *
- * The search submits through the same `onSubmit` (loadModel) the nav uses, so
- * picking a model here drives the normal load + URL sync.
+ * The search submits through `onSubmit` (loadModel), so picking a model here
+ * drives the normal load + URL sync.
  */
 
+import { useArchStore } from "../../../store/archStore";
 import { ModelInputBar } from "../../components/ModelInputBar";
 import { CyclingWord } from "../../landing/CyclingWord";
 import styles from "./ModelLanding.module.css";
@@ -20,6 +21,9 @@ type Props = {
 const ARCHITECTURES = ["Llama", "Qwen", "Mistral", "Gemma", "DeepSeek"] as const;
 
 export function ModelLanding({ onSubmit }: Props) {
+  // The home "Enter Model" CTA bumps this nonce to focus the search once we land
+  // on the (previously empty) Model tab — where the primary search now lives.
+  const searchFocusNonce = useArchStore((s) => s.searchFocusNonce);
   return (
     <div className={styles.root}>
       <div className={styles.hero}>
@@ -35,7 +39,7 @@ export function ModelLanding({ onSubmit }: Props) {
           </p>
 
           <div className={styles.search}>
-            <ModelInputBar onSubmit={onSubmit} />
+            <ModelInputBar onSubmit={onSubmit} focusSignal={searchFocusNonce} />
           </div>
         </div>
 

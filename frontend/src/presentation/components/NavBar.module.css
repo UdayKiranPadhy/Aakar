@@ -1,20 +1,13 @@
-/* ── Outer wrapper that controls the headroom-collapse animation ─────── */
+/* ── Outer wrapper (sticky single-row nav; slides up when hidden) ─────── */
 
 .wrapper {
-  --nav-row1-h: 64px;
-  --nav-row2-h: 44px;
+  --nav-h: 56px;
   position: relative;
   flex-shrink: 0;
   overflow: visible;
-  height: calc(var(--nav-row1-h) + var(--nav-row2-h));
-  transition:
-    transform var(--duration-base) var(--ease-out),
-    height var(--duration-base) var(--ease-out);
+  height: var(--nav-h);
+  transition: transform var(--duration-base) var(--ease-out);
   will-change: transform;
-}
-/* Home view: only the top bar (no tab row), so reserve one row's height. */
-.wrapperSingle {
-  height: var(--nav-row1-h);
 }
 /* Home view: float over the scrolling landing page instead of reserving layout
  * height, so hiding/showing the nav never resizes the scroll-snap container. */
@@ -29,11 +22,6 @@
 .wrapperHidden {
   transform: translateY(-100%);
 }
-/* Model dashboard headroom: collapse the top row (brand + search) on
- * scroll-down, leaving just the section tabs pinned. */
-.wrapperCompact {
-  height: var(--nav-row2-h);
-}
 
 .header {
   position: absolute;
@@ -45,44 +33,29 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wrapper,
-  .row1,
-  .row1Collapsed {
+  .wrapper {
     transition: none;
   }
 }
 
-/* ── Row 1: brand + search + icons ───────────────────────────────────── */
+/* ── Single row: brand (left) + section tabs (centred) ───────────────── */
 
-.row1 {
-  display: flex;
-  height: var(--nav-row1-h);
+/* Three-column grid keeps the tabs centred on the page regardless of the
+ * brand's width: brand in the left 1fr column, tabs in the auto middle column,
+ * an empty 1fr column on the right balancing it. */
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 24px;
+  height: var(--nav-h);
   padding: 0 20px;
-  overflow: hidden;
-  transition:
-    height var(--duration-base) var(--ease-out),
-    opacity var(--duration-base) var(--ease-out),
-    visibility 0s;
-}
-/* Collapsed: height + opacity animate out, then `visibility` flips — so the
- * search input drops out of the tab order only once it's actually hidden. */
-.row1Collapsed {
-  height: 0;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition:
-    height var(--duration-base) var(--ease-out),
-    opacity var(--duration-base) var(--ease-out),
-    visibility 0s linear var(--duration-base);
 }
 
 .brand {
   display: flex;
   flex-shrink: 0;
   align-items: center;
+  justify-self: start;
   color: var(--color-ink);
 }
 .brand:hover {
@@ -96,33 +69,7 @@
   letter-spacing: -0.01em;
 }
 
-/* Equal-width flex spacers on either side keep the search pill centred on the
- * page; the brand sits at the left edge of the left spacer (and won't squish,
- * being flex-shrink:0). */
-.side {
-  display: flex;
-  flex: 1 1 0;
-  min-width: 0;
-  align-items: center;
-}
-/* Right spacer: push its contents (the theme toggle) to the edge so the search
- * pill stays centred. */
-.sideEnd {
-  justify-content: flex-end;
-}
-
-.searchSlot {
-  display: flex;
-  flex: 0 1 640px;
-  justify-content: center;
-}
-
-/* ── Row 2: section + quick-model tabs, separated by a hairline ──────── */
-
-.row2 {
+.tabsSlot {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 20px;
 }

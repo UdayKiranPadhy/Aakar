@@ -11,7 +11,8 @@ vi.mock("../../../application/useModelInfo", () => ({
 }));
 
 vi.mock("../../../store/archStore", () => ({
-  useArchStore: (selector: (s: unknown) => unknown) => selector({ setModelView: vi.fn(), setAppMode: vi.fn() }),
+  useArchStore: (selector: (s: unknown) => unknown) =>
+    selector({ setModelView: vi.fn(), setAppMode: vi.fn(), setCardLoading: vi.fn() }),
 }));
 
 const stubSpec: Spec = {

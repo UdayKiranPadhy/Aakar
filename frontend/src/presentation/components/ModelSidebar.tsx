@@ -25,6 +25,7 @@ import { useArchStore } from "../../store/archStore";
 import { modelViewRegistry } from "../model-views/ModelViewRegistry";
 import { PanelToggleIcon, ViewIcon } from "./NavIcons";
 import { ResizeHandle } from "./ResizeHandle";
+import { Spinner } from "./ui/Spinner";
 import styles from "./ModelSidebar.module.css";
 
 const SIDEBAR_MIN = 200;
@@ -34,6 +35,11 @@ export function ModelSidebar() {
   const modelView = useArchStore((s) => s.modelView);
   const setModelView = useArchStore((s) => s.setModelView);
   const clearModel = useArchStore((s) => s.clearModel);
+  // True while the introspection (architecture) call is in flight — spec-dependent
+  // tabs spin until it resolves. `cardLoading` is the open card-first view's own
+  // fetch (Hub metadata / research) — its tab spins until that resolves.
+  const loading = useArchStore((s) => s.loading);
+  const cardLoading = useArchStore((s) => s.cardLoading);
   const collapsed = useArchStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useArchStore((s) => s.toggleSidebar);
   const width = useArchStore((s) => s.sidebarWidth);
@@ -61,19 +67,26 @@ export function ModelSidebar() {
       </button>
 
       <nav className={styles.nav} aria-label="Model views">
-        {views.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setModelView(key)}
-            aria-current={modelView === key ? "page" : undefined}
-            className={clsx(styles.navItem, modelView === key && styles.navItemActive)}
-            title={label}
-          >
-            <ViewIcon viewKey={key} className={styles.navIcon} />
-            <span className={styles.navLabel}>{label}</span>
-          </button>
-        ))}
+        {views.map(({ key, label, needsSpec }) => {
+          // Spec-dependent tabs wait on the architecture call; card-first tabs
+          // fetch their own data only while open, so spin the active one.
+          const pending = needsSpec ? loading : key === modelView && cardLoading;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setModelView(key)}
+              aria-current={modelView === key ? "page" : undefined}
+              aria-busy={pending || undefined}
+              className={clsx(styles.navItem, modelView === key && styles.navItemActive)}
+              title={pending ? `${label} — loading…` : label}
+            >
+              <ViewIcon viewKey={key} className={styles.navIcon} />
+              <span className={styles.navLabel}>{label}</span>
+              {pending && <Spinner className={styles.navSpinner} />}
+            </button>
+          );
+        })}
       </nav>
 
       {!collapsed && modelView === "architecture" && <ModuleTree />}

@@ -26,6 +26,9 @@
 .band_green {
   background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-green-subtle) 9%, var(--color-bg) 38%);
 }
+.band_purple {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--g-purple-subtle) 9%, var(--color-bg) 38%);
+}
 
 .split {
   display: grid;
@@ -61,6 +64,9 @@
 .tone_green {
   color: var(--g-green);
 }
+.tone_purple {
+  color: var(--g-purple);
+}
 
 .h2 {
   margin-top: 14px;
@@ -88,6 +94,57 @@
   border-radius: var(--radius-sm);
   padding: 1px 6px;
   color: var(--color-ink-muted);
+}
+
+/* Primary CTA for destination sections (Compare / Learn). Filled in the
+ * section's vivid tone (set inline via SEAL_COLOR), white label, with an arrow
+ * that nudges right on hover. */
+.actionRow {
+  margin-top: 28px;
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-panel);
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease;
+}
+.cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06) saturate(1.05);
+}
+.cta:active {
+  transform: translateY(0);
+}
+.ctaArrow {
+  font-size: 17px;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+.cta:hover .ctaArrow {
+  transform: translateX(4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta,
+  .ctaArrow {
+    transition: none;
+  }
+  .cta:hover {
+    transform: none;
+  }
+  .cta:hover .ctaArrow {
+    transform: none;
+  }
 }
 
 .art {
@@ -195,10 +252,11 @@
 
 /* Vivid scalloped seal: a foreground accent overhanging the diagram's top-right
  * that pops in (with a slight overshoot) just after the background shapes have
- * slid in. */
+ * slid in. Must out-rank the TravelingImage that lands in the first section's
+ * slot (`.travelCard` is z-index 6) so the seal stays on top of it, not under. */
 .seal {
   position: absolute;
-  z-index: 3;
+  z-index: 7;
   top: -28px;
   left: -18px;
   opacity: 0;

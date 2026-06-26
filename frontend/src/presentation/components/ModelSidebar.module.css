@@ -114,6 +114,21 @@
   display: none;
 }
 
+/* Per-tab loading spinner — sits at the trailing edge while the tab's data
+ * (the architecture call) is still in flight. Slightly smaller than the default
+ * spinner so it sits comfortably in the 36px row. */
+.navSpinner {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  width: 13px;
+  height: 13px;
+}
+/* Collapsed rail has no room beside the centred icon, so drop the spinner like
+ * the label; the loading illustration in the content area still signals load. */
+.collapsed .navSpinner {
+  display: none;
+}
+
 /* Collapsed rail: drop the row padding/gap so the lone icon centres in 40px. */
 .collapsed .navItem,
 .collapsed .collapseBtn {

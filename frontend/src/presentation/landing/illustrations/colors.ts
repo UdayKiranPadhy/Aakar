@@ -22,6 +22,7 @@ export const red = "var(--g-red)";
 export const yellow = "var(--g-yellow)";
 export const yellowInk = "var(--g-yellow-ink)";
 export const green = "var(--g-green)";
+export const purple = "var(--g-purple)";
 
 /** Rotating order used to colour sequences of nodes/cells. */
 export const palette = [blue, red, yellowInk, green, blueStrong] as const;

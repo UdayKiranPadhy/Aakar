@@ -5,14 +5,24 @@
  * direct children of App's scroll container (required for CSS scroll-snap).
  */
 
+import { useArchStore } from "../../store/archStore";
 import { CoverageSection } from "./CoverageSection";
 import { CtaSection } from "./CtaSection";
 import { Hero } from "./Hero";
 import { Section } from "./Section";
 import { AttentionFan } from "./illustrations/AttentionFan";
+import { CompareDiagram } from "./illustrations/CompareDiagram";
+import { LearnConstellation } from "./illustrations/LearnConstellation";
 import { WeightMatrix } from "./illustrations/WeightMatrix";
 import { ZoomLadder } from "./illustrations/ZoomLadder";
-import { EyeGlyph, RouteGlyph, SearchGlyph, ZoomGlyph } from "./illustrations/sealGlyphs";
+import {
+  CompareGlyph,
+  EyeGlyph,
+  LearnGlyph,
+  RouteGlyph,
+  SearchGlyph,
+  ZoomGlyph,
+} from "./illustrations/sealGlyphs";
 import illo from "./illustrations/illustrations.module.css";
 
 type Props = {
@@ -20,6 +30,10 @@ type Props = {
 };
 
 export function LandingPage({ onSubmit }: Props) {
+  // Compare and Learn are top-level destinations; the landing's only path into
+  // them (the nav's SectionTabs appear only off-home), so these sections double
+  // as their entry points.
+  const setAppMode = useArchStore((s) => s.setAppMode);
   return (
     <>
       <Hero />
@@ -71,6 +85,33 @@ export function LandingPage({ onSubmit }: Props) {
       >
         Follow a token's journey through the model, as it transforms from input to output.
         See how it interacts with other tokens, and how its representation evolves across layers.
+      </Section>
+
+      <Section
+        tone="blue"
+        eyebrow=""
+        title="Compare two models, side by side"
+        badge={<CompareGlyph />}
+        art={<CompareDiagram />}
+        actionLabel="Compare models"
+        onAction={() => setAppMode("compare")}
+      >
+        Put any two HuggingFace models head to head — layers, parameters, attention shape,
+        compute and context window, lined up so the differences jump out at a glance.
+      </Section>
+
+      <Section
+        flip
+        tone="purple"
+        eyebrow=""
+        title="Learn the ideas behind the models"
+        badge={<LearnGlyph />}
+        art={<LearnConstellation />}
+        actionLabel="Start learning"
+        onAction={() => setAppMode("learn")}
+      >
+        A built-in library of the concepts, papers and architecture milestones that shaped modern
+        LLMs — attention, RoPE, MoE, KV caching and more, mapped out and cross-linked.
       </Section>
 
       <CoverageSection />
