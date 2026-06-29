@@ -13,6 +13,7 @@ import { Section } from "./Section";
 import { AttentionFan } from "./illustrations/AttentionFan";
 import { CompareDiagram } from "./illustrations/CompareDiagram";
 import { LearnConstellation } from "./illustrations/LearnConstellation";
+import { NextTokenBars } from "./illustrations/NextTokenBars";
 import { WeightMatrix } from "./illustrations/WeightMatrix";
 import { ZoomLadder } from "./illustrations/ZoomLadder";
 import {
@@ -38,14 +39,22 @@ export function LandingPage({ onSubmit }: Props) {
     <>
       <Hero />
 
-      {/* Illustration removed: the hero's bottom-left image (TravelingImage)
-       * scrolls in and lands in this section's empty slot. */}
+      {/* On wide screens the hero's bottom-left image (TravelingImage) scrolls
+       * in and lands in this slot. Below 1159px that travelling image is hidden,
+       * so the slot renders its own static copy (.travelFallback) — otherwise
+       * this section would have no illustration at all. */}
       <Section
         tone="blue"
         eyebrow=""
         title="Find What's inside your model"
         badge={<SearchGlyph />}
-        art={<div data-travel-target className={illo.travelTarget} aria-hidden="true" />}
+        art={
+          <div data-travel-target className={illo.travelTarget} aria-hidden="true">
+            <div className={illo.travelFallback}>
+              <NextTokenBars />
+            </div>
+          </div>
+        }
       >
         See a model capability that's caught your eye? Or a model you want to use? 
         Paste its HuggingFace model id and watch the architecture unfold as a clickable diagram.

@@ -69,6 +69,12 @@ class Node(BaseModel):
     module_path: str | None = None
     weight_shape: list[int] | None = None
     bias_shape: list[int] | None = None
+    # Distinct from the Spec-level `param_dtype`,
+    # which is the *declared* config.torch_dtype: a model can declare bfloat16 yet build
+    # fp32 norms, and that mixed precision is only visible here. None when the module
+    # has no weight / no bias.
+    weight_dtype: str | None = None
+    bias_dtype: str | None = None
     # Recursive memory footprint of this subtree, in bytes, at the model's declared `param_dtype` (Spec-level).
     memory_bytes: int | None = None
     # Non-parameter tensors registered with `register_buffer` — RoPE inv_freq,
@@ -104,6 +110,17 @@ class Node(BaseModel):
     # Theoretical forward-pass FLOPs at Spec.flops_reference. Only populated for
     # modules whose count is determined by the module alone (Linear, norms).
     flops: int | None = None
+    # Additive FLOPs cost components of this module's OWN forward — child modules
+    # carry their own, so nothing here double-counts them. Keys are a bounded
+    # vocabulary:
+    #   "matmul"                        — a Linear's matmul
+    #   "norm"                          — a normalization's elementwise math
+    #   "attn_scores" / "attn_context"  — the two SDPA matmuls (Q·Kᵀ and scores·V),
+    #                                      attention's own forward (the projections
+    #                                      live on the child Linear nodes)
+    # Where `flops` is also set (Linear, norm) the values sum to it. None when no
+    # component is known. Companion to `flops`, which stays the headline aggregate.
+    flops_detail: dict[str, int] | None = None
     # Per-class intermediate tensor shapes that aren't visible from in/out
     # alone. Populated only for `*Attention` (q/k/v after multi-head reshape,
     # attention scores) and `*MLP` (after the up projection) — they expose
@@ -137,6 +154,11 @@ class Spec(BaseModel):
     # "rope" | "alibi" | "learned" | "sinusoidal" — inferred from the presence
     # of rotary modules or positional-embedding sub-modules.
     position_encoding: str | None = None
+    # Curated RoPE parameters when the model uses rotary embeddings: e.g.
+    # {"theta": 500000.0, "scaling": {"rope_type": "llama3", ...}} copied verbatim
+    # from the config. Model-wide (not per-module), so it sits at Spec level next to
+    # `position_encoding`. None when RoPE isn't used.
+    rope_parameters: dict[str, Any] | None = None
     # True iff `model.get_input_embeddings() is model.get_output_embeddings()`
     # after the model is built on meta. The config flag isn't always honored.
     tied_word_embeddings: bool | None = None

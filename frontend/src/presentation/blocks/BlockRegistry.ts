@@ -5,10 +5,14 @@
  *   1. `register(type, ...)` — a renderer keyed on `snake_case(module_class)`.
  *   2. `registerCategory(category, ...)` — a renderer keyed on the backend's
  *      semantic `category` (e.g. `"activation"`), shared by many classes.
- *   3. Fallback (`GenericBlockNode`).
+ *   3. `registerRole(role, ...)` — a renderer keyed on the backend's fact-derived
+ *      `role` (e.g. `"moe"`). This is the family-agnostic key for concepts whose
+ *      class name varies per model (`mixtral_sparse_moe_block`, … ) — the backend
+ *      only sets `role` when a rule proves it, so a role match is "guaranteed true".
+ *   4. Fallback (`GenericBlockNode`).
  *
- * Adding a custom renderer for, say, `sparse_attention` is one new component +
- * one `register()` call in `register.ts`. See docs/block-types.md.
+ * Adding a custom renderer is one new component + one `register*()` call in
+ * `register.ts`. See docs/block-types.md.
  */
 
 import type { ComponentType } from "react";
@@ -52,6 +56,7 @@ export type BlockNodeComponent = ComponentType<BlockNodeProps>;
 export class BlockRegistry {
   private readonly registry = new Map<string, BlockNodeComponent>();
   private readonly categoryRegistry = new Map<string, BlockNodeComponent>();
+  private readonly roleRegistry = new Map<string, BlockNodeComponent>();
 
   constructor(private readonly fallback: BlockNodeComponent) {}
 
@@ -69,12 +74,23 @@ export class BlockRegistry {
     this.categoryRegistry.set(category, component);
   }
 
-  resolve(node: Pick<Node, "type" | "category">): BlockNodeComponent {
+  registerRole(role: string, component: BlockNodeComponent): void {
+    if (this.roleRegistry.has(role)) {
+      throw new Error(`BlockRegistry: role '${role}' already registered`);
+    }
+    this.roleRegistry.set(role, component);
+  }
+
+  resolve(node: Pick<Node, "type" | "category" | "role">): BlockNodeComponent {
     const byType = this.registry.get(node.type);
     if (byType) return byType;
     if (node.category) {
       const byCategory = this.categoryRegistry.get(node.category);
       if (byCategory) return byCategory;
+    }
+    if (node.role) {
+      const byRole = this.roleRegistry.get(node.role);
+      if (byRole) return byRole;
     }
     return this.fallback;
   }
@@ -86,6 +102,10 @@ export class BlockRegistry {
 
   get registeredCategories(): readonly string[] {
     return Array.from(this.categoryRegistry.keys());
+  }
+
+  get registeredRoles(): readonly string[] {
+    return Array.from(this.roleRegistry.keys());
   }
 }
 

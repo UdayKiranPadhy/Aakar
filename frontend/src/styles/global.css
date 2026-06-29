@@ -82,3 +82,14 @@ input {
 body {
   font-feature-settings: "ss01", "ss02";
 }
+
+/* ── Focus ─────────────────────────────────────────────────────────────── */
+/* A visible keyboard-focus ring for interactive elements that don't define their
+ * own. Zero-specificity (`:where`) so any component's bespoke `:focus-visible`
+ * still wins — this only reaches controls relying on the browser default (detail-
+ * panel close button, collapse chevrons, tree rows, …). We replace the outline
+ * with an equally-visible ring, preserving WCAG 2.4.7. */
+:where(button, a, input, select, textarea, [role="treeitem"], [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

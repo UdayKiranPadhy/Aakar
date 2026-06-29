@@ -17,6 +17,7 @@ import { blockRegistry } from "./BlockRegistry";
 import { EmbeddingNode } from "./EmbeddingNode";
 import { FlowGlyphNode } from "./FlowGlyphNode";
 import { LinearNode } from "./LinearNode";
+import { MoeBlockNode } from "./MoeBlockNode";
 import { OperationNode } from "./OperationNode";
 
 // Heads are rendered ~3× narrower than a default block — at level 4 we
@@ -41,4 +42,9 @@ blockRegistry.register("linear", LinearNode);
 // Category-keyed renderers — one component handles every activation class
 // regardless of name (SiLU, GELU, ReLU, …).
 blockRegistry.registerCategory("activation", ActivationNode);
+
+// Role-keyed renderers — family-agnostic, resolved on the backend's fact-derived
+// `node.role` (set only when proven), so every mixture-of-experts block (Mixtral,
+// Qwen-MoE, DeepSeek, …) gets the expert-grid card without naming a class.
+blockRegistry.registerRole("moe", MoeBlockNode);
 

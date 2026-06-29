@@ -6,9 +6,16 @@
 
 import type { LoadError } from "../../application/loadError";
 import { ModelNotFoundIllustration } from "./ModelNotFoundIllustration";
+import { RetryButton } from "./RetryButton";
 import styles from "./ModelNotFoundState.module.css";
 
-export function ModelNotFoundState({ error }: { error: LoadError }) {
+export function ModelNotFoundState({
+  error,
+  onRetry,
+}: {
+  error: LoadError;
+  onRetry?: () => void;
+}) {
   return (
     <div className={styles.root} role="alert" aria-live="polite">
       <div className={styles.copy}>
@@ -46,6 +53,12 @@ export function ModelNotFoundState({ error }: { error: LoadError }) {
             Try a stock architecture (Llama, Qwen, GPT-2…)
           </li>
         </ul>
+
+        {onRetry && (
+          <div className={styles.actions}>
+            <RetryButton onRetry={onRetry} />
+          </div>
+        )}
       </div>
 
       <div className={styles.art}>

@@ -18,6 +18,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { MotionConfig } from "framer-motion";
 
 import { useArchitecture } from "./application/useArchitecture";
+import { useKeyboardShortcuts } from "./application/useKeyboardShortcuts";
+import { useRetryLoad } from "./application/useRetryLoad";
 import { useUrlSync } from "./application/useUrlSync";
 import type { CompareView, LearnView, ModelView } from "./domain/navigation";
 import { HttpArchitectureRepository } from "./infrastructure/api/HttpArchitectureRepository";
@@ -27,6 +29,7 @@ import { compareViewRegistry } from "./presentation/compare-views/CompareViewReg
 import { learnViewRegistry } from "./presentation/learn-views/LearnViewRegistry";
 import { modelViewRegistry } from "./presentation/model-views/ModelViewRegistry";
 import { ErrorBoundary } from "./presentation/components/ErrorBoundary";
+import { HelpOverlay } from "./presentation/components/HelpOverlay";
 import { ModelSidebar } from "./presentation/components/ModelSidebar";
 import { NavBar } from "./presentation/components/NavBar";
 import { LearnHost } from "./presentation/learn/LearnHost";
@@ -45,6 +48,8 @@ export function App() {
     [],
   );
   const { loadModel } = useArchitecture(repo);
+  // Re-run the last failed load (off the error pages). Reuses loadModel.
+  const { retry, canRetry } = useRetryLoad(loadModel);
 
   // Keep the URL and the navigation store in lockstep (deep links, back/forward,
   // shareable pages). View strings are validated against the registries — so a
@@ -65,6 +70,8 @@ export function App() {
     [],
   );
   useUrlSync({ loadModel, toModelView, toCompareView, toLearnView });
+  // Global keyboard shortcuts (`?` opens the help dialog). Mounted once here.
+  useKeyboardShortcuts();
 
   const appMode = useArchStore((s) => s.appMode);
   const modelView = useArchStore((s) => s.modelView);
@@ -136,7 +143,11 @@ export function App() {
                 {/* Inner boundary: a malformed field in one model view can't blank
                     the dashboard. Remounts per model+view so navigating recovers. */}
                 <ErrorBoundary key={`${modelId ?? "none"}:${modelView}`}>
-                  <ModelViewHost onSubmit={loadModel} onRetryWithToken={loadModel} />
+                  <ModelViewHost
+                    onSubmit={loadModel}
+                    onRetryWithToken={loadModel}
+                    onRetry={canRetry ? retry : undefined}
+                  />
                 </ErrorBoundary>
               </section>
             </div>
@@ -147,6 +158,9 @@ export function App() {
           {appMode === "learn" && <LearnHost />}
         </ErrorBoundary>
       </main>
+
+      {/* Available on every screen; self-gates on the store's `helpOpen`. */}
+      <HelpOverlay />
     </div>
   );
 }

@@ -8,7 +8,23 @@ The frontend renders every node through three Strategy registries:
 | `LayoutRegistry` | Position function for a parent's children | `verticalStack`      |
 | `DetailRegistry` | The component shown in the right panel    | `GenericDetailPanel` |
 
-All three are keyed by `node.type`, which is `snake_case(module_class)` — e.g. `LlamaSdpaAttention` → `"llama_sdpa_attention"`, `Linear` → `"linear"`, `LlamaRMSNorm` → `"llama_rms_norm"`. If nothing is registered for a key, the fallback is used. Aakar always renders correctly out of the box; custom renderers are a polish step you reach for when a visual affordance specific to a class would help.
+Resolution is tiered (most specific wins, then the fallback):
+
+| Registry         | Resolution order                                              |
+| ---------------- | ------------------------------------------------------------ |
+| `BlockRegistry`  | `type` → `category` → `role` → `GenericBlockNode`            |
+| `DetailRegistry` | `type` → `role` → `GenericDetailPanel`                       |
+| `LayoutRegistry` | `type` (parent) → `verticalStack`                            |
+
+- **`type`** is `snake_case(module_class)` — e.g. `LlamaSdpaAttention` → `"llama_sdpa_attention"`, `Linear` → `"linear"`. Model-specific.
+- **`category`** is the backend's namespace tag (`"activation"`, `"norm"`, …) — shared by many classes.
+- **`role`** is the backend's **fact-derived** semantic role (`"attention"`, `"moe"`, `"norm"`, `"mlp"`, `"lm_head"`, …), decided from config dims + real tensor shapes — never class names — and set to `null` when unproven. This is the **family-agnostic** key: register once on `"attention"` and every Llama/Qwen/Mistral/… attention block matches, with no class enumeration. Because the backend only sets `role` when a rule proves it, a role match is guaranteed correct.
+
+If nothing is registered for a node, the fallback is used. Aakar always renders correctly out of the box; custom renderers are a polish step.
+
+> **Prefer `role` (or `category`) over `type` for concept renderers.** Attention and MoE blocks have no stable `type` (it varies per model family) and no useful `category`, so the only correct key is `role`. Enumerating `register("llama_sdpa_attention", …)`, `register("mistral_attention", …)`, … hardcodes class names and silently misses families — exactly what `role` exists to avoid.
+
+> **Layouts for attention / MLP / MoE internals are special.** When you drill into a `layer_stack`, a decoder layer, an attention block, or an MLP/MoE block, the canvas's `presentation/canvas/semanticFlow.ts` builder synthesizes the nodes **and supplies its own positions and edges**, bypassing `LayoutRegistry` entirely. So a custom *layout* keyed on `self_attention`/`sdpa`/`moe` will not run on the live path. To visualize what's *inside* one of these concepts, put the visual in a **block renderer** (drawn inside the card, like `MoeBlockNode`'s expert grid) or a **detail panel** (keyed on `role`, like `AttentionDetail`'s GQA diagram) — not a layout. `verticalStack`/`fanOut`/`headGrid`/`expertFanOut` still apply on the generic layout path (root view, leaves, and any parent `semanticFlow` doesn't claim).
 
 This guide uses **a fan-out diagram for `LlamaSdpaAttention`** as the running example.
 
@@ -78,6 +94,22 @@ blockRegistry.registerCategory("activation", ActivationNode);
 ```
 
 `ActivationNode` then handles `SiLU`, `GELU`, `GELUActivation`, `ReLU`, and anything else the backend tags `"activation"` — without enumerating names anywhere. A more specific `register("relu", CustomReluNode)` would still win for that one class.
+
+### Role-based renderers
+
+For concepts whose class name varies per model family — attention, mixture-of-experts, normalization — key on the backend's fact-derived `role` instead. `registerRole(role, Component)` (on both `BlockRegistry` and `DetailRegistry`) resolves after `type`/`category` miss:
+
+```ts
+// presentation/blocks/register.ts
+blockRegistry.registerRole("moe", MoeBlockNode); // every Mixtral/Qwen-MoE/DeepSeek MoE block
+
+// presentation/details/register.ts
+detailRegistry.registerRole("attention", AttentionDetail); // every family's attention block
+detailRegistry.registerRole("moe", MoeDetail);
+detailRegistry.registerRole("norm", NormalizationDetail);
+```
+
+These ship today. They read their facts from `node.params` (the curated, role-scoped config facts the backend attaches — `num_heads`, `num_key_value_heads`, `num_experts`, `hidden_act`, `eps`, …) with a `config_summary` fallback, and **omit any row whose fact is absent** — so a panel still renders for a model that exposes none of them. `NormalizationDetail` distinguishes LayerNorm from RMSNorm by facts (a learnable bias, and the traced `native_layer_norm` vs `pow/rsqrt` ops), never by the class-name string.
 
 ## Step 2 — register it
 

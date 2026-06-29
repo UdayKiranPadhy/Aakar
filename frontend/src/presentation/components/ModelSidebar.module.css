@@ -221,6 +221,12 @@
 .row:hover {
   background: var(--color-canvas);
 }
+/* The row is the focusable treeitem; an inset ring reads cleanly inside the
+ * narrow rail (an outset one would clip against the edge). */
+.row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
 
 .rowActive {
   background: var(--color-accent-subtle);

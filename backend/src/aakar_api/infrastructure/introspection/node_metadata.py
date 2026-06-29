@@ -10,21 +10,7 @@ import torch
 import transformers
 from torch import nn
 
-from aakar_api.infrastructure.introspection.walk_context import WalkContext
-
-_MODULE_PARAM_KEYS = (
-    "in_features",
-    "out_features",
-    "num_embeddings",
-    "embedding_dim",
-    "normalized_shape",
-    "eps",
-    "num_heads",
-    "head_dim",
-    "hidden_size",
-    "intermediate_size",
-    "p",
-)
+from aakar_api.infrastructure.introspection.walk_context import WalkContext, clean_dtype
 
 
 def parameter_shape(value: Any) -> list[int] | None:
@@ -33,16 +19,35 @@ def parameter_shape(value: Any) -> list[int] | None:
     return None
 
 
+def parameter_dtype(value: Any) -> str | None:
+    """Actual dtype of a parameter on the meta device (None for non-parameters).
+
+    Meta tensors keep their `.dtype`, so this is faithful without any weights — and it
+    can differ from the declared `config.torch_dtype` (mixed precision shows up here)."""
+    if isinstance(value, nn.Parameter):
+        return clean_dtype(value.dtype)
+    return None
+
+
 def extract_params(module: nn.Module) -> dict[str, Any]:
+    """A generic, faithful dump of the module's own scalar instance attributes — every
+    public field the class stores, with no curated key list.
+
+    `nn.Module`'s parameters/buffers/submodules live in private `_parameters` / `_buffers`
+    / `_modules` dicts (filtered out by the `_` prefix), so this surfaces only the plain
+    attributes a class sets in `__init__` — rich for torch built-ins (`Linear.in_features`,
+    `LayerNorm.eps`/`normalized_shape`) and older HF modules, sparse for newer ones that
+    read from `self.config` at forward time (the config-derived `role_config_facts` fill
+    those in). Values are kept only when scalar (`bool/int/float/str`) or an iterable of
+    ints (e.g. `normalized_shape`); everything else (tensors, submodules, objects) is
+    skipped."""
     params: dict[str, Any] = {}
-    for key in _MODULE_PARAM_KEYS:
-        value = getattr(module, key, None)
-        if value is None or callable(value):
+    for key, value in vars(module).items():
+        if key.startswith("_") or key == "training" or callable(value):
             continue
-        if isinstance(value, int | float | bool | str):
+        if isinstance(value, bool | int | float | str):
             params[key] = value
-            continue
-        if hasattr(value, "__iter__") and not isinstance(value, str | bytes):
+        elif hasattr(value, "__iter__") and not isinstance(value, str | bytes):
             try:
                 params[key] = [int(item) for item in value]
             except (TypeError, ValueError):
@@ -51,6 +56,36 @@ def extract_params(module: nn.Module) -> dict[str, Any]:
     if isinstance(module, nn.Linear):
         params["has_bias"] = module.bias is not None
     return params
+
+
+def role_config_facts(ctx: WalkContext, *, role: str | None) -> dict[str, Any]:
+    """Curated, role-scoped config facts that aren't leaf-module attributes.
+
+    Sourced from the config-resolved `WalkContext` and gated by the fact-based `role`,
+    so an attention block surfaces its head grouping and an MLP its width — never a full
+    config dump (`config_full` already holds that). Each fact is included only when known;
+    `role` strings are the contract from `role.py`, compared as literals to keep the
+    dependency one-directional."""
+    facts: dict[str, Any] = {}
+    if role == "attention":
+        if ctx.num_heads:
+            facts["num_heads"] = ctx.num_heads
+        if ctx.head_dim:
+            facts["head_dim"] = ctx.head_dim
+        # Only meaningful (and only emitted) when K/V heads are actually shared — i.e. GQA/MQA.
+        if ctx.num_kv_heads and ctx.num_heads and ctx.num_kv_heads < ctx.num_heads:
+            facts["num_key_value_heads"] = ctx.num_kv_heads
+            facts["gqa_ratio"] = ctx.num_heads // ctx.num_kv_heads
+    elif role in ("mlp", "moe"):
+        if ctx.intermediate_size:
+            facts["intermediate_size"] = ctx.intermediate_size
+        if ctx.hidden_act:
+            facts["hidden_act"] = ctx.hidden_act
+        if role == "moe" and ctx.num_experts:
+            facts["num_experts"] = ctx.num_experts
+            if ctx.num_experts_per_tok:
+                facts["num_experts_per_tok"] = ctx.num_experts_per_tok
+    return facts
 
 
 def io_shapes(
@@ -144,6 +179,30 @@ def flops(module: nn.Module, ctx: WalkContext, *, role: str | None) -> int | Non
         return 0
     if role == "norm":
         return 5 * tokens * ctx.hidden_size
+    return None
+
+
+def flops_detail(module: nn.Module, ctx: WalkContext, *, role: str | None) -> dict[str, int] | None:
+    """Additive FLOPs cost components of this module's OWN forward — companion to `flops`.
+
+    Each key is an exact cost in the same unit, so the values sum to the module's
+    own-forward FLOPs. Child modules carry their own breakdown, so nothing here
+    double-counts them: an attention block reports only its SDPA softmax-path matmuls,
+    not the Q/K/V/O projections (those are child `Linear` nodes). Pure arithmetic on
+    config dims + the reference batch/seq — meta-safe, no weights."""
+    tokens = ctx.seq_ref * ctx.batch_ref
+    if isinstance(module, nn.Linear):
+        return {"matmul": 2 * tokens * module.in_features * module.out_features}
+    if role == "norm":
+        return {"norm": 5 * tokens * ctx.hidden_size}
+    if role == "attention":
+        if not ctx.num_heads or not ctx.head_dim:
+            return None
+        # The two batched matmuls of scaled-dot-product attention, each
+        # 2·B·num_heads·S²·head_dim: Q·Kᵀ (scores) and scores·V (context). Visible
+        # even under attn_impl="sdpa" — SDPA decomposes to bmm → softmax → bmm.
+        per_matmul = 2 * ctx.batch_ref * ctx.num_heads * ctx.seq_ref * ctx.seq_ref * ctx.head_dim
+        return {"attn_scores": per_matmul, "attn_context": per_matmul}
     return None
 
 

@@ -8,9 +8,10 @@
 
 import type { LoadError } from "../../application/loadError";
 import { ErrorIllustration } from "./ErrorIllustration";
+import { RetryButton } from "./RetryButton";
 import styles from "./ErrorState.module.css";
 
-export function ErrorState({ error }: { error: LoadError }) {
+export function ErrorState({ error, onRetry }: { error: LoadError; onRetry?: () => void }) {
   const facts: Array<[string, string]> = [];
   if (error.modelId) facts.push(["model", error.modelId]);
   if (error.architecture) facts.push(["architecture", error.architecture]);
@@ -36,6 +37,12 @@ export function ErrorState({ error }: { error: LoadError }) {
       )}
 
       {error.hint && <p className={styles.hint}>{error.hint}</p>}
+
+      {onRetry && (
+        <div className={styles.actions}>
+          <RetryButton onRetry={onRetry} />
+        </div>
+      )}
     </div>
   );
 }

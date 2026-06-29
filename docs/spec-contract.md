@@ -21,6 +21,7 @@ type Spec = {
   param_dtype?: string;    // "float16" | "bfloat16" | "float32" — from config.torch_dtype
   attn_impl?: string;      // "eager" | "sdpa" | "flash_attention_2"
   position_encoding?: string; // "rope" | "alibi" | "learned" | "sinusoidal"
+  rope_parameters?: Record<string, unknown>; // curated { theta, scaling } when RoPE is used
   tied_word_embeddings?: boolean; // checked on the meta-instantiated model
   flops_reference?: { batch_size: number; seq_len: number }; // assumed dims for Node.flops
   config_full?: Record<string, unknown>; // full config.to_dict() — NOT key-filtered
@@ -42,12 +43,15 @@ type Node = {
   module_path?: string;    // full attribute path, same as id for non-root
   weight_shape?: number[]; // ground-truth from nn.Parameter.shape (meta device)
   bias_shape?: number[];
+  weight_dtype?: string;   // actual meta-tensor dtype, e.g. "float32" (vs declared Spec.param_dtype)
+  bias_dtype?: string;
   memory_bytes?: number;   // param_count × bytes_per_element at Spec.param_dtype
   buffers?: Record<string, number[]>; // non-parameter tensors (RoPE inv_freq, masks)
   category?: string;       // namespace-derived tag (e.g. "activation"); frontend uses it as a fallback registry key
   role?: string;           // fact-based semantic role ("attention" | "mlp" | "moe" | "norm" | "layer_stack" | …)
   source_url?: string;     // GitHub link to the class definition (HF transformers / PyTorch)
   flops?: number;          // theoretical forward FLOPs at Spec.flops_reference (Linear / norms only)
+  flops_detail?: Record<string, number>; // additive own-forward FLOPs components (matmul/norm/attn_scores/attn_context)
   intermediates?: Record<string, string>; // per-class intermediate shapes (attention q/k/v/scores, MLP up)
   operations?: Operation[]; // ops this module's own forward() runs (fake-tensor trace); from /operations, best-effort
 };
@@ -70,7 +74,7 @@ type Operation = {
 | `type`         | yes      | `snake_case(module_class)`. The frontend's `BlockRegistry` looks up a custom renderer by this; `GenericBlockNode` is the fallback. |
 | `label`        | yes      | The card's headline — heuristic from the last path segment (`q_proj` → "Q proj", `0` → "Layer 0"). |
 | `meta`         | no       | The Python class name; gives users a direct breadcrumb to the HF source. |
-| `params`       | yes      | Module-config bag: `in_features`, `num_heads`, `eps`, etc. Drawn from common `nn.Module` attributes when present. |
+| `params`       | yes      | A generic dump of the module's own **public scalar instance attributes** — whatever the class stores, with no curated key list (`in_features`/`out_features` on a `Linear`, `eps`/`normalized_shape` on a `LayerNorm`, `num_heads`/`scaling` on older attention, …). Parameters/buffers/submodules are excluded (they live in private `_*` dicts). Newer `transformers` modules read from `self.config` at forward time, so their dump can be sparse — the **role-scoped curated config facts** fill the gap: sourced from the resolved config and gated by `role` (never the *whole* config; `config_full` holds that), `role: "attention"` adds `num_heads`, `head_dim`, and (when GQA) `num_key_value_heads` + `gqa_ratio`; `role: "mlp"`/`"moe"` adds `intermediate_size`, `hidden_act`, and (moe) `num_experts` + `num_experts_per_tok`. Each key is present only when known. |
 | `children`     | no       | Real submodule tree — emitted in the order `nn.Module.named_children()` returns them. |
 | `has_internals` | no      | `true` ⇔ `children` has entries. UI shows the "Expand internals" pill. |
 | `param_count`  | no       | Sum of `p.numel()` across all params in this subtree (recursive). |
@@ -78,12 +82,14 @@ type Operation = {
 | `module_class` | no       | Exact Python class name from `type(module).__name__`. Useful when comparing two model families. |
 | `module_path`  | no       | The dotted attribute path. Lets users grep the HF source verbatim. |
 | `weight_shape` / `bias_shape` | no | Tensor shapes captured from `module.weight.shape` / `module.bias.shape`. None for modules without that parameter. |
+| `weight_dtype` / `bias_dtype` | no | The **actual** dtype of `module.weight` / `module.bias` as instantiated on the meta device (e.g. `"float32"`, `"bfloat16"`). Distinct from the Spec-level `param_dtype`, which is the *declared* `config.torch_dtype`: a model can declare `bfloat16` yet build fp32 norms or integer buffers, and that mixed precision is only visible here. None when the module has no weight / no bias. |
 | `memory_bytes` | no       | `param_count × bytes_per_element` using `Spec.param_dtype` (not the meta device's default fp32). Recursive — same scope as `param_count`. |
 | `buffers`      | no       | Map of this module's *own* (non-recursive) `register_buffer` tensors → shape. Captures RoPE `inv_freq`, causal masks, running stats. |
 | `source_url`   | no       | GitHub permalink to the module's class definition. Populated for `transformers.*` and `torch.*` classes — pinned to the installed package's semver tag (`v5.9.0`) when one matches, else `main`. Includes a `#L<line>` anchor pointing to the `class X(nn.Module):` line. Custom user code is left without a link. Renders as a clickable class name in the detail panel's Source section. |
 | `category`     | no       | Free-form semantic tag derived purely from the module's Python namespace — no class-name matching, so every class within a namespace is tagged automatically. Current values: `"activation"` (`torch.nn.modules.activation`, `transformers.activations`), `"norm"` (`torch.nn.modules.normalization`, `torch.nn.modules.batchnorm`), `"dropout"`, `"linear"`, `"embedding"` (`torch.nn.modules.sparse`), `"container"` (`ModuleList`, `Sequential`, `ModuleDict`, …). The frontend's `BlockRegistry` looks this up *after* `type`, so one renderer can serve every class in a category without enumerating them. |
 | `role`         | no       | The module's **semantic role**, decided from facts only — config dims (head counts, FFN width, expert/layer counts, vocab) + real tensor shapes + namespace `category` + structure — and **never** from class/attribute/child names (see `infrastructure/introspection/role.py`). Values: `"layer_stack"` (the decoder ModuleList, length == num_hidden_layers), `"container"`, `"norm"`, `"token_embedding"` / `"position_embedding"` / `"embedding"`, `"attention"` (block carrying head-width projections), `"mlp"` / `"moe"` (FFN block by intermediate width; `moe` when experts are present), `"lm_head"` (Linear to vocab), `"linear"`. Absent when no rule proves a role — the UI renders a generic card. Both the canvas semantic flow and the Token Journey segment a model purely off this field, so they always agree. |
 | `flops`        | no       | Theoretical forward-pass FLOPs at `Spec.flops_reference`. Populated only for modules with closed-form formulas: `Linear` (2·S·in·out), norms (~5·S·H), `Embedding` (0). |
+| `flops_detail` | no       | Additive FLOPs cost components of this module's **own** forward — child modules carry their own, so nothing here double-counts them. Bounded keys: `matmul` (a Linear's matmul), `norm` (a normalization's elementwise math), and `attn_scores` / `attn_context` (the two SDPA matmuls Q·Kᵀ and scores·V — attention's own forward; the Q/K/V/O projections live on the child `Linear` nodes). Where `flops` is also set (Linear, norm) the values sum to it; for attention `flops` is unset and `flops_detail` is the SDPA breakdown. None when no component is known. |
 | `intermediates` | no      | Symbolic shapes of tensors that live *inside* opaque blocks, emitted per the module's `role` from config facts (never attribute/child names). `role: "attention"` reports `q`, `k`, `v` (with GQA grouping on K/V) and `attn_scores` (the `[B, num_heads, S, S]` quadratic intermediate); `role: "mlp"`/`"moe"` report `up` (the `[B, S, intermediate_size]` expansion). |
 | `operations`   | no       | The ATen ops this module's **own** `forward()` runs, in execution order (a submodule's ops live on that submodule's Node, so a `Linear` reports its `mm`, an RMSNorm `pow/mean/rsqrt/mul`, a decoder layer its two residual `add`s, attention its Q·Kᵀ / softmax / ·V math). Populated only by **`GET /api/operations`**, never `/architecture` (the trace is the slow part of introspection, so it's fetched lazily — see below). Captured by a single fake-tensor trace — **best-effort**: absent when a model can't be traced, and the module tree renders regardless. See the `Operation` semantics below. |
 | `notes`        | no       | Optional UI banner. Currently unused after the adapter system was removed. |
@@ -106,6 +112,7 @@ type Operation = {
 | `param_dtype` | Cleaned form of `config.torch_dtype` (`torch.float16` → `"float16"`). Drives `Node.memory_bytes`. |
 | `attn_impl` | From `config._attn_implementation` (the kernel transformers itself dispatches on), defaulting to `"eager"` when unset. No class-name sniffing. |
 | `position_encoding` | `"rope"` if `config.rope_theta`/`rope_scaling` is set; `"learned"` if a second embedding table sized to `max_position_embeddings` is present (a shape fact). No `"Rotary"`/`"ALiBi"`/`wpe` class-or-name matching — absent when neither fact holds. |
+| `rope_parameters` | Curated RoPE facts copied verbatim from the config when rotary embeddings are used: `theta` (`config.rope_theta`) and `scaling` (`config.rope_scaling`, the structured dict — `rope_type`, `factor`, etc.). Model-wide, so it sits here rather than on a Node. Absent when RoPE isn't used. |
 | `tied_word_embeddings` | `model.get_input_embeddings().weight is model.get_output_embeddings().weight` after meta-instantiation. Config flag isn't always honored at runtime. |
 | `flops_reference` | `{batch_size, seq_len}` assumed when computing each `Node.flops`. Defaults to `{1, 2048}`. |
 | `config_full` | The complete `config.to_dict()` — every key, unfiltered (unlike the curated `config_summary`). Backs a generic Config Explorer that must not drop fields as `transformers` evolves. May contain nested sub-configs. Adds ~KB to the cached Spec JSON. |

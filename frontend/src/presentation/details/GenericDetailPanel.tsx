@@ -8,6 +8,8 @@
  * Sections are hidden if the relevant data is absent.
  */
 
+import { useState } from "react";
+
 import { Button } from "../components/ui/Button";
 import type { DetailPanelProps } from "./DetailRegistry";
 import { SourceViewer } from "./SourceViewer";
@@ -20,10 +22,15 @@ import {
 import { useArchStore } from "../../store/archStore";
 import type { Spec } from "../../domain/spec";
 import { ClassificationSection } from "./ClassificationSection";
+import { DetailFilter, filterEntries } from "./DetailFilter";
 import { FieldKey, FieldRow, Section } from "./DetailSection";
 import { explainRole } from "./explanations";
 import { OperationsSection } from "./OperationsSection";
+import { ViewAllConfigLink } from "./ViewAllConfigLink";
 import styles from "./GenericDetailPanel.module.css";
+
+// Above this many filterable fields, show a filter box and collapse the long lists.
+const FILTER_THRESHOLD = 12;
 
 export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps) {
   // Spec-level metadata (attention impl, position encoding, etc.) lives next
@@ -31,6 +38,13 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
   // want the model-wide context to ground the layer's behavior.
   const spec = useArchStore((s) => s.spec);
   const isRoot = !node.module_path;
+  const [filter, setFilter] = useState("");
+
+  // Long models clutter the panel; offer a filter (and collapse the long lists)
+  // only when there's enough to be worth narrowing.
+  const filterableCount =
+    Object.keys(node.params).length + Object.keys(node.buffers ?? {}).length;
+  const showFilter = filterableCount > FILTER_THRESHOLD;
 
   return (
     <div className={styles.panel}>
@@ -52,12 +66,13 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
 
       <div className={styles.body}>
         <RoleBlurb role={node.role} />
+        {showFilter && <DetailFilter value={filter} onChange={setFilter} />}
         {isRoot && spec && <ModelInfoSection spec={spec} />}
         <SourceSection node={node} />
         <ClassificationSection node={node} />
         <TensorPathSection node={node} />
         <OperationsSection operations={node.operations} />
-        <ParamsSection params={node.params} />
+        <ParamsSection params={node.params} query={filter} moduleClass={node.module_class} />
         <ShapesSection
           input={node.input_shape}
           output={node.output_shape}
@@ -70,8 +85,9 @@ export function GenericDetailPanel({ node, onExpand, onClose }: DetailPanelProps
           dtype={spec?.param_dtype}
         />
         <ComputeSection flops={node.flops} flopsReference={spec?.flops_reference} />
-        <SubmoduleBreakdownSection node={node} />
-        <BuffersSection buffers={node.buffers} />
+        <SubmoduleBreakdownSection node={node} query={filter} />
+        <BuffersSection buffers={node.buffers} query={filter} />
+        <ViewAllConfigLink />
       </div>
 
       {node.has_internals && onExpand && (
@@ -187,13 +203,21 @@ function ModelInfoSection({ spec }: { spec: Spec }) {
 
 function ParamsSection({
   params,
+  query,
+  moduleClass,
 }: {
   params: Readonly<Record<string, string | number | boolean>>;
+  query: string;
+  moduleClass?: string;
 }) {
-  const entries = Object.entries(params);
-  if (entries.length === 0) return null;
+  const all = Object.entries(params);
+  if (all.length === 0) return null;
+  const entries = filterEntries(all, query);
+  if (query && entries.length === 0) return null; // filtered everything out
+  const title = moduleClass ? `${moduleClass} attributes` : "Attributes";
   return (
-    <Section title="Configuration">
+    // While filtering, keep sections open (not collapsible) so matches stay visible.
+    <Section title={title} collapsible={!query} defaultOpen={all.length <= 8}>
       <dl className={styles.kvGrid}>
         {entries.map(([k, v]) => (
           <FieldRow key={k} k={k} v={String(v)} />
@@ -286,14 +310,18 @@ function ComputeSection({
 
 function BuffersSection({
   buffers,
+  query,
 }: {
   buffers?: Readonly<Record<string, ReadonlyArray<number>>> | null;
+  query: string;
 }) {
   if (!buffers) return null;
-  const entries = Object.entries(buffers);
-  if (entries.length === 0) return null;
+  const all = Object.entries(buffers);
+  if (all.length === 0) return null;
+  const entries = filterEntries(all, query);
+  if (query && entries.length === 0) return null;
   return (
-    <Section title="Buffers">
+    <Section title="Buffers" collapsible={!query} defaultOpen={all.length <= 8}>
       <dl className={styles.kvGrid}>
         {entries.map(([name, shape]) => (
           <FieldRow key={name} k={name} v={formatShape(shape) ?? "[]"} />
@@ -303,12 +331,27 @@ function BuffersSection({
   );
 }
 
-function SubmoduleBreakdownSection({ node }: { node: DetailPanelProps["node"] }) {
-  const children = (node.children ?? []).filter((child) => (child.param_count ?? 0) > 0);
+function SubmoduleBreakdownSection({
+  node,
+  query,
+}: {
+  node: DetailPanelProps["node"];
+  query: string;
+}) {
+  const all = (node.children ?? []).filter((child) => (child.param_count ?? 0) > 0);
   const total = node.param_count ?? 0;
-  if (children.length === 0 || total <= 0) return null;
+  if (all.length === 0 || total <= 0) return null;
+  const q = query.trim().toLowerCase();
+  const children = q
+    ? all.filter(
+        (c) =>
+          c.label.toLowerCase().includes(q) ||
+          (c.module_class ?? "").toLowerCase().includes(q),
+      )
+    : all;
+  if (q && children.length === 0) return null;
   return (
-    <Section title="Parameter breakdown">
+    <Section title="Parameter breakdown" collapsible={!query} defaultOpen={all.length <= 6}>
       <div className={styles.breakdown}>
         {children.slice(0, 6).map((child) => {
           const count = child.param_count ?? 0;

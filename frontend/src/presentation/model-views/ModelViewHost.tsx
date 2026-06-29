@@ -26,11 +26,14 @@ function stubSpec(modelId: string): Spec {
 export function ModelViewHost({
   onRetryWithToken,
   onSubmit,
+  onRetry,
 }: {
   /** Re-run a load with a just-entered HF token (used by the gated page). */
   onRetryWithToken?: (modelId: string, token: string) => void;
   /** Load a model from the empty-state landing's in-page search / chips. */
   onSubmit?: (modelId: string) => void;
+  /** Re-run the last failed load (shown as a Retry button on error pages). */
+  onRetry?: () => void;
 } = {}) {
   const spec = useArchStore((s) => s.spec);
   const error = useArchStore((s) => s.error);
@@ -54,7 +57,8 @@ export function ModelViewHost({
   }
 
   if (!spec) {
-    if (error?.kind === "not_found") return <ModelNotFoundState error={error} />;
+    if (error?.kind === "not_found")
+      return <ModelNotFoundState error={error} onRetry={onRetry} />;
 
     // For unsupported/gated errors we still know the model_id, so the card-first
     // views can fetch from the HF Hub independently of introspection.
@@ -69,9 +73,10 @@ export function ModelViewHost({
     if (error?.kind === "gated")
       return <ModelGatedState error={error} onRetryWithToken={onRetryWithToken} />;
     if (error?.kind === "timeout" || error?.kind === "failed")
-      return <ModelIntrospectionErrorState error={error} />;
-    if (error?.kind === "server_error") return <ModelServerErrorState error={error} />;
-    if (error) return <ErrorState error={error} />;
+      return <ModelIntrospectionErrorState error={error} onRetry={onRetry} />;
+    if (error?.kind === "server_error")
+      return <ModelServerErrorState error={error} onRetry={onRetry} />;
+    if (error) return <ErrorState error={error} onRetry={onRetry} />;
     // No model, no error: the landing hero. Falls back to the plain placeholder
     // only if no loader was wired (the in-page search/chips need `onSubmit`).
     return onSubmit ? (

@@ -9,10 +9,17 @@
  */
 
 import type { LoadError } from "../../application/loadError";
+import { RetryButton } from "./RetryButton";
 import illustrationUrl from "./model-introspection-error.svg";
 import styles from "./ModelNotFoundState.module.css";
 
-export function ModelIntrospectionErrorState({ error }: { error: LoadError }) {
+export function ModelIntrospectionErrorState({
+  error,
+  onRetry,
+}: {
+  error: LoadError;
+  onRetry?: () => void;
+}) {
   const isTimeout = error.kind === "timeout";
   return (
     <div className={styles.root} role="alert" aria-live="polite">
@@ -71,6 +78,12 @@ export function ModelIntrospectionErrorState({ error }: { error: LoadError }) {
             </>
           )}
         </ul>
+
+        {onRetry && (
+          <div className={styles.actions}>
+            <RetryButton onRetry={onRetry} />
+          </div>
+        )}
       </div>
 
       <div className={styles.art}>

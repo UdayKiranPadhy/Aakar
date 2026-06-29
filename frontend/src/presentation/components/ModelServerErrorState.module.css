@@ -1,4 +1,5 @@
 .root {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
@@ -7,6 +8,14 @@
   justify-content: center;
   padding: var(--space-8);
   overflow: auto;
+}
+
+/* The artwork is a full-page mockup, so float the retry over its lower edge. */
+.retryOverlay {
+  position: absolute;
+  bottom: var(--space-10);
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .image {

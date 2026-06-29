@@ -17,6 +17,7 @@ from aakar_api.infrastructure.introspection.model_metadata import (
     attention_implementation,
     config_summary,
     position_encoding,
+    rope_parameters,
     tied_word_embeddings,
 )
 from aakar_api.infrastructure.introspection.node_walker import walk_module_tree
@@ -65,6 +66,7 @@ def build_spec(
         param_dtype=param_dtype,
         attn_impl=attention_implementation(config),
         position_encoding=position_encoding(model, config),
+        rope_parameters=rope_parameters(config),
         tied_word_embeddings=tied_word_embeddings(model, config),
         flops_reference={
             "batch_size": walk_context.batch_ref,

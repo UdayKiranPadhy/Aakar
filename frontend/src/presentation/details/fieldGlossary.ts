@@ -20,6 +20,10 @@ const SHAPE_OUT = "Symbolic shape of the tensor leaving this module. B = batch, 
 const WEIGHT = "Shape of this module's weight tensor, read from nn.Parameter.shape on the meta device (no weights are downloaded).";
 const BIAS = "Shape of this module's bias tensor. Absent when the module has no bias.";
 const DTYPE = "Intended parameter precision from the model config (e.g. bfloat16). Drives the memory estimate.";
+const DTYPE_ACTUAL = "Actual precision of this module's weight/bias as built on the meta device — can differ from the model's declared dtype (e.g. fp32 norms inside a bf16 model).";
+const ACTIVATION = "Non-linear activation used inside the feed-forward block (e.g. silu, gelu).";
+const EXPERTS = "Total number of expert feed-forward networks in this mixture-of-experts layer.";
+const EXPERTS_PER_TOK = "How many experts each token is routed to (top-k). The rest stay idle, so compute scales with k, not the total expert count.";
 const ATTN = "Attention kernel the model dispatches to: eager, sdpa, or flash_attention_2.";
 const POS = "How token order is injected: rope, learned, alibi, or sinusoidal — inferred from config facts.";
 const TIED = "Whether the input embedding and output (LM-head) weight matrices are the same tensor.";
@@ -46,11 +50,16 @@ const FIELD_TIPS: Record<string, string> = {
   weight_shape: WEIGHT,
   bias: BIAS,
   bias_shape: BIAS,
+  weight_dtype: DTYPE_ACTUAL,
+  bias_dtype: DTYPE_ACTUAL,
 
   // ── Counts & cost ──
   param_count: "Total learnable parameters in this module and everything beneath it (recursive sum of numel()).",
   memory_bytes: "Parameter memory for this subtree = parameter count × bytes-per-element at the model's dtype.",
   flops: "Theoretical forward-pass floating-point ops at the reference batch/sequence size — only for modules with a closed-form count (Linear, norms).",
+  // FLOPs breakdown components (Node.flops_detail).
+  matmul: "FLOPs of this layer's matrix multiply at the reference batch/sequence size.",
+  attn_context: "FLOPs of the scores·V matmul — weighting the value vectors by the attention scores.",
 
   // ── Spec-level (Model section) ──
   dtype: DTYPE,
@@ -83,6 +92,11 @@ const FIELD_TIPS: Record<string, string> = {
   hidden_size: "The model's residual-stream width — the size of the vectors flowing between layers.",
   intermediate_size: "Inner width of the feed-forward (MLP) block — usually several × the hidden size.",
   vocab_size: "Number of distinct tokens the model can represent.",
+  hidden_act: ACTIVATION,
+  activation_function: ACTIVATION,
+  num_experts: EXPERTS,
+  num_local_experts: EXPERTS,
+  num_experts_per_tok: EXPERTS_PER_TOK,
 
   // ── Intermediates (Tensor path) ──
   q: QKV,

@@ -42,6 +42,14 @@ export type Node = Readonly<{
   module_path?: string;
   weight_shape?: ReadonlyArray<number>;
   bias_shape?: ReadonlyArray<number>;
+  /**
+   * Actual dtype of this module's own weight / bias as built on the meta device
+   * (e.g. `"float32"`, `"bfloat16"`). Distinct from the Spec-level `param_dtype`
+   * (the *declared* `config.torch_dtype`): mixed precision — e.g. fp32 norms in a
+   * bf16 model — is only visible here. Absent when the module has no weight / bias.
+   */
+  weight_dtype?: string;
+  bias_dtype?: string;
   memory_bytes?: number;
   buffers?: Readonly<Record<string, ReadonlyArray<number>>>;
   /**
@@ -81,6 +89,13 @@ export type Node = Readonly<{
   source_url?: string;
   flops?: number;
   /**
+   * Additive FLOPs cost components of this module's OWN forward (child modules
+   * carry their own — nothing here double-counts them). Bounded keys: `matmul`
+   * (Linear), `norm`, `attn_scores` / `attn_context` (the two SDPA matmuls). Where
+   * `flops` is also set the values sum to it. Absent when no component is known.
+   */
+  flops_detail?: Readonly<Record<string, number>>;
+  /**
    * Per-class intermediate tensor shapes derived from the module + config.
    * Populated only for `*Attention` (q / k / v / attn_scores) and `*MLP`
    * (up) modules. Values are symbolic strings like `"[B, 32, S, 128]"`.
@@ -103,6 +118,13 @@ export type Spec = Readonly<{
   param_dtype?: string;
   attn_impl?: string;
   position_encoding?: string;
+  /**
+   * Curated RoPE parameters when the model uses rotary embeddings, e.g.
+   * `{ theta: 500000, scaling: { rope_type: "llama3", … } }` copied verbatim from
+   * the config. Model-wide, so it lives at Spec level next to `position_encoding`.
+   * Absent when RoPE isn't used.
+   */
+  rope_parameters?: Readonly<Record<string, unknown>>;
   tied_word_embeddings?: boolean;
   flops_reference?: Readonly<{ batch_size: number; seq_len: number }>;
   /**

@@ -10,23 +10,58 @@
  * (Linear, Embedding, …) render identical rows and inherit tooltips for free.
  */
 
-import type { ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { clsx } from "clsx";
 
 import { Tooltip } from "../components/ui/Tooltip";
 import { fieldTip } from "./fieldGlossary";
 import styles from "./GenericDetailPanel.module.css";
 
+/**
+ * Titled detail section. Pass `collapsible` to make the header a disclosure
+ * button (defaulting to `defaultOpen`); without it the section renders exactly as
+ * before, so every existing call site is unchanged.
+ */
 export function Section({
   title,
   children,
+  collapsible = false,
+  defaultOpen = true,
 }: {
   title: string;
   children: ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const bodyId = useId();
+
+  if (!collapsible) {
+    return (
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>{title}</h3>
+        {children}
+      </section>
+    );
+  }
+
   return (
     <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>{title}</h3>
-      {children}
+      <h3 className={styles.sectionTitle}>
+        <button
+          type="button"
+          className={styles.sectionToggle}
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span className={clsx(styles.sectionChevron, open && styles.sectionChevronOpen)}>
+            ›
+          </span>
+          {title}
+        </button>
+      </h3>
+      {open && <div id={bodyId}>{children}</div>}
     </section>
   );
 }

@@ -11,9 +11,12 @@ from aakar_api.infrastructure.introspection.node_metadata import (
     category,
     extract_params,
     flops,
+    flops_detail,
     intermediates,
     io_shapes,
+    parameter_dtype,
     parameter_shape,
+    role_config_facts,
     source_url,
 )
 from aakar_api.infrastructure.introspection.role import is_decoder_layer, role
@@ -59,10 +62,14 @@ def walk_module_tree(
         module_path=path or None,
         weight_shape=parameter_shape(getattr(module, "weight", None)),
         bias_shape=parameter_shape(getattr(module, "bias", None)),
+        weight_dtype=parameter_dtype(getattr(module, "weight", None)),
+        bias_dtype=parameter_dtype(getattr(module, "bias", None)),
         param_count=param_count,
         has_internals=bool(children),
         children=children or None,
-        params=extract_params(module),
+        # Module attributes (extract_params) plus a small curated set of role-scoped
+        # config facts that aren't leaf-module attributes (GQA grouping, activation, …).
+        params={**extract_params(module), **role_config_facts(ctx, role=node_role)},
         input_shape=input_shape,
         output_shape=output_shape,
         memory_bytes=param_count * ctx.dtype_bytes if param_count else None,
@@ -71,6 +78,7 @@ def walk_module_tree(
         role=node_role,
         source_url=source_url(module),
         flops=flops(module, ctx, role=node_role),
+        flops_detail=flops_detail(module, ctx, role=node_role),
         intermediates=intermediates(module, ctx, role=node_role),
         # FX trace keys ops by the module's qualified name, which is exactly the
         # `path` we build here (root scope is keyed by "").

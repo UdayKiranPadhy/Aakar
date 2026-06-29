@@ -81,3 +81,7 @@
   color: var(--color-ink-muted);
   text-align: start;
 }
+
+.actions {
+  margin-top: var(--space-6);
+}

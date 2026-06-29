@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 
 import { ErrorState } from "./ErrorState";
 import type { LoadError } from "../../application/loadError";
@@ -42,5 +43,15 @@ describe("ErrorState", () => {
       />,
     );
     expect(screen.getByText("DeepSeekV3")).toBeInTheDocument();
+  });
+
+  it("renders a retry button that calls onRetry, and none without it", async () => {
+    const onRetry = vi.fn();
+    const { rerender } = render(<ErrorState error={unsupported} onRetry={onRetry} />);
+    await userEvent.click(screen.getByRole("button", { name: /try again/i }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+
+    rerender(<ErrorState error={unsupported} />);
+    expect(screen.queryByRole("button", { name: /try again/i })).toBeNull();
   });
 });

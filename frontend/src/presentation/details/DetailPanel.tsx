@@ -55,7 +55,7 @@ export function DetailPanel() {
     );
   }
 
-  const Panel = detailRegistry.resolve(panelNode.type);
+  const Panel = detailRegistry.resolveNode(panelNode);
   return (
     <aside
       className={clsx(styles.dock, resizing && styles.resizing)}

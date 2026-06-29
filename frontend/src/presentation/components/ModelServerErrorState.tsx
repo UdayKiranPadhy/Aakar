@@ -6,10 +6,17 @@
  */
 
 import type { LoadError } from "../../application/loadError";
+import { RetryButton } from "./RetryButton";
 import illustrationUrl from "./server-error.svg";
 import styles from "./ModelServerErrorState.module.css";
 
-export function ModelServerErrorState({ error }: { error: LoadError }) {
+export function ModelServerErrorState({
+  error,
+  onRetry,
+}: {
+  error: LoadError;
+  onRetry?: () => void;
+}) {
   return (
     <div className={styles.root} role="alert" aria-live="polite">
       <p className={styles.srOnly}>
@@ -21,6 +28,11 @@ export function ModelServerErrorState({ error }: { error: LoadError }) {
         alt="Something went wrong — Aakar hit an unexpected error while building this model's graph. Please try again in a few moments."
         className={styles.image}
       />
+      {onRetry && (
+        <div className={styles.retryOverlay}>
+          <RetryButton onRetry={onRetry} />
+        </div>
+      )}
     </div>
   );
 }

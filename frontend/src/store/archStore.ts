@@ -120,6 +120,8 @@ type State = {
    * shows its explanation. Takes precedence over the path-based selection.
    */
   selectedFlowNode: Node | null;
+  /** Whether the keyboard-shortcut help dialog is open (toggled by `?`). */
+  helpOpen: boolean;
 };
 
 type Actions = {
@@ -160,6 +162,9 @@ type Actions = {
   setOpHideShapeOps(hide: boolean): void;
   /** Select a synthetic node (op/semantic glyph) to explain in the detail panel. */
   selectFlowNode(node: Node): void;
+  openHelp(): void;
+  closeHelp(): void;
+  toggleHelp(): void;
   /** Clear both Compare columns → back to the Compare landing (`/compare`). */
   clearCompare(): void;
   /** Clear the loaded model → back to the Model landing (`/model`). */
@@ -196,6 +201,7 @@ const initialState: State = {
   opFlowPath: null,
   opHideShapeOps: true,
   selectedFlowNode: null,
+  helpOpen: false,
 };
 
 export const useArchStore = create<State & Actions>()((set) => ({
@@ -311,6 +317,10 @@ export const useArchStore = create<State & Actions>()((set) => ({
 
   selectFlowNode: (node) =>
     set({ selectedFlowNode: node, detailOpen: true, detailCollapsed: false }),
+
+  openHelp: () => set({ helpOpen: true }),
+  closeHelp: () => set({ helpOpen: false }),
+  toggleHelp: () => set((s) => ({ helpOpen: !s.helpOpen })),
 
   // Drop both columns (and their in-flight ids) so CompareHost falls back to the
   // landing; resetting the view keeps the resulting URL a clean `/compare`.

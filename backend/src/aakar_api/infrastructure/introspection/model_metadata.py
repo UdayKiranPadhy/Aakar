@@ -70,6 +70,22 @@ def position_encoding(model: nn.Module, config: Any) -> str | None:
     return None
 
 
+def rope_parameters(config: Any) -> dict[str, Any] | None:
+    """Curated RoPE facts copied verbatim from the config when rotary embeddings are used:
+    the angular base `theta` (`config.rope_theta`) and the structured `scaling` dict
+    (`config.rope_scaling`). Model-wide, so it belongs at Spec level next to
+    `position_encoding` — and reads the same config fields that function keys on. None
+    when RoPE isn't used."""
+    out: dict[str, Any] = {}
+    theta = getattr(config, "rope_theta", None)
+    if isinstance(theta, int | float) and not isinstance(theta, bool):
+        out["theta"] = theta
+    scaling = getattr(config, "rope_scaling", None)
+    if isinstance(scaling, dict):
+        out["scaling"] = scaling
+    return out or None
+
+
 def tied_word_embeddings(model: nn.Module, config: Any) -> bool | None:
     config_value = getattr(config, "tie_word_embeddings", None)
     config_tied = config_value if isinstance(config_value, bool) else None

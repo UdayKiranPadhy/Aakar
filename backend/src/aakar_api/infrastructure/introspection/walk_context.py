@@ -29,6 +29,8 @@ class WalkContext:
     intermediate_size: int
     num_layers: int = 0
     num_experts: int = 0
+    num_experts_per_tok: int = 0
+    hidden_act: str | None = None
     max_position: int = 0
     seq_ref: int = FLOPS_REFERENCE_SEQUENCE
     batch_ref: int = FLOPS_REFERENCE_BATCH
@@ -72,8 +74,14 @@ def walk_context_from_config(config: Any, param_dtype: str | None) -> WalkContex
             getattr(text, "num_hidden_layers", None) or getattr(text, "n_layer", None), 0
         ),
         num_experts=_int_or_default(
-            getattr(text, "num_local_experts", None) or getattr(text, "n_routed_experts", None),
+            getattr(text, "num_local_experts", None)
+            or getattr(text, "n_routed_experts", None)
+            or getattr(text, "num_experts", None),
             0,
+        ),
+        num_experts_per_tok=_int_or_default(getattr(text, "num_experts_per_tok", None), 0),
+        hidden_act=_str_or_none(
+            getattr(text, "hidden_act", None) or getattr(text, "activation_function", None)
         ),
         max_position=_int_or_default(getattr(text, "max_position_embeddings", None), 0),
     )
@@ -115,4 +123,10 @@ def _int_or_default(value: Any, default: int) -> int:
         return int(value or default)
     except (TypeError, ValueError):
         return default
+
+
+def _str_or_none(value: Any) -> str | None:
+    if isinstance(value, str) and value:
+        return value
+    return None
 

@@ -121,6 +121,14 @@
   --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.06);
   --shadow-nav: 0 1px 3px rgba(0, 0, 0, 0.08);
 
+  /* ── Focus ─────────────────────────────────────────────────────────── */
+  /* Keyboard focus rings. Two intensities matching the conventions already in
+   * use across the component CSS: a 3px subtle ring for inputs/cards/rows, and a
+   * tighter 2px accent ring for dense controls (buttons). Single source of truth
+   * so a future dark palette only re-tunes these. */
+  --focus-ring: 0 0 0 3px var(--color-accent-subtle);
+  --focus-ring-strong: 0 0 0 2px var(--color-accent);
+
   /* ── Landing backdrop (the empty Model-tab hero) ─────────────────────── */
   /* Pure white, matching the scene illustration's white backdrop, so the image
    * blends into the hero with no visible border (edges also feathered). */

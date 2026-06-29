@@ -1,0 +1,42 @@
+/* Expert-grid glyph for a mixture-of-experts card. Pairs with the generic card
+ * chrome (imported from GenericBlockNode.module.css). */
+
+.experts {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(var(--moe-cols, 6), 1fr);
+  gap: 3px;
+}
+
+.expert {
+  aspect-ratio: 1 / 1;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--viz-mlp) 45%, var(--color-bg));
+  background: color-mix(in srgb, var(--viz-mlp) 10%, var(--color-bg));
+}
+
+/* The top-k experts routed per token — filled to read as "active". */
+.expertActive {
+  background: var(--viz-mlp);
+  border-color: var(--viz-mlp);
+}
+
+/* Overflow tile shown when there are more experts than we draw individually. */
+.overflow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--color-ink-subtle);
+  background: var(--color-canvas-hover);
+}
+
+.caption {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+}

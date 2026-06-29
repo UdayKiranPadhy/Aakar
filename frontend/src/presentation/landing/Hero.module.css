@@ -216,11 +216,43 @@
   }
 }
 
-/* Not enough room for the corner cards on smaller screens — show a clean,
- * centred hero instead. */
+/* Below 1159px the full-size corner cards no longer fit *around* the centred
+ * headline. Rather than hide them, we fade the whole collage right back and let
+ * it sit behind the copy as ambient decoration: the cards shrink with the
+ * viewport and tuck into the four corners (peeking past the hero's clipped
+ * edge), leaving the centre clear for the headline + CTA — which stay on
+ * z-index 4, above the collage (z-index 2), so the text is never obscured. */
 @media (max-width: 1159px) {
   .cards {
+    opacity: 0.6;
+  }
+  .card {
+    width: clamp(116px, 25vw, 184px);
+  }
+  .cardTL {
+    top: 4%;
+    left: -4%;
+  }
+  .cardTR {
+    top: 2%;
+    left: auto;
+    right: -4%;
+  }
+  /* cardBL carries only a decorative blob (its illustration is the
+   * TravelingImage, hidden at this width) — drop it and promote the Tokenization
+   * card into the bottom-left corner so every visible corner holds a real
+   * illustration. */
+  .cardBL {
     display: none;
+  }
+  .cardBC {
+    left: -4%;
+    right: auto;
+    bottom: 5%;
+  }
+  .cardBR {
+    bottom: 4%;
+    right: -4%;
   }
 }
 

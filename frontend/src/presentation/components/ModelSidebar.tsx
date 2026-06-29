@@ -12,17 +12,14 @@
  * its right edge via `sidebarWidth` + ResizeHandle.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { clsx } from "clsx";
 
-import {
-  matchOutline,
-  outlinePathKey,
-  type OutlineFilter,
-} from "../../domain/navigation";
+import { matchOutline, outlinePathKey } from "../../domain/navigation";
 import type { Node } from "../../domain/spec";
 import { useArchStore } from "../../store/archStore";
 import { modelViewRegistry } from "../model-views/ModelViewRegistry";
+import { flattenVisibleRows } from "./moduleTreeNav";
 import { PanelToggleIcon, ViewIcon } from "./NavIcons";
 import { ResizeHandle } from "./ResizeHandle";
 import { Spinner } from "./ui/Spinner";
@@ -150,10 +147,20 @@ function ModuleTree() {
   // Explicit user open/close decisions, keyed by path. Absent ⇒ fall back to
   // the depth default. New models produce new path-keys, so this self-resets.
   const [overrides, setOverrides] = useState<Map<string, boolean>>(() => new Map());
+  // Roving-tabindex focus target for keyboard navigation (the ARIA tree pattern:
+  // the whole tree is a single tab stop; arrows move focus between rows).
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLDivElement>());
 
   const filter = useMemo(
     () => (spec ? matchOutline(spec.graph, query) : null),
     [spec, query],
+  );
+  // The visible rows in DOM order — keyboard order is computed from exactly this.
+  const rows = useMemo(
+    () =>
+      spec ? flattenVisibleRows(spec.graph, filter, overrides, DEFAULT_OPEN_DEPTH) : [],
+    [spec, filter, overrides],
   );
 
   if (!spec || spec.graph.length === 0) return null;
@@ -178,6 +185,65 @@ function ModuleTree() {
     }
   };
 
+  const focusRow = (key: string | undefined) => {
+    if (!key) return;
+    setActiveKey(key);
+    rowRefs.current.get(key)?.focus();
+  };
+
+  // ARIA tree keyboard model, operating over the flat `rows` list.
+  const handleKeyDown = (e: React.KeyboardEvent, key: string) => {
+    const i = rows.findIndex((r) => r.key === key);
+    if (i < 0) return;
+    const row = rows[i]!;
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        focusRow(rows[i + 1]?.key);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        focusRow(rows[i - 1]?.key);
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        if (row.hasChildren && !row.open) setOpen(key, true);
+        else if (row.hasChildren && row.open) focusRow(rows[i + 1]?.key);
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        if (row.hasChildren && row.open) setOpen(key, false);
+        else if (row.path.length > 1) focusRow(outlinePathKey(row.path.slice(0, -1)));
+        break;
+      case "Home":
+        e.preventDefault();
+        focusRow(rows[0]?.key);
+        break;
+      case "End":
+        e.preventDefault();
+        focusRow(rows[rows.length - 1]?.key);
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        navigate(row.node, row.path);
+        break;
+    }
+  };
+
+  // Exactly one row is in the tab order: the last-focused, else the selected,
+  // else the first — so Tab always lands somewhere sensible.
+  const tabbableKey =
+    (activeKey && rows.some((r) => r.key === activeKey) && activeKey) ||
+    (selectedKey && rows.some((r) => r.key === selectedKey) && selectedKey) ||
+    rows[0]?.key ||
+    null;
+
+  const registerRef = (key: string, el: HTMLDivElement | null) => {
+    if (el) rowRefs.current.set(key, el);
+    else rowRefs.current.delete(key);
+  };
+
   const noMatches = filter !== null && filter.visible.size === 0;
 
   return (
@@ -188,6 +254,13 @@ function ModuleTree() {
         placeholder="Filter modules…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          // Hand off from the filter box into the tree.
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            focusRow(rows[0]?.key);
+          }
+        }}
         aria-label="Filter modules"
       />
       {noMatches ? (
@@ -203,8 +276,11 @@ function ModuleTree() {
               filter={filter}
               overrides={overrides}
               selectedKey={selectedKey}
+              tabbableKey={tabbableKey}
+              registerRef={registerRef}
               onToggle={setOpen}
               onNavigate={navigate}
+              onKeyDown={handleKeyDown}
             />
           ))}
         </ul>
@@ -217,11 +293,14 @@ type TreeRowProps = Readonly<{
   node: Node;
   path: ReadonlyArray<string>;
   depth: number;
-  filter: OutlineFilter | null;
+  filter: ReturnType<typeof matchOutline>;
   overrides: ReadonlyMap<string, boolean>;
   selectedKey: string | null;
+  tabbableKey: string | null;
+  registerRef: (key: string, el: HTMLDivElement | null) => void;
   onToggle: (key: string, open: boolean) => void;
   onNavigate: (node: Node, path: ReadonlyArray<string>) => void;
+  onKeyDown: (e: React.KeyboardEvent, key: string) => void;
 }>;
 
 function TreeRow({
@@ -231,8 +310,11 @@ function TreeRow({
   filter,
   overrides,
   selectedKey,
+  tabbableKey,
+  registerRef,
   onToggle,
   onNavigate,
+  onKeyDown,
 }: TreeRowProps) {
   const key = outlinePathKey(path);
 
@@ -246,9 +328,17 @@ function TreeRow({
       ? !!overrides.get(key)
       : depth < DEFAULT_OPEN_DEPTH;
 
+  // The row <div> is the focusable treeitem (single tab stop, roving tabindex);
+  // the inner twisty/label buttons stay clickable but out of the tab order.
   return (
-    <li role="treeitem" aria-expanded={hasChildren ? open : undefined}>
+    <li role="none">
       <div
+        role="treeitem"
+        aria-expanded={hasChildren ? open : undefined}
+        aria-selected={selectedKey === key}
+        tabIndex={key === tabbableKey ? 0 : -1}
+        ref={(el) => registerRef(key, el)}
+        onKeyDown={(e) => onKeyDown(e, key)}
         className={clsx(styles.row, selectedKey === key && styles.rowActive)}
         style={{ paddingInlineStart: `calc(var(--space-1) + ${depth} * var(--space-3))` }}
       >
@@ -270,6 +360,7 @@ function TreeRow({
           className={styles.rowLabel}
           onClick={() => onNavigate(node, path)}
           title={node.module_class ?? node.label}
+          tabIndex={-1}
         >
           <span className={styles.rowName}>{node.label}</span>
           {node.module_class && <span className={styles.rowClass}>{node.module_class}</span>}
@@ -287,8 +378,11 @@ function TreeRow({
               filter={filter}
               overrides={overrides}
               selectedKey={selectedKey}
+              tabbableKey={tabbableKey}
+              registerRef={registerRef}
               onToggle={onToggle}
               onNavigate={onNavigate}
+              onKeyDown={onKeyDown}
             />
           ))}
         </ul>

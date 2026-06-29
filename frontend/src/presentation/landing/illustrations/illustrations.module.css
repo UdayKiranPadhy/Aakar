@@ -162,9 +162,30 @@
   width: 100%;
   aspect-ratio: 4 / 3;
 }
+/* The slot's own static copy of the illustration. Hidden on wide screens (the
+ * scroll-travelling hero image lands in the slot instead); shown below 1159px,
+ * where that image is `display:none` — without this the section would render an
+ * empty slot. */
+.travelFallback {
+  display: none;
+  width: 100%;
+}
 @media (max-width: 1159px) {
   .travelCard {
     display: none;
+  }
+  .travelTarget {
+    aspect-ratio: auto; /* let the static illustration set the slot height */
+  }
+  .travelFallback {
+    display: block;
+  }
+  /* The hero collage shrinks to ambient corner accents at this width (see
+   * Hero.module.css). These overhang shapes are fixed-px, so scale them down to
+   * match the smaller cards — otherwise a ~112px blob nearly fills a ~116px
+   * card. `scale` composes with each variant's existing `transform: rotate()`. */
+  .deco {
+    scale: 0.5;
   }
 }
 

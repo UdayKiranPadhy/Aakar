@@ -95,6 +95,11 @@
   list-style: none;
 }
 
+/* Retry button row under the tips (shared by the not-found + introspection pages). */
+.actions {
+  margin-top: var(--space-6);
+}
+
 .tip {
   display: flex;
   align-items: center;

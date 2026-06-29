@@ -101,6 +101,69 @@
   color: var(--color-ink-subtle);
 }
 
+/* Disclosure header for a collapsible Section — inherits the .sectionTitle type. */
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+}
+.sectionChevron {
+  display: inline-block;
+  color: var(--color-ink-subtle);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.sectionChevronOpen {
+  transform: rotate(90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sectionChevron {
+    transition: none;
+  }
+}
+
+/* Filter box shown atop the body for large nodes. */
+.filter {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink);
+}
+.filter:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--color-accent);
+}
+
+/* "View full model config →" — a link-styled button that switches to the Config tab. */
+.configLink {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-accent);
+}
+.configLink:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+.configLink:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
 .kvGrid {
   display: grid;
   grid-template-columns: max-content 1fr;

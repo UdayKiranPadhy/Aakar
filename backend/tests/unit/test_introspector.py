@@ -153,6 +153,75 @@ async def test_memory_and_flops(introspector: TransformersIntrospector) -> None:
 
 
 @pytest.mark.asyncio
+async def test_node_dtypes_present(introspector: TransformersIntrospector) -> None:
+    spec = await introspector.introspect(_TINY_LLAMA)
+    lm_head = next(c for c in spec.graph[0].children or [] if c.id == "lm_head")
+    # Read from the (meta) parameter — fp32 on the meta build regardless of declared dtype.
+    assert lm_head.weight_dtype == "float32"
+    # Llama disables bias on the LM head, so there's no bias dtype to report.
+    assert lm_head.bias_dtype is None
+
+
+@pytest.mark.asyncio
+async def test_attention_node_carries_curated_head_facts(
+    introspector: TransformersIntrospector,
+) -> None:
+    spec = await introspector.introspect(_TINY_LLAMA)
+    model = next(c for c in spec.graph[0].children or [] if c.id == "model")
+    layers = next(c for c in model.children or [] if c.id == "model.layers")
+    layer0 = (layers.children or [])[0]
+    attn = next(c for c in layer0.children or [] if c.id.endswith(".self_attn"))
+    # Head grouping facts come from the config (curated, role-gated) — not module attrs.
+    assert attn.params.get("num_heads")
+    assert attn.params.get("head_dim")
+    # tiny-random-llama is MHA, so the GQA grouping fact is (correctly) absent.
+    assert "gqa_ratio" not in attn.params
+
+
+@pytest.mark.asyncio
+async def test_mlp_node_carries_activation_fact(
+    introspector: TransformersIntrospector,
+) -> None:
+    spec = await introspector.introspect(_TINY_LLAMA)
+    model = next(c for c in spec.graph[0].children or [] if c.id == "model")
+    layers = next(c for c in model.children or [] if c.id == "model.layers")
+    layer0 = (layers.children or [])[0]
+    mlp = next(c for c in layer0.children or [] if c.id.endswith(".mlp"))
+    assert mlp.params.get("hidden_act") == "silu"  # Llama's gated SwiGLU activation
+    assert mlp.params.get("intermediate_size")
+
+
+@pytest.mark.asyncio
+async def test_flops_detail_on_linear_and_attention(
+    introspector: TransformersIntrospector,
+) -> None:
+    spec = await introspector.introspect(_TINY_LLAMA)
+    lm_head = next(c for c in spec.graph[0].children or [] if c.id == "lm_head")
+    # A leaf Linear's breakdown is exactly its headline FLOPs.
+    assert lm_head.flops_detail == {"matmul": lm_head.flops}
+
+    model = next(c for c in spec.graph[0].children or [] if c.id == "model")
+    layers = next(c for c in model.children or [] if c.id == "model.layers")
+    layer0 = (layers.children or [])[0]
+    attn = next(c for c in layer0.children or [] if c.id.endswith(".self_attn"))
+    assert attn.flops_detail is not None
+    assert set(attn.flops_detail) == {"attn_scores", "attn_context"}
+    assert attn.flops_detail["attn_scores"] == attn.flops_detail["attn_context"] > 0
+
+
+@pytest.mark.asyncio
+async def test_rope_parameters_present(introspector: TransformersIntrospector) -> None:
+    spec = await introspector.introspect(_TINY_LLAMA)
+    assert spec.position_encoding == "rope"
+    assert spec.rope_parameters is not None
+    # Copied verbatim from the config; the shape varies by transformers version —
+    # the angular base may sit at top-level `theta` or inside the `scaling` dict.
+    assert spec.rope_parameters.get("theta") is not None or isinstance(
+        spec.rope_parameters.get("scaling"), dict
+    )
+
+
+@pytest.mark.asyncio
 async def test_categories_on_real_llama_tree(
     introspector: TransformersIntrospector,
 ) -> None:

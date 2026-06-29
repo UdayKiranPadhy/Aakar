@@ -28,7 +28,11 @@ _DEFAULT_ROOT = Path("backend/.cache/specs")
 #   v4: trace runs device-uniformly (meta), so MoE / buffer-heavy models now emit ops too.
 #   v5: operations split into a separate /operations call. /architecture now caches a
 #       structure-only Spec (`operations_traced=False`); the key dropped the config hash.
-_SPEC_SCHEMA_VERSION = 5
+#   v6: per-module weight_dtype/bias_dtype, curated role-scoped config facts in
+#       Node.params, structured Node.flops_detail, and Spec.rope_parameters.
+#   v7: Node.params is now a generic dump of all public module attributes (was a
+#       curated whitelist); walk_context picks up the `num_experts` config key.
+_SPEC_SCHEMA_VERSION = 7
 
 
 def _safe_model_id(model_id: str) -> str:
